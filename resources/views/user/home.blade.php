@@ -26,11 +26,11 @@
                     <div class="d-flex justify-content-between align-items-center
     mb-3">
                         <div>
-                            <h4 class="mb-0">Projects</h4>
+                            <h4 class="mb-0">Jumlah Siswa</h4>
                         </div>
                         <div class="icon-shape icon-md bg-light-primary text-primary
       rounded-2">
-                            <i class="bi bi-briefcase fs-4"></i>
+                            <i data-feather="Person fill" class="bi bi-person-fill fs-4"></i>
                         </div>
                     </div>
                     <!-- project number -->

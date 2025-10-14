@@ -26,11 +26,11 @@
                         <div class="d-flex justify-content-between align-items-center
         mb-3">
                             <div>
-                                <h4 class="mb-0">Projects</h4>
+                                <h4 class="mb-0">Jumlah Siswa</h4>
                             </div>
                             <div class="icon-shape icon-md bg-light-primary text-primary
           rounded-2">
-                                <i class="bi bi-briefcase fs-4"></i>
+                                <i class="bi bi-people-fill fs-4"></i>
                             </div>
                         </div>
                         <!-- project number -->
@@ -50,11 +50,11 @@
                         <div class="d-flex justify-content-between align-items-center
         mb-3">
                             <div>
-                                <h4 class="mb-0">Active Task</h4>
+                                <h4 class="mb-0">Jumlah Guru</h4>
                             </div>
                             <div class="icon-shape icon-md bg-light-primary text-primary
           rounded-2">
-                                <i class="bi bi-list-task fs-4"></i>
+                                <i class="bi bi-person-fill fs-4"></i>
                             </div>
                         </div>
                         <!-- project number -->
@@ -74,11 +74,11 @@
                         <div class="d-flex justify-content-between align-items-center
         mb-3">
                             <div>
-                                <h4 class="mb-0">Teams</h4>
+                                <h4 class="mb-0">Jumlah Kelas</h4>
                             </div>
                             <div class="icon-shape icon-md bg-light-primary text-primary
           rounded-2">
-                                <i class="bi bi-people fs-4"></i>
+                                <i class="bi bi-easel-fill fs-4"></i>
                             </div>
                         </div>
                         <!-- project number -->
@@ -99,17 +99,17 @@
                         <div class="d-flex justify-content-between align-items-center
         mb-3">
                             <div>
-                                <h4 class="mb-0">Productivity</h4>
+                                <h4 class="mb-0">Jumlah Admin</h4>
                             </div>
                             <div class="icon-shape icon-md bg-light-primary text-primary
           rounded-2">
-                                <i class="bi bi-bullseye fs-4"></i>
+                                <i class="bi bi-person-fill-lock fs-4"></i>
                             </div>
                         </div>
                         <!-- project number -->
                         <div>
-                            <h1 class="fw-bold">76%</h1>
-                            <p class="mb-0"><span class="text-success me-2">5%</span>Completed</p>
+                            <h1 class="fw-bold">76</h1>
+                            <p class="mb-0"><span class="text-success me-2">5</span>Completed</p>
                         </div>
                     </div>
                 </div>
