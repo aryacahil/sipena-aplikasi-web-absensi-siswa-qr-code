@@ -89,12 +89,12 @@
                                             </a>
                                             <form action="{{ route('admin.users.destroy', $user->id) }}" 
                                                   method="POST" 
-                                                  class="d-inline"
-                                                  onsubmit="return confirm('Yakin ingin menghapus user ini?')">
+                                                  class="d-inline delete-form">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" 
-                                                        class="btn btn-sm btn-danger" 
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-danger btn-delete" 
+                                                        data-name="{{ $user->name }}"
                                                         title="Hapus">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
@@ -123,3 +123,64 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    @if(session('success'))
+        Swal.fire({
+            icon: 'success',
+            title: 'Berhasil!',
+            text: '{{ session("success") }}',
+            showConfirmButton: false,
+            timer: 2000,
+            timerProgressBar: true
+        });
+    @endif
+
+    @if(session('error'))
+        Swal.fire({
+            icon: 'error',
+            title: 'Gagal!',
+            text: '{{ session("error") }}',
+            confirmButtonText: 'OK'
+        });
+    @endif
+
+    document.querySelectorAll('.btn-delete').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const form = this.closest('form');
+            const userName = this.getAttribute('data-name');
+            
+            Swal.fire({
+                title: 'Hapus User?',
+                html: `Apakah Anda yakin ingin menghapus user<br><strong>${userName}</strong>?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="bi bi-trash me-1"></i> Ya, Hapus!',
+                cancelButtonText: '<i class="bi bi-x-circle me-1"></i> Batal',
+                reverseButtons: true,
+                focusCancel: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Menghapus...',
+                        text: 'Mohon tunggu sebentar',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    
+                    form.submit();
+                }
+            });
+        });
+    });
+</script>
+@endpush

@@ -1,4 +1,4 @@
- <!-- Sidebar -->
+<!-- Sidebar -->
  <nav class="navbar-vertical navbar">
      <div class="nav-scroller">
          <!-- Brand logo -->
@@ -14,130 +14,165 @@
                  <a class="nav-link" href="{{ route('admin.home') }}">
                      <i data-feather="House door" class="bi bi-house-door icon-xs me-2"></i>Dashboard
                  </a>
-
              </li>
+
              <!-- Nav item -->
              <li class="nav-item">
                  <div class="navbar-heading">Manajemen</div>
              </li>
-            </li>
+
+             <!-- Manajemen User -->
              <li class="nav-item">
-    <a class="nav-link has-arrow " href="#!"
-        data-bs-toggle="collapse" data-bs-target="#navPages" aria-expanded="false"
-        aria-controls="navPages">
-        <i data-feather="People" class="bi bi-people icon-xs me-2"></i>
-        Manajemen User
-    </a>
+                <a class="nav-link has-arrow" href="#!" data-bs-toggle="collapse" 
+                   data-bs-target="#navUsers" aria-expanded="false" aria-controls="navUsers">
+                    <i data-feather="People" class="bi bi-people icon-xs me-2"></i>
+                    Manajemen User
+                </a>
+                <div id="navUsers" class="collapse" data-bs-parent="#sideNavbar">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ route('admin.users.index') }}">
+                                <i class="bi bi-list-ul me-2"></i>Semua User
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ route('admin.users.index', ['role' => '1']) }}">
+                                <i class="bi bi-shield-check me-2"></i>Admin
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ route('admin.users.index', ['role' => '0']) }}">
+                                <i class="bi bi-person-video3 me-2"></i>Guru
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ route('admin.users.index', ['role' => '2']) }}">
+                                <i class="bi bi-mortarboard me-2"></i>Siswa
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
 
-    <div id="navPages" class="collapse " data-bs-parent="#sideNavbar">
-        <ul class="nav flex-column">
-            <li class="nav-item">
-                <a class="nav-link" href="{{ route('admin.users.index', ['role' => '1']) }}">
-                    Admin
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{{ route('admin.users.index', ['role' => '0']) }}">
-                    Guru
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{{ route('admin.users.index', ['role' => '2']) }}">
-                    Siswa
-                </a>
-            </li>
-        </ul>
-    </div>
-</li>
-
+             <!-- Manajemen Jurusan -->
              <li class="nav-item">
-                <a class="nav-link has-arrow " href="#!"
-                    aria-controls="navPages">
-                    <i data-feather="Book" class="bi bi-book icon-xs me-2">
-                    </i> Manajemen Jurusan
+                <a class="nav-link has-arrow" href="#!" data-bs-toggle="collapse" 
+                   data-bs-target="#navJurusan" aria-expanded="false" aria-controls="navJurusan">
+                    <i data-feather="Book" class="bi bi-book icon-xs me-2"></i>
+                    Manajemen Jurusan
                 </a>
+                <div id="navJurusan" class="collapse" data-bs-parent="#sideNavbar">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ route('admin.jurusan.index') }}">
+                                <i class="bi bi-list-ul me-2"></i>Daftar Jurusan
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ route('admin.jurusan.create') }}">
+                                <i class="bi bi-plus-circle me-2"></i>Tambah Jurusan
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
 
-            <li class="nav-item">
-                <a class="nav-link has-arrow " href="#!"
-                    aria-controls="navPages">
-                    <i data-feather="Easel" class="bi bi-easel icon-xs me-2">
-                    </i> Manajemen Kelas
+             <!-- Manajemen Kelas -->
+             <li class="nav-item">
+                <a class="nav-link has-arrow" href="#!" data-bs-toggle="collapse" 
+                   data-bs-target="#navKelas" aria-expanded="false" aria-controls="navKelas">
+                    <i data-feather="Easel" class="bi bi-easel icon-xs me-2"></i>
+                    Manajemen Kelas
                 </a>
+                <div id="navKelas" class="collapse" data-bs-parent="#sideNavbar">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ route('admin.kelas.index') }}">
+                                <i class="bi bi-list-ul me-2"></i>Daftar Kelas
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ route('admin.kelas.create') }}">
+                                <i class="bi bi-plus-circle me-2"></i>Tambah Kelas
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
 
-
-            <li class="nav-item">
+             <!-- Absensi Section -->
+             <li class="nav-item">
                  <div class="navbar-heading">Absensi</div>
              </li>
-            </li>
+
              <li class="nav-item">
-                <a class="nav-link has-arrow " href="#!"
-                    aria-controls="navPages">
-                    <i data-feather="QR code" class="bi bi-qr-code icon-xs me-2">
-                    </i> Generate QR Code
+                <a class="nav-link" href="{{ route('admin.qrcode.index') }}">
+                    <i data-feather="QR code" class="bi bi-qr-code icon-xs me-2"></i>
+                    Generate QR Code
                 </a>
+            </li>
             
             <li class="nav-item">
-                <a class="nav-link has-arrow " href="#!"
-                    aria-controls="navPages">
-                    <i data-feather="QR code scan" class="bi bi-qr-code-scan icon-xs me-2">
-                    </i> Scan Absensi
+                <a class="nav-link" href="{{ route('admin.scan.index') }}">
+                    <i data-feather="QR code scan" class="bi bi-qr-code-scan icon-xs me-2"></i>
+                    Scan Absensi
                 </a>
+            </li>
 
             <li class="nav-item">
-                <a class="nav-link has-arrow " href="#!"
-                    aria-controls="navPages">
-                    <i data-feather="File text" class="bi bi-file-text icon-xs me-2">
-                    </i> Absensi Siswa
+                <a class="nav-link" href="{{ route('admin.absensi.index') }}">
+                    <i data-feather="File text" class="bi bi-file-text icon-xs me-2"></i>
+                    Absensi Siswa
                 </a>
+            </li>
 
-            <li class="nav-item">
+             <!-- Laporan Section -->
+             <li class="nav-item">
                  <div class="navbar-heading">Laporan</div>
              </li>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link has-arrow " href="#!"
-                    aria-controls="navPages">
-                    <i data-feather="File earmark text" class="bi bi-file-earmark-text icon-xs me-2">
-                    </i> Export Excel / PDF
-                </a>
 
-             
+            <li class="nav-item">
+                <a class="nav-link" href="{{ route('admin.laporan.index') }}">
+                    <i data-feather="File earmark text" class="bi bi-file-earmark-text icon-xs me-2"></i>
+                    Export Excel / PDF
+                </a>
+            </li>
+
+             <!-- Pengaturan Section -->
              <li class="nav-item">
                  <div class="navbar-heading">Pengaturan</div>
              </li>
 
             <li class="nav-item">
-                <a class="nav-link has-arrow " href="#!"
-                    aria-controls="navPages">
-                    <i data-feather="Building" class="bi bi-building icon-xs me-2">
-                    </i> Profil Sekolah
+                <a class="nav-link" href="{{ route('admin.profil-sekolah.index') }}">
+                    <i data-feather="Building" class="bi bi-building icon-xs me-2"></i>
+                    Profil Sekolah
                 </a>
+            </li>
 
             <li class="nav-item">
-                 <a class="nav-link has-arrow  " href="#!"
-                     data-bs-toggle="collapse" data-bs-target="#navAuthentication" aria-expanded="false"
-                     aria-controls="navAuthentication">
-                     <i data-feather="Lock" class="bi bi-lock icon-xs me-2">
-                     </i> Autentikasi
+                 <a class="nav-link has-arrow" href="#!" data-bs-toggle="collapse" 
+                    data-bs-target="#navAuthentication" aria-expanded="false" aria-controls="navAuthentication">
+                     <i data-feather="Lock" class="bi bi-lock icon-xs me-2"></i>
+                     Autentikasi
                  </a>
-                 <div id="navAuthentication" class="collapse  "
-                     data-bs-parent="#sideNavbar">
+                 <div id="navAuthentication" class="collapse" data-bs-parent="#sideNavbar">
                      <ul class="nav flex-column">
                          <li class="nav-item">
-                             <a class="nav-link  "
-                                 href="pages/sign-in.html"> Sign In</a>
-                         </li>
-                         <li class="nav-item">
-                             <a class="nav-link  "
-                                 href="pages/sign-up.html"> Sign Up</a>
-                         </li>
-                         <li class="nav-item">
-                             <a class="nav-link  "
-                                 href="pages/forget-password.html">
-                                 Forget Password
+                             <a class="nav-link" href="{{ route('login') }}">
+                                <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
                              </a>
                          </li>
-
+                         <li class="nav-item">
+                             <a class="nav-link" href="{{ route('register') }}">
+                                <i class="bi bi-person-plus me-2"></i>Sign Up
+                             </a>
+                         </li>
+                         <li class="nav-item">
+                             <a class="nav-link" href="{{ route('password.request') }}">
+                                <i class="bi bi-key me-2"></i>Forget Password
+                             </a>
+                         </li>
                      </ul>
                  </div>
              </li>

@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\JurusanController;
+use App\Http\Controllers\Admin\KelasController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -48,6 +50,9 @@ Route::middleware(['auth', 'user-role:admin'])->group(function() {
             'update' => 'admin.users.update',
             'destroy' => 'admin.users.destroy',
         ]);
+    
+    Route::resource('jurusan', App\Http\Controllers\Admin\JurusanController::class);
+    Route::resource('kelas', App\Http\Controllers\Admin\KelasController::class);
 });
 
 Route::middleware(['auth', 'user-role:siswa'])->group(function() {

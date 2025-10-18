@@ -34,9 +34,7 @@ class UserController extends Controller
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:8|confirmed',
             'role' => 'required|in:0,1,2',
-            'phone' => 'nullable|string|max:20',
             'parent_phone' => 'required_if:role,2|nullable|string|max:20',
-            'address' => 'nullable|string',
             'status' => 'required|in:active,inactive',
         ], [
             'name.required' => 'Nama wajib diisi',
@@ -75,9 +73,7 @@ class UserController extends Controller
             'email' => 'required|email|unique:users,email,' . $user->id,
             'password' => 'nullable|min:8|confirmed',
             'role' => 'required|in:0,1,2',
-            'phone' => 'nullable|string|max:20',
             'parent_phone' => 'required_if:role,2|nullable|string|max:20',
-            'address' => 'nullable|string',
             'status' => 'required|in:active,inactive',
         ], [
             'name.required' => 'Nama wajib diisi',

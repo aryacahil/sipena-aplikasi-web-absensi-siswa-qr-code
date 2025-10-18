@@ -91,20 +91,12 @@
                                     @endif
                                 </td>
                             </tr>
-                            <tr>
-                                <td class="fw-bold">No. Telepon</td>
-                                <td>{{ $user->phone ?? '-' }}</td>
-                            </tr>
                             @if($user->role == 'siswa' && $user->parent_phone)
                             <tr>
                                 <td class="fw-bold">No. Telepon Orang Tua</td>
                                 <td>{{ $user->parent_phone }}</td>
                             </tr>
                             @endif
-                            <tr>
-                                <td class="fw-bold">Alamat</td>
-                                <td>{{ $user->address ?? '-' }}</td>
-                            </tr>
                             <tr>
                                 <td class="fw-bold">Status</td>
                                 <td>

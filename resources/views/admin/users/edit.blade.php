@@ -95,20 +95,6 @@
                         </div>
 
                         <div class="row">
-                            <!-- Telepon -->
-                            <div class="col-md-6 mb-3">
-                                <label for="phone" class="form-label">No. Telepon</label>
-                                <input type="text" 
-                                       class="form-control @error('phone') is-invalid @enderror" 
-                                       id="phone" 
-                                       name="phone" 
-                                       value="{{ old('phone', $user->phone) }}"
-                                       placeholder="08xxxxxxxxxx">
-                                @error('phone')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-
                             <!-- Telepon Orang Tua (untuk siswa) -->
                             <div class="col-md-6 mb-3" id="parent-phone-group" style="display: none;">
                                 <label for="parent_phone" class="form-label">No. Telepon Orang Tua <span class="text-danger">*</span></label>
@@ -123,18 +109,6 @@
                                 @enderror
                                 <small class="text-muted">Untuk notifikasi WhatsApp ke orang tua</small>
                             </div>
-                        </div>
-
-                        <!-- Alamat -->
-                        <div class="mb-3">
-                            <label for="address" class="form-label">Alamat</label>
-                            <textarea class="form-control @error('address') is-invalid @enderror" 
-                                      id="address" 
-                                      name="address" 
-                                      rows="3">{{ old('address', $user->address) }}</textarea>
-                            @error('address')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
                         </div>
 
                         <div class="alert alert-info">
