@@ -71,14 +71,6 @@
                             </div>
 
                             <!-- Links -->
-                            <div class="d-md-flex justify-content-between mt-4">
-                                <a href="{{ route('register') }}" class="fs-6">Buat Akun</a>
-                                @if (Route::has('password.request'))
-                                    <a class="fs-6" href="{{ route('password.request') }}">
-                                        {{ __('Forgot Password?') }}
-                                    </a>
-                                @endif
-                            </div>
 
                         </form>
                     </div>

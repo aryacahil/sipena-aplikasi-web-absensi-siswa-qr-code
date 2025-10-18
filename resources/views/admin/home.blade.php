@@ -129,32 +129,32 @@
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td>1</td>
-                                        <td>Teknik Komputer dan Jaringan</td>
-                                        <td>TKJ</td>
-                                        <td>4</td>
-                                        <td>X TKJ 1, X TKJ 2, XI TKJ 1, XII TKJ 1</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
                                     </tr>
                                     <tr>
-                                        <td>2</td>
-                                        <td>Rekayasa Perangkat Lunak</td>
-                                        <td>RPL</td>
-                                        <td>3</td>
-                                        <td>X RPL 1, XI RPL 1, XII RPL 1</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
                                     </tr>
                                     <tr>
-                                        <td>3</td>
-                                        <td>Multimedia</td>
-                                        <td>MM</td>
-                                        <td>2</td>
-                                        <td>X MM 1, XI MM 1</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
                                     </tr>
                                     <tr>
-                                        <td>4</td>
-                                        <td>Akuntansi</td>
-                                        <td>AK</td>
-                                        <td>3</td>
-                                        <td>X AK 1, XI AK 1, XII AK 1</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
                                     </tr>
                                 </tbody>
                             </table>

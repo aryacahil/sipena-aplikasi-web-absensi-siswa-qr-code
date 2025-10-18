@@ -18,33 +18,6 @@
 
              </li>
              <!-- Nav item -->
-             <li class="nav-item">
-                 <div class="navbar-heading">Manajemen</div>
-             </li>
-            </li>
-
-             <li class="nav-item">
-                <a class="nav-link has-arrow " href="#!"
-                    aria-controls="navPages">
-                    <i data-feather="Book" class="bi bi-book icon-xs me-2">
-                    </i> Manajemen Jurusan
-                </a>
-
-            <li class="nav-item">
-                <a class="nav-link has-arrow " href="#!"
-                    aria-controls="navPages">
-                    <i data-feather="Easel" class="bi bi-easel icon-xs me-2">
-                    </i> Manajemen Kelas
-                </a>
-
-            <li class="nav-item">
-                <a class="nav-link has-arrow " href="#!"
-                    aria-controls="navPages">
-                    <i data-feather="People" class="bi bi-people icon-xs me-2">
-                    </i> Manajemen Siswa
-                </a>
-
-
             <li class="nav-item">
                  <div class="navbar-heading">Absensi</div>
              </li>

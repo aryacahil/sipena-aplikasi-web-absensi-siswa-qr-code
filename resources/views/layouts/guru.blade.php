@@ -9,7 +9,7 @@
 <body class="bg-light">
     <div id="db-wrapper">
         <!-- navbar vertical -->
-            @include('layouts.partials.admin.navbar-vertical-user')
+            @include('layouts.partials.admin.navbar-vertical-guru')
         <!-- Page content -->
         <div id="page-content">
             @include('layouts.partials.admin.header')
