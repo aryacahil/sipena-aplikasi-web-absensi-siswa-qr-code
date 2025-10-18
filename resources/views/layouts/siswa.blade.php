@@ -3,7 +3,7 @@
 
 <head>
     @include('layouts.partials.admin.head')
-    <title>Homepage | Dash Ui - Bootstrap 5 Admin Dashboard Template</title>
+    <title>Home | SMKN 1 BENDO</title>
 </head>
 
 <body class="bg-light">

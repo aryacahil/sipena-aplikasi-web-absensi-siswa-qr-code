@@ -11,8 +11,7 @@
          <!-- Navbar nav -->
          <ul class="navbar-nav flex-column" id="sideNavbar">
              <li class="nav-item">
-                 <a class="nav-link has-arrow "
-                     >
+                 <a class="nav-link" href="{{ route('siswa.home') }}">
                      <i data-feather="House door" class="bi bi-house-door icon-xs me-2"></i>Dashboard
                  </a>
 
@@ -22,12 +21,6 @@
                  <div class="navbar-heading">Absensi</div>
              </li>
             </li>
-             <li class="nav-item">
-                <a class="nav-link has-arrow " href="#!"
-                    aria-controls="navPages">
-                    <i data-feather="QR code" class="bi bi-qr-code icon-xs me-2">
-                    </i> Generate QR Code
-                </a>
             
             <li class="nav-item">
                 <a class="nav-link has-arrow " href="#!"
