@@ -11,8 +11,7 @@
          <!-- Navbar nav -->
          <ul class="navbar-nav flex-column" id="sideNavbar">
              <li class="nav-item">
-                 <a class="nav-link has-arrow "
-                     >
+                 <a class="nav-link" href="{{ route('guru.home') }}">
                      <i data-feather="House door" class="bi bi-house-door icon-xs me-2"></i>Dashboard
                  </a>
 
