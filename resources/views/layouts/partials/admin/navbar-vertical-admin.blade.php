@@ -45,6 +45,12 @@
                                  Guru
                              </a>
                          </li>
+                        <li class="nav-item">
+                             <a class="nav-link has-arrow   "
+                                 href="pages/settings.html">
+                                 Siswa
+                             </a>
+                         </li>
                      </ul>
                  </div>
 
@@ -62,13 +68,6 @@
                     aria-controls="navPages">
                     <i data-feather="Easel" class="bi bi-easel icon-xs me-2">
                     </i> Manajemen Kelas
-                </a>
-
-            <li class="nav-item">
-                <a class="nav-link has-arrow " href="#!"
-                    aria-controls="navPages">
-                    <i data-feather="People" class="bi bi-people icon-xs me-2">
-                    </i> Manajemen Siswa
                 </a>
 
 

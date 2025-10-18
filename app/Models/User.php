@@ -46,10 +46,15 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
-    protected function role():Attribute
+    /**
+     * Get the user's role.
+     * 
+     * @return \Illuminate\Database\Eloquent\Casts\Attribute
+     */
+    protected function role(): Attribute
     {
         return new Attribute(
-            get: fn ($value) => ["user","admin"][$value],
+            get: fn ($value) => ["guru", "admin", "siswa"][$value],
         );
     }
 }

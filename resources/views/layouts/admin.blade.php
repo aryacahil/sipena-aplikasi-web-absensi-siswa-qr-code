@@ -23,6 +23,7 @@
 
     <!-- Scripts -->
     @include('layouts.partials.admin.scripts')
+    @stack('scripts')
 
 
 
