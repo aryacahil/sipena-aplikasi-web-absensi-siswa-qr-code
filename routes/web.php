@@ -3,22 +3,18 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\HomeController;
-
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-*/
+use App\Http\Controllers\Admin\UserController;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-Auth::routes();
+Auth::routes([
+    'register' => false,
+    'reset' => false,
+    'verify' => false,
+]);
 
-// ========================================
-// HOME ROUTE 
-// ========================================
 Route::middleware(['auth'])->group(function() {
     Route::get('/home', function() {
         $role = auth()->user()->role;
@@ -35,23 +31,25 @@ Route::middleware(['auth'])->group(function() {
     })->name('home');
 });
 
-// ========================================
-// GURU ROUTES
-// ========================================
 Route::middleware(['auth', 'user-role:guru'])->group(function() {
     Route::get('/guru/home', [HomeController::class, 'guruHome'])->name('guru.home');
 });
 
-// ========================================
-// ADMIN ROUTES
-// ========================================
 Route::middleware(['auth', 'user-role:admin'])->group(function() {
     Route::get('/admin/home', [HomeController::class, 'adminHome'])->name('admin.home');
+    
+    Route::resource('admin/users', App\Http\Controllers\Admin\UserController::class)
+        ->names([
+            'index' => 'admin.users.index',
+            'create' => 'admin.users.create',
+            'store' => 'admin.users.store',
+            'show' => 'admin.users.show',
+            'edit' => 'admin.users.edit',
+            'update' => 'admin.users.update',
+            'destroy' => 'admin.users.destroy',
+        ]);
 });
 
-// ========================================
-// SISWA ROUTES
-// ========================================
 Route::middleware(['auth', 'user-role:siswa'])->group(function() {
     Route::get('/siswa/home', [HomeController::class, 'siswaHome'])->name('siswa.home');
 });

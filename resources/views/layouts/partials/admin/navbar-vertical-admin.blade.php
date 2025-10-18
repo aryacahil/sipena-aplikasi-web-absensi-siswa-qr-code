@@ -11,8 +11,7 @@
          <!-- Navbar nav -->
          <ul class="navbar-nav flex-column" id="sideNavbar">
              <li class="nav-item">
-                 <a class="nav-link has-arrow "
-                     >
+                 <a class="nav-link" href="{{ route('admin.home') }}">
                      <i data-feather="House door" class="bi bi-house-door icon-xs me-2"></i>Dashboard
                  </a>
 
@@ -23,38 +22,33 @@
              </li>
             </li>
              <li class="nav-item">
-                 <a class="nav-link has-arrow " href="#!"
-                     data-bs-toggle="collapse" data-bs-target="#navPages" aria-expanded="false"
-                     aria-controls="navPages">
-                     <i data-feather="People" class="bi bi-people icon-xs me-2"></i>
-                     </i> Manajemen User
-                 </a>
+    <a class="nav-link has-arrow " href="#!"
+        data-bs-toggle="collapse" data-bs-target="#navPages" aria-expanded="false"
+        aria-controls="navPages">
+        <i data-feather="People" class="bi bi-people icon-xs me-2"></i>
+        Manajemen User
+    </a>
 
-                 <div id="navPages" class="collapse "
-                     data-bs-parent="#sideNavbar">
-                     <ul class="nav flex-column">
-                         <li class="nav-item">
-                             <a class="nav-link  "
-                                 href="pages/profile.html">
-                                 Admin
-                             </a>
-                         </li>
-                         <li class="nav-item">
-                             <a class="nav-link has-arrow   "
-                                 href="pages/settings.html">
-                                 Guru
-                             </a>
-                         </li>
-                        <li class="nav-item">
-                             <a class="nav-link has-arrow   "
-                                 href="pages/settings.html">
-                                 Siswa
-                             </a>
-                         </li>
-                     </ul>
-                 </div>
-
-             </li>
+    <div id="navPages" class="collapse " data-bs-parent="#sideNavbar">
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link" href="{{ route('admin.users.index', ['role' => '1']) }}">
+                    Admin
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ route('admin.users.index', ['role' => '0']) }}">
+                    Guru
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ route('admin.users.index', ['role' => '2']) }}">
+                    Siswa
+                </a>
+            </li>
+        </ul>
+    </div>
+</li>
 
              <li class="nav-item">
                 <a class="nav-link has-arrow " href="#!"

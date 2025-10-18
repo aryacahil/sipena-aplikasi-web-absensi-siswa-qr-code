@@ -6,13 +6,19 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::latest()->paginate(10);
+        $query = User::query();
+        
+        // Filter by role if provided
+        if ($request->has('role') && $request->role !== '') {
+            $query->where('role', $request->role);
+        }
+        
+        $users = $query->latest()->paginate(10);
         return view('admin.users.index', compact('users'));
     }
 
@@ -29,8 +35,8 @@ class UserController extends Controller
             'password' => 'required|min:8|confirmed',
             'role' => 'required|in:0,1,2',
             'phone' => 'nullable|string|max:20',
+            'parent_phone' => 'required_if:role,2|nullable|string|max:20',
             'address' => 'nullable|string',
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'status' => 'required|in:active,inactive',
         ], [
             'name.required' => 'Nama wajib diisi',
@@ -41,15 +47,10 @@ class UserController extends Controller
             'password.min' => 'Password minimal 8 karakter',
             'password.confirmed' => 'Konfirmasi password tidak cocok',
             'role.required' => 'Role wajib dipilih',
-            'photo.image' => 'File harus berupa gambar',
-            'photo.max' => 'Ukuran foto maksimal 2MB',
+            'parent_phone.required_if' => 'No telepon orang tua wajib diisi untuk siswa',
         ]);
 
         $validated['password'] = Hash::make($validated['password']);
-
-        if ($request->hasFile('photo')) {
-            $validated['photo'] = $request->file('photo')->store('users', 'public');
-        }
 
         User::create($validated);
 
@@ -75,8 +76,8 @@ class UserController extends Controller
             'password' => 'nullable|min:8|confirmed',
             'role' => 'required|in:0,1,2',
             'phone' => 'nullable|string|max:20',
+            'parent_phone' => 'required_if:role,2|nullable|string|max:20',
             'address' => 'nullable|string',
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'status' => 'required|in:active,inactive',
         ], [
             'name.required' => 'Nama wajib diisi',
@@ -86,21 +87,13 @@ class UserController extends Controller
             'password.min' => 'Password minimal 8 karakter',
             'password.confirmed' => 'Konfirmasi password tidak cocok',
             'role.required' => 'Role wajib dipilih',
-            'photo.image' => 'File harus berupa gambar',
-            'photo.max' => 'Ukuran foto maksimal 2MB',
+            'parent_phone.required_if' => 'No telepon orang tua wajib diisi untuk siswa',
         ]);
 
         if ($request->filled('password')) {
             $validated['password'] = Hash::make($validated['password']);
         } else {
             unset($validated['password']);
-        }
-
-        if ($request->hasFile('photo')) {
-            if ($user->photo) {
-                Storage::disk('public')->delete($user->photo);
-            }
-            $validated['photo'] = $request->file('photo')->store('users', 'public');
         }
 
         $user->update($validated);
@@ -111,10 +104,6 @@ class UserController extends Controller
 
     public function destroy(User $user)
     {
-        if ($user->photo) {
-            Storage::disk('public')->delete($user->photo);
-        }
-        
         $user->delete();
 
         return redirect()->route('admin.users.index')
