@@ -32,8 +32,8 @@
                                     <th>No</th>
                                     <th>Kode Jurusan</th>
                                     <th>Nama Jurusan</th>
-                                    <th>Deskripsi</th>
                                     <th>Jumlah Kelas</th>
+                                    <th>Status</th>
                                     <th>Aksi</th>
                                 </tr>
                             </thead>
@@ -42,10 +42,16 @@
                                 <tr>
                                     <td>{{ $jurusans->firstItem() + $index }}</td>
                                     <td><span class="badge bg-primary">{{ $jurusan->kode_jurusan }}</span></td>
-                                    <td><strong>{{ $jurusan->nama_jurusan }}</strong></td>
-                                    <td>{{ Str::limit($jurusan->deskripsi ?? '-', 50) }}</td>
+                                    <td>{{ $jurusan->nama_jurusan }}</td>
                                     <td>
                                         <span class="badge bg-info">{{ $jurusan->kelas_count }} Kelas</span>
+                                    </td>
+                                    <td>
+                                        @if($jurusan->status == 'active')
+                                            <span class="badge bg-success">Aktif</span>
+                                        @else
+                                            <span class="badge bg-secondary">Nonaktif</span>
+                                        @endif
                                     </td>
                                     <td>
                                         <div class="btn-group" role="group">
@@ -94,4 +100,63 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    @if(session('success'))
+        Swal.fire({
+            icon: 'success',
+            title: 'Berhasil!',
+            text: '{{ session("success") }}',
+            showConfirmButton: false,
+            timer: 2000,
+            timerProgressBar: true
+        });
+    @endif
+
+    @if(session('error'))
+        Swal.fire({
+            icon: 'error',
+            title: 'Gagal!',
+            text: '{{ session("error") }}',
+            confirmButtonText: 'OK'
+        });
+    @endif
+
+    document.querySelectorAll('.btn-delete').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const form = this.closest('form');
+            const name = this.getAttribute('data-name');
+            
+            Swal.fire({
+                title: 'Hapus Jurusan?',
+                html: `Apakah Anda yakin ingin menghapus jurusan yang dipilih?<br><strong>${name}</strong>?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="bi bi-trash me-1"></i> Ya, Hapus!',
+                cancelButtonText: '<i class="bi bi-x-circle me-1"></i> Batal',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Menghapus...',
+                        text: 'Mohon tunggu sebentar',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    form.submit();
+                }
+            });
+        });
+    });
+</script>
+@endpush
 @endsection

@@ -40,7 +40,7 @@ Route::middleware(['auth', 'user-role:guru'])->group(function() {
 Route::middleware(['auth', 'user-role:admin'])->group(function() {
     Route::get('/admin/home', [HomeController::class, 'adminHome'])->name('admin.home');
     
-    Route::resource('admin/users', App\Http\Controllers\Admin\UserController::class)
+    Route::resource('admin/users', UserController::class)
         ->names([
             'index' => 'admin.users.index',
             'create' => 'admin.users.create',
@@ -51,8 +51,27 @@ Route::middleware(['auth', 'user-role:admin'])->group(function() {
             'destroy' => 'admin.users.destroy',
         ]);
     
-    Route::resource('jurusan', App\Http\Controllers\Admin\JurusanController::class);
-    Route::resource('kelas', App\Http\Controllers\Admin\KelasController::class);
+    Route::resource('admin/jurusan', JurusanController::class)
+        ->names([
+            'index' => 'admin.jurusan.index',
+            'create' => 'admin.jurusan.create',
+            'store' => 'admin.jurusan.store',
+            'show' => 'admin.jurusan.show',
+            'edit' => 'admin.jurusan.edit',
+            'update' => 'admin.jurusan.update',
+            'destroy' => 'admin.jurusan.destroy',
+        ]);
+    
+    Route::resource('admin/kelas', KelasController::class)
+        ->names([
+            'index' => 'admin.kelas.index',
+            'create' => 'admin.kelas.create',
+            'store' => 'admin.kelas.store',
+            'show' => 'admin.kelas.show',
+            'edit' => 'admin.kelas.edit',
+            'update' => 'admin.kelas.update',
+            'destroy' => 'admin.kelas.destroy',
+        ]);
 });
 
 Route::middleware(['auth', 'user-role:siswa'])->group(function() {

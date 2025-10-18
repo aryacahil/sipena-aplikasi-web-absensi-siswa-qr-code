@@ -17,6 +17,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'kelas_id',
         'parent_phone',
         'status',
     ];
@@ -36,5 +37,18 @@ class User extends Authenticatable
         return new Attribute(
             get: fn ($value) => ["guru", "admin", "siswa"][$value],
         );
+    }
+
+    public function kelas()
+    {
+        return $this->belongsTo(Kelas::class, 'kelas_id');
+    }
+
+    public function getRawOriginal($key = null, $default = null)
+    {
+        if ($key === 'role') {
+            return $this->attributes['role'] ?? $default;
+        }
+        return parent::getRawOriginal($key, $default);
     }
 }

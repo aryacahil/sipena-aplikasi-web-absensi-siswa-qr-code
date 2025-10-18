@@ -66,7 +66,7 @@
                                         id="role" 
                                         name="role" 
                                         required
-                                        onchange="toggleParentPhone()">
+                                        onchange="toggleStudentFields()">
                                     <option value="">Pilih Role</option>
                                     <option value="1" {{ old('role') == '1' ? 'selected' : '' }}>Admin</option>
                                     <option value="0" {{ old('role') == '0' ? 'selected' : '' }}>Guru</option>
@@ -94,6 +94,25 @@
                         </div>
 
                         <div class="row">
+                            <!-- Kelas (untuk siswa) -->
+                            <div class="col-md-6 mb-3" id="kelas-group" style="display: none;">
+                                <label for="kelas_id" class="form-label">Kelas <span class="text-danger">*</span></label>
+                                <select class="form-select @error('kelas_id') is-invalid @enderror" 
+                                        id="kelas_id" 
+                                        name="kelas_id">
+                                    <option value="">Pilih Kelas</option>
+                                    @foreach($kelas as $item)
+                                        <option value="{{ $item->id }}" {{ old('kelas_id') == $item->id ? 'selected' : '' }}>
+                                            {{ $item->nama_kelas }} - {{ $item->jurusan->nama_jurusan }} (Tingkat {{ $item->tingkat }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('kelas_id')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                <small class="text-muted">Pilih kelas untuk siswa</small>
+                            </div>
+
                             <!-- Telepon Orang Tua (untuk siswa) -->
                             <div class="col-md-6 mb-3" id="parent-phone-group" style="display: none;">
                                 <label for="parent_phone" class="form-label">No. Telepon Orang Tua <span class="text-danger">*</span></label>
@@ -152,22 +171,31 @@
 </div>
 
 <script>
-function toggleParentPhone() {
+function toggleStudentFields() {
     const role = document.getElementById('role').value;
+    const kelasGroup = document.getElementById('kelas-group');
     const parentPhoneGroup = document.getElementById('parent-phone-group');
+    const kelasSelect = document.getElementById('kelas_id');
+    const parentPhoneInput = document.getElementById('parent_phone');
     
     if (role == '2') { // Siswa
+        kelasGroup.style.display = 'block';
         parentPhoneGroup.style.display = 'block';
-        document.getElementById('parent_phone').required = true;
+        kelasSelect.required = true;
+        parentPhoneInput.required = true;
     } else {
+        kelasGroup.style.display = 'none';
         parentPhoneGroup.style.display = 'none';
-        document.getElementById('parent_phone').required = false;
+        kelasSelect.required = false;
+        parentPhoneInput.required = false;
+        kelasSelect.value = '';
+        parentPhoneInput.value = '';
     }
 }
 
 // Check on page load
 document.addEventListener('DOMContentLoaded', function() {
-    toggleParentPhone();
+    toggleStudentFields();
 });
 </script>
 @endsection
