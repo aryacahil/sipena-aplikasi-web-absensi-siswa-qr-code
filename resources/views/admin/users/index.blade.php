@@ -40,8 +40,6 @@
                                     <th>Nama</th>
                                     <th>Email</th>
                                     <th>Role</th>
-                                    <th>Kelas</th>
-                                    <th>Telepon</th>
                                     <th>Status</th>
                                     <th>Aksi</th>
                                 </tr>
@@ -68,15 +66,6 @@
                                             <span class="badge bg-success">Siswa</span>
                                         @endif
                                     </td>
-                                    <td>
-                                        @if($user->kelas)
-                                            <span class="badge bg-secondary">{{ $user->kelas->nama_kelas }}</span>
-                                            <small class="text-muted d-block">{{ $user->kelas->jurusan->kode_jurusan }}</small>
-                                        @else
-                                            <span class="text-muted">-</span>
-                                        @endif
-                                    </td>
-                                    <td>{{ $user->parent_phone ?? '-' }}</td>
                                     <td>
                                         @if($user->status == 'active')
                                             <span class="badge bg-success">Aktif</span>
@@ -113,7 +102,7 @@
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="9" class="text-center py-4">
+                                    <td colspan="7" class="text-center py-4">
                                         <i class="bi bi-inbox fs-1 text-muted"></i>
                                         <p class="text-muted mt-2">Tidak ada data user</p>
                                     </td>

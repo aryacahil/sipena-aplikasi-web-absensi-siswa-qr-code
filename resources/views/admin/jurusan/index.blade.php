@@ -33,7 +33,6 @@
                                     <th>Kode Jurusan</th>
                                     <th>Nama Jurusan</th>
                                     <th>Jumlah Kelas</th>
-                                    <th>Status</th>
                                     <th>Aksi</th>
                                 </tr>
                             </thead>
@@ -45,13 +44,6 @@
                                     <td>{{ $jurusan->nama_jurusan }}</td>
                                     <td>
                                         <span class="badge bg-info">{{ $jurusan->kelas_count }} Kelas</span>
-                                    </td>
-                                    <td>
-                                        @if($jurusan->status == 'active')
-                                            <span class="badge bg-success">Aktif</span>
-                                        @else
-                                            <span class="badge bg-secondary">Nonaktif</span>
-                                        @endif
                                     </td>
                                     <td>
                                         <div class="btn-group" role="group">
@@ -67,12 +59,12 @@
                                             </a>
                                             <form action="{{ route('admin.jurusan.destroy', $jurusan->id) }}" 
                                                   method="POST" 
-                                                  class="d-inline"
-                                                  onsubmit="return confirm('Yakin ingin menghapus jurusan ini?')">
+                                                  class="d-inline delete-form">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" 
-                                                        class="btn btn-sm btn-danger" 
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-danger btn-delete" 
+                                                        data-name="{{ $jurusan->nama_jurusan }}"
                                                         title="Hapus">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
@@ -82,7 +74,7 @@
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="6" class="text-center py-4">
+                                    <td colspan="5" class="text-center py-4">
                                         <i class="bi bi-inbox fs-1 text-muted"></i>
                                         <p class="text-muted mt-2">Tidak ada data jurusan</p>
                                     </td>
@@ -113,7 +105,9 @@
             text: '{{ session("success") }}',
             showConfirmButton: false,
             timer: 2000,
-            timerProgressBar: true
+            timerProgressBar: true,
+            toast: true,
+            position: 'top-end'
         });
     @endif
 
@@ -122,7 +116,8 @@
             icon: 'error',
             title: 'Gagal!',
             text: '{{ session("error") }}',
-            confirmButtonText: 'OK'
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#dc3545'
         });
     @endif
 
@@ -134,24 +129,34 @@
             
             Swal.fire({
                 title: 'Hapus Jurusan?',
-                html: `Apakah Anda yakin ingin menghapus jurusan yang dipilih?<br><strong>${name}</strong>?`,
+                html: `Apakah Anda yakin ingin menghapus jurusan<br><strong>"${name}"</strong>?<br><br><small class="text-muted">Data yang sudah dihapus tidak dapat dikembalikan!</small>`,
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonColor: '#d33',
+                confirmButtonColor: '#dc3545',
                 cancelButtonColor: '#6c757d',
                 confirmButtonText: '<i class="bi bi-trash me-1"></i> Ya, Hapus!',
                 cancelButtonText: '<i class="bi bi-x-circle me-1"></i> Batal',
-                reverseButtons: true
+                reverseButtons: true,
+                focusCancel: true,
+                customClass: {
+                    confirmButton: 'btn btn-danger px-4',
+                    cancelButton: 'btn btn-secondary px-4'
+                },
+                buttonsStyling: false,
+                allowOutsideClick: false
             }).then((result) => {
                 if (result.isConfirmed) {
                     Swal.fire({
                         title: 'Menghapus...',
-                        text: 'Mohon tunggu sebentar',
+                        html: 'Mohon tunggu sebentar',
                         allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        allowEnterKey: false,
                         didOpen: () => {
                             Swal.showLoading();
                         }
                     });
+                    
                     form.submit();
                 }
             });
