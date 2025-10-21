@@ -8,7 +8,10 @@ use App\Http\Controllers\Admin\JurusanController;
 use App\Http\Controllers\Admin\KelasController;
 
 Route::get('/', function () {
-    return view('welcome');
+    if (Auth::check()) {
+        return redirect('/home');
+    }
+    return redirect('/login');
 });
 
 Auth::routes([
