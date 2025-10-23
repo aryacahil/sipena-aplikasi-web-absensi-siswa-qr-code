@@ -1,5 +1,4 @@
 <?php
-// app/Models/Presensi.php
 
 namespace App\Models;
 
@@ -29,17 +28,11 @@ class Presensi extends Model
         'is_valid_location' => 'boolean',
     ];
 
-    /**
-     * Relasi ke PresensiSession
-     */
     public function session()
     {
         return $this->belongsTo(PresensiSession::class, 'presensi_session_id');
     }
 
-    /**
-     * Relasi ke Siswa (User)
-     */
     public function siswa()
     {
         return $this->belongsTo(User::class, 'siswa_id');
@@ -57,20 +50,16 @@ class Presensi extends Model
      */
     public static function calculateDistance($lat1, $lon1, $lat2, $lon2)
     {
-        // Radius bumi dalam meter
         $earthRadius = 6371000;
 
-        // Convert degrees to radians
         $latFrom = deg2rad($lat1);
         $lonFrom = deg2rad($lon1);
         $latTo = deg2rad($lat2);
         $lonTo = deg2rad($lon2);
 
-        // Hitung selisih
         $latDelta = $latTo - $latFrom;
         $lonDelta = $lonTo - $lonFrom;
 
-        // Haversine formula
         $angle = 2 * asin(sqrt(
             pow(sin($latDelta / 2), 2) +
             cos($latFrom) * cos($latTo) * pow(sin($lonDelta / 2), 2)
@@ -79,9 +68,6 @@ class Presensi extends Model
         return $angle * $earthRadius;
     }
 
-    /**
-     * Get badge color berdasarkan status
-     */
     public function getStatusBadgeAttribute()
     {
         return [
@@ -92,9 +78,6 @@ class Presensi extends Model
         ][$this->status] ?? 'secondary';
     }
 
-    /**
-     * Get status text dalam bahasa Indonesia
-     */
     public function getStatusTextAttribute()
     {
         return [
@@ -105,81 +88,51 @@ class Presensi extends Model
         ][$this->status] ?? 'Unknown';
     }
 
-    /**
-     * Get tipe absen text
-     */
     public function getTipeAbsenTextAttribute()
     {
         return $this->tipe_absen === 'qr' ? 'QR Code' : 'Manual';
     }
 
-    /**
-     * Get formatted waktu absen
-     */
     public function getWaktuAbsenFormatAttribute()
     {
         return $this->waktu_absen->format('d/m/Y H:i:s');
     }
 
-    /**
-     * Scope untuk status hadir
-     */
     public function scopeHadir($query)
     {
         return $query->where('status', 'hadir');
     }
 
-    /**
-     * Scope untuk status izin
-     */
     public function scopeIzin($query)
     {
         return $query->where('status', 'izin');
     }
 
-    /**
-     * Scope untuk status sakit
-     */
     public function scopeSakit($query)
     {
         return $query->where('status', 'sakit');
     }
 
-    /**
-     * Scope untuk status alpha
-     */
     public function scopeAlpha($query)
     {
         return $query->where('status', 'alpha');
     }
 
-    /**
-     * Scope untuk tipe absen QR
-     */
     public function scopeQrCode($query)
     {
         return $query->where('tipe_absen', 'qr');
     }
 
-    /**
-     * Scope untuk tipe absen manual
-     */
     public function scopeManual($query)
     {
         return $query->where('tipe_absen', 'manual');
     }
 
-    /**
-     * Scope untuk presensi berdasarkan siswa
-     */
     public function scopeBySiswa($query, $siswaId)
     {
         return $query->where('siswa_id', $siswaId);
     }
 
-    /**
-     * Scope untuk presensi berdasarkan session
-     */
     public function scopeBySession($query, $sessionId)
     {
         return $query->where('presensi_session_id', $sessionId);
