@@ -3,7 +3,7 @@
 
 <head>
     @include('layouts.partials.admin.head')
-    <title>Home | SMKN 1 BENDO</title>
+    <title>Home | SMKN 1 BENDO MAGETAN</title>
 </head>
 
 <body class="bg-light">

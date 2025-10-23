@@ -17,7 +17,11 @@ class KelasController extends Controller
             ->latest()
             ->paginate(10);
         
-        return view('admin.kelas.index', compact('kelas'));
+        // Tambahkan data untuk modal create/edit
+        $jurusans = Jurusan::all();
+        $gurus = User::whereRaw("role = 0")->get(); // Guru
+        
+        return view('admin.kelas.index', compact('kelas', 'jurusans', 'gurus'));
     }
 
     public function create()
