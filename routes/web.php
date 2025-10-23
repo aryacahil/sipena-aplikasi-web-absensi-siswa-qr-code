@@ -109,13 +109,11 @@ Route::middleware(['auth', 'user-role:guru'])->group(function() {
 
 Route::middleware(['auth', 'user-role:siswa'])->group(function() {
     Route::prefix('siswa')->name('siswa.')->group(function() {
-        Route::get('presensi/scan', [\App\Http\Controllers\Siswa\PresensiController::class, 'scan'])
+        Route::get('presensi/scan', [\App\Http\Controllers\Siswa\ScanController::class, 'scan'])
             ->name('presensi.scan');
-        Route::get('presensi/verify/{code}', [\App\Http\Controllers\Siswa\PresensiController::class, 'verifyForm'])
-            ->name('presensi.verify-form');
-        Route::post('presensi/verify', [\App\Http\Controllers\Siswa\PresensiController::class, 'verify'])
+        Route::post('presensi/verify', [\App\Http\Controllers\Siswa\ScanController::class, 'verify'])
             ->name('presensi.verify');
-        Route::get('presensi/history', [\App\Http\Controllers\Siswa\PresensiController::class, 'history'])
+        Route::get('presensi/history', [\App\Http\Controllers\Siswa\ScanController::class, 'history'])
             ->name('presensi.history');
     });
 });

@@ -7,7 +7,7 @@ use App\Models\PresensiSession;
 use App\Models\Presensi;
 use Illuminate\Http\Request;
 
-class PresensiController extends Controller
+class ScanController extends Controller
 {
     /**
      * Halaman scan QR Code
@@ -40,7 +40,7 @@ class PresensiController extends Controller
     }
 
     /**
-     * Proses verifikasi presensi
+     * Proses verifikasi presensi dengan GPS validation
      */
     public function verify(Request $request)
     {
@@ -81,7 +81,7 @@ class PresensiController extends Controller
             ], 400);
         }
 
-        // Validasi jarak GPS
+        // Validasi jarak GPS (maksimal 200 meter)
         $distance = Presensi::calculateDistance(
             $session->latitude,
             $session->longitude,
@@ -137,5 +137,32 @@ class PresensiController extends Controller
             ->paginate(20);
             
         return view('siswa.presensi.history', compact('presensis'));
+    }
+
+    /**
+     * Kirim notifikasi WhatsApp ke orang tua
+     * TODO: Implementasi API WhatsApp
+     */
+    private function sendWhatsAppNotification($presensi)
+    {
+        $siswa = $presensi->siswa;
+        $session = $presensi->session;
+        
+        if (!$siswa->parent_phone) {
+            return;
+        }
+
+        // Format pesan
+        $message = "Assalamualaikum,\n\n";
+        $message .= "Informasi Presensi:\n";
+        $message .= "Nama: {$siswa->name}\n";
+        $message .= "Kelas: {$session->kelas->nama_kelas}\n";
+        $message .= "Status: " . strtoupper($presensi->status) . "\n";
+        $message .= "Waktu: {$presensi->waktu_absen->format('d/m/Y H:i:s')}\n";
+        $message .= "Lokasi: Valid (" . round($presensi->distance ?? 0) . "m)\n\n";
+        $message .= "Terima kasih.";
+
+        // TODO: Kirim via API WhatsApp (Twilio, WA Business API, dll)
+        // Contoh menggunakan Twilio atau Fonnte
     }
 }
