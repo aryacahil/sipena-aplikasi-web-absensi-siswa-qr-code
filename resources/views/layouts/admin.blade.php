@@ -13,7 +13,6 @@
         <!-- Page content -->
         <div id="page-content">
             @include('layouts.partials.admin.header')
-            @include('layouts.partials.admin.notifications')
             <!-- Container fluid -->
             @yield('content')
         </div>

@@ -16,8 +16,10 @@ class QRCodeController extends Controller
             ->today()
             ->latest()
             ->paginate(10);
-            
-        return view('admin.qrcode.index', compact('sessions'));
+
+        $dataKelas = \App\Models\Kelas::with('jurusan')->get();
+
+        return view('admin.qrcode.index', compact('sessions', 'dataKelas'));
     }
 
     public function create()

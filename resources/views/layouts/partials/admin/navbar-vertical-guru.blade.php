@@ -35,7 +35,7 @@
              </li>
             </li>
              <li class="nav-item">
-                <a class="nav-link has-arrow " href="#!"
+                <a class="nav-link has-arrow " href="{{ route('guru.presensi.index') }}"
                     aria-controls="navPages">
                     <i data-feather="QR code" class="bi bi-qr-code icon-xs me-2">
                     </i> Generate QR Code

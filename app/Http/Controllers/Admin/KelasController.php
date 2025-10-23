@@ -86,19 +86,16 @@ class KelasController extends Controller
 
         $kela->update($validated);
 
-        return redirect()->route('admin.kelas.index')
-            ->with('success', 'Kelas berhasil diupdate');
+        return redirect()->route('admin.kelas.index');
     }
 
     public function destroy(Kelas $kela)
     {
         try {
             $kela->delete();
-            return redirect()->route('admin.kelas.index')
-                ->with('success', 'Kelas berhasil dihapus');
+            return redirect()->route('admin.kelas.index');
         } catch (\Exception $e) {
-            return redirect()->route('admin.kelas.index')
-                ->with('error', 'Kelas tidak dapat dihapus karena masih memiliki siswa');
+            return redirect()->route('admin.kelas.index');
         }
     }
 }
