@@ -16,8 +16,8 @@
                                  class="rounded-circle shadow-sm mb-3"
                                  width="100">
 
-                            <h4 class="fw-bold mb-1">SMK BENDO</h4>
-                            <p class="text-muted small">Sistem Informasi Absensi</p>
+                            <h4 class="fw-bold mb-1">SMKN 1 BENDO MAGETAN</h4>
+                            <p class="text-muted small">Aplikasi Web Absensi Berbasis QR CODE</p>
                         </div>
 
                         <!-- Form Login -->

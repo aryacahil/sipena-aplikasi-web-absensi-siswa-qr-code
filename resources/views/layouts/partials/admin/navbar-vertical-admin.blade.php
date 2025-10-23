@@ -105,8 +105,7 @@
                 </a>
             </li>
 
-             <!-- Pengaturan Section -->
-             <li class="nav-item">
+             {{-- <li class="nav-item">
                  <div class="navbar-heading">Pengaturan</div>
              </li>
 
@@ -141,7 +140,7 @@
                              </a>
                          </li>
                      </ul>
-                 </div>
+                 </div> --}}
              </li>
          </ul>
      </div>

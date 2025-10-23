@@ -29,14 +29,14 @@
                     </i> Scan Absensi
                 </a>
 
-            <li class="nav-item">
+            {{-- <li class="nav-item">
                 <a class="nav-link has-arrow " href="#!"
                     aria-controls="navPages">
                     <i data-feather="File text" class="bi bi-file-text icon-xs me-2">
                     </i> Absensi Siswa
-                </a>
+                </a> --}}
 
-            <li class="nav-item">
+            {{-- <li class="nav-item">
                  <div class="navbar-heading">Laporan</div>
              </li>
             </li>
@@ -45,7 +45,7 @@
                     aria-controls="navPages">
                     <i data-feather="File earmark text" class="bi bi-file-earmark-text icon-xs me-2">
                     </i> Export Excel / PDF
-                </a>
+                </a> --}}
 
              
              <!-- <li class="nav-item">

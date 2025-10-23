@@ -12,7 +12,7 @@ class UserController extends Controller
 {
     public function index(Request $request)
     {
-        $query = User::with('kelas.jurusan'); // Tambahkan eager loading
+        $query = User::with('kelas.jurusan');
         
         // Filter by role if provided
         if ($request->has('role') && $request->role !== '') {
@@ -20,12 +20,14 @@ class UserController extends Controller
         }
         
         $users = $query->latest()->paginate(10);
-        return view('admin.users.index', compact('users'));
+        $kelas = Kelas::with('jurusan')->get(); // Untuk modal create
+        
+        return view('admin.users.index', compact('users', 'kelas'));
     }
 
     public function create()
     {
-        $kelas = Kelas::with('jurusan')->get(); // Ambil semua kelas
+        $kelas = Kelas::with('jurusan')->get();
         return view('admin.users.create', compact('kelas'));
     }
 
@@ -36,7 +38,7 @@ class UserController extends Controller
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:8|confirmed',
             'role' => 'required|in:0,1,2',
-            'kelas_id' => 'required_if:role,2|nullable|exists:kelas,id', // Tambahkan ini
+            'kelas_id' => 'required_if:role,2|nullable|exists:kelas,id',
             'parent_phone' => 'required_if:role,2|nullable|string|max:20',
             'status' => 'required|in:active,inactive',
         ], [
@@ -56,7 +58,8 @@ class UserController extends Controller
 
         User::create($validated);
 
-        return redirect()->route('admin.users.index');
+        return redirect()->route('admin.users.index')
+            ->with('success', 'User berhasil ditambahkan');
     }
 
     public function show(User $user)
@@ -101,13 +104,15 @@ class UserController extends Controller
 
         $user->update($validated);
 
-        return redirect()->route('admin.users.index');
+        return redirect()->route('admin.users.index')
+            ->with('success', 'User berhasil diupdate');
     }
 
     public function destroy(User $user)
     {
         $user->delete();
 
-        return redirect()->route('admin.users.index');
+        return redirect()->route('admin.users.index')
+            ->with('success', 'User berhasil dihapus');
     }
 }
