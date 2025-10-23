@@ -37,10 +37,23 @@ class PresensiSession extends Model
         
         static::creating(function ($model) {
             if (empty($model->qr_code)) {
-                // Generate unique QR code
-                $model->qr_code = Str::random(32);
+                $model->qr_code = self::generateQRCode();
             }
         });
+    }
+
+    /**
+     * Generate unique QR code string
+     * 
+     * @return string
+     */
+    public static function generateQRCode()
+    {
+        do {
+            $qrCode = Str::random(32);
+        } while (self::where('qr_code', $qrCode)->exists());
+        
+        return $qrCode;
     }
 
     public function kelas()
@@ -49,6 +62,11 @@ class PresensiSession extends Model
     }
 
     public function guru()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+    
+    public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
     }
