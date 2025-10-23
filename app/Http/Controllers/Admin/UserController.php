@@ -14,13 +14,12 @@ class UserController extends Controller
     {
         $query = User::with('kelas.jurusan');
         
-        // Filter by role if provided
         if ($request->has('role') && $request->role !== '') {
             $query->where('role', $request->role);
         }
         
         $users = $query->latest()->paginate(10);
-        $kelas = Kelas::with('jurusan')->get(); // Untuk modal create
+        $kelas = Kelas::with('jurusan')->get(); 
         
         return view('admin.users.index', compact('users', 'kelas'));
     }

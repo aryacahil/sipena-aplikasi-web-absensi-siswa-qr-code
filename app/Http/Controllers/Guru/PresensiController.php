@@ -11,9 +11,6 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class PresensiController extends Controller
 {
-    /**
-     * Tampilkan daftar session presensi yang dibuat guru
-     */
     public function index()
     {
         $sessions = PresensiSession::with(['kelas.jurusan', 'guru'])
@@ -24,20 +21,13 @@ class PresensiController extends Controller
         return view('guru.presensi.index', compact('sessions'));
     }
 
-    /**
-     * Form untuk buat session presensi baru
-     */
     public function create()
     {
-        // Guru bisa pilih semua kelas
         $kelas = Kelas::with('jurusan')->orderBy('tingkat')->orderBy('nama_kelas')->get();
         
         return view('guru.presensi.create', compact('kelas'));
     }
 
-    /**
-     * Simpan session presensi baru
-     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -69,9 +59,6 @@ class PresensiController extends Controller
             ->with('success', 'Session presensi berhasil dibuat');
     }
 
-    /**
-     * Tampilkan detail session presensi & QR Code
-     */
     public function show($id)
     {
         $session = PresensiSession::with([
@@ -83,25 +70,21 @@ class PresensiController extends Controller
             'guru'
         ])->findOrFail($id);
             
-        // Cek apakah guru yang membuat session ini
         if ($session->created_by !== auth()->id()) {
             abort(403, 'Anda tidak memiliki akses ke session presensi ini');
         }
         
-        // Generate QR Code
         $qrCodeUrl = route('siswa.presensi.verify-form', ['code' => $session->qr_code]);
         $qrCode = QrCode::size(300)
             ->margin(1)
             ->generate($qrCodeUrl);
             
-        // Hitung statistik
         $totalSiswa = $session->kelas->siswa->count();
         $totalHadir = $session->presensis->where('status', 'hadir')->count();
         $totalIzin = $session->presensis->where('status', 'izin')->count();
         $totalSakit = $session->presensis->where('status', 'sakit')->count();
         $belumAbsen = $totalSiswa - $session->presensis->count();
         
-        // Siswa yang belum absen
         $siswaIds = $session->presensis->pluck('siswa_id')->toArray();
         $siswaBelumAbsen = $session->kelas->siswa->whereNotIn('id', $siswaIds);
         
@@ -117,9 +100,6 @@ class PresensiController extends Controller
         ));
     }
 
-    /**
-     * Tutup session presensi
-     */
     public function close($id)
     {
         $session = PresensiSession::where('id', $id)
@@ -132,9 +112,6 @@ class PresensiController extends Controller
             ->with('success', 'Session presensi ditutup');
     }
 
-    /**
-     * Buka kembali session presensi
-     */
     public function reopen($id)
     {
         $session = PresensiSession::where('id', $id)
@@ -147,9 +124,6 @@ class PresensiController extends Controller
             ->with('success', 'Session presensi dibuka kembali');
     }
 
-    /**
-     * Hapus session presensi
-     */
     public function destroy($id)
     {
         $session = PresensiSession::where('id', $id)
@@ -162,9 +136,6 @@ class PresensiController extends Controller
             ->with('success', 'Session presensi berhasil dihapus');
     }
 
-    /**
-     * Download QR Code sebagai gambar PNG
-     */
     public function downloadQr($id)
     {
         $session = PresensiSession::where('id', $id)
@@ -185,9 +156,6 @@ class PresensiController extends Controller
             ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
     }
 
-    /**
-     * Absen manual untuk siswa (izin/sakit/alpha)
-     */
     public function absenManual(Request $request, $sessionId)
     {
         $validated = $request->validate([
@@ -203,7 +171,6 @@ class PresensiController extends Controller
             ->where('created_by', auth()->id())
             ->firstOrFail();
 
-        // Cek apakah siswa sudah absen
         $existingPresensi = Presensi::where('presensi_session_id', $session->id)
             ->where('siswa_id', $validated['siswa_id'])
             ->first();
@@ -213,7 +180,6 @@ class PresensiController extends Controller
                 ->with('error', 'Siswa sudah melakukan presensi');
         }
 
-        // Cek apakah siswa ada di kelas ini
         $siswa = \App\Models\User::where('id', $validated['siswa_id'])
             ->where('kelas_id', $session->kelas_id)
             ->first();
@@ -237,9 +203,6 @@ class PresensiController extends Controller
             ->with('success', 'Presensi manual berhasil dicatat');
     }
 
-    /**
-     * Update status presensi siswa
-     */
     public function updatePresensi(Request $request, $sessionId, $presensiId)
     {
         $validated = $request->validate([
@@ -263,9 +226,6 @@ class PresensiController extends Controller
             ->with('success', 'Status presensi berhasil diupdate');
     }
 
-    /**
-     * Hapus presensi siswa
-     */
     public function deletePresensi($sessionId, $presensiId)
     {
         $session = PresensiSession::where('id', $sessionId)

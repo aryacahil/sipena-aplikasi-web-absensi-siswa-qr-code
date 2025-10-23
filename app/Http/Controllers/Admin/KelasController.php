@@ -17,9 +17,8 @@ class KelasController extends Controller
             ->latest()
             ->paginate(10);
         
-        // Tambahkan data untuk modal create/edit
         $jurusans = Jurusan::all();
-        $gurus = User::whereRaw("role = 0")->get(); // Guru
+        $gurus = User::whereRaw("role = 0")->get(); 
         
         return view('admin.kelas.index', compact('kelas', 'jurusans', 'gurus'));
     }
@@ -27,7 +26,7 @@ class KelasController extends Controller
     public function create()
     {
         $jurusans = Jurusan::all();
-        $gurus = User::whereRaw("role = 0")->get(); // Guru
+        $gurus = User::whereRaw("role = 0")->get(); 
         
         return view('admin.kelas.create', compact('jurusans', 'gurus'));
     }

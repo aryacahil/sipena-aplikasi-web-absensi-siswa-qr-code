@@ -96,7 +96,6 @@ class QRCodeController extends Controller
 
     public function getSchoolLocation()
     {
-        // Koordinat default 
         return response()->json([
             'latitude' => -7.645702,  
             'longitude' => 111.4265614,

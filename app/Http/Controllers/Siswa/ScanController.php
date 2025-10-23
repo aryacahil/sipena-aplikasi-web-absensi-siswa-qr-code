@@ -9,17 +9,11 @@ use Illuminate\Http\Request;
 
 class ScanController extends Controller
 {
-    /**
-     * Halaman scan QR Code
-     */
     public function scan()
     {
         return view('siswa.presensi.scan');
     }
 
-    /**
-     * Form verifikasi setelah scan QR
-     */
     public function verifyForm($code)
     {
         $session = PresensiSession::where('qr_code', $code)
@@ -31,7 +25,6 @@ class ScanController extends Controller
                 ->with('error', 'QR Code tidak valid');
         }
 
-        // Cek apakah siswa sudah absen
         $sudahAbsen = Presensi::where('presensi_session_id', $session->id)
             ->where('siswa_id', auth()->id())
             ->first();
@@ -39,9 +32,6 @@ class ScanController extends Controller
         return view('siswa.presensi.verify', compact('session', 'sudahAbsen'));
     }
 
-    /**
-     * Proses verifikasi presensi dengan GPS validation
-     */
     public function verify(Request $request)
     {
         $request->validate([
@@ -61,7 +51,6 @@ class ScanController extends Controller
             ], 404);
         }
 
-        // Cek apakah session expired
         if ($session->isExpired()) {
             return response()->json([
                 'success' => false,
@@ -69,7 +58,6 @@ class ScanController extends Controller
             ], 400);
         }
 
-        // Cek apakah siswa sudah absen
         $existingPresensi = Presensi::where('presensi_session_id', $session->id)
             ->where('siswa_id', auth()->id())
             ->first();
@@ -81,7 +69,6 @@ class ScanController extends Controller
             ], 400);
         }
 
-        // Validasi jarak GPS (maksimal 200 meter)
         $distance = Presensi::calculateDistance(
             $session->latitude,
             $session->longitude,
@@ -100,7 +87,6 @@ class ScanController extends Controller
             ], 400);
         }
 
-        // Simpan presensi
         $presensi = Presensi::create([
             'presensi_session_id' => $session->id,
             'siswa_id' => auth()->id(),
@@ -126,9 +112,6 @@ class ScanController extends Controller
         ]);
     }
 
-    /**
-     * History presensi siswa
-     */
     public function history()
     {
         $presensis = Presensi::with(['session.kelas.jurusan'])
@@ -152,7 +135,6 @@ class ScanController extends Controller
             return;
         }
 
-        // Format pesan
         $message = "Assalamualaikum,\n\n";
         $message .= "Informasi Presensi:\n";
         $message .= "Nama: {$siswa->name}\n";
