@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\PresensiSession;
 use App\Models\Kelas;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class QRCodeController extends Controller
@@ -61,23 +62,26 @@ class QRCodeController extends Controller
             ->with('success', 'QR Code berhasil di-generate');
     }
 
-    public function show(PresensiSession $session)
+    public function show($id)
     {
-        $session->load(['kelas.jurusan', 'creator', 'presensis.siswa']);
-        
-        $qrCodeUrl = route('scan.verify', $session->qr_code);
-        $qrCode = QrCode::size(300)
-            ->margin(2)
-            ->generate($qrCodeUrl);
-        
+        $session = PresensiSession::with(['kelas.jurusan', 'creator', 'presensis.siswa'])
+            ->findOrFail($id);
+
+        $qrCode = QrCode::size(200)->generate($session->qr_code); 
+
+        if (!$session->qr_code) {
+            $session->qr_code = Str::uuid(); 
+            $session->save();
+        }
+
         $stats = [
             'total_siswa' => $session->kelas->siswa->count(),
-            'hadir' => $session->presensis()->hadir()->count(),
-            'izin' => $session->presensis()->izin()->count(),
-            'sakit' => $session->presensis()->sakit()->count(),
-            'alpha' => $session->presensis()->alpha()->count(),
+            'hadir' => $session->presensis->where('status', 'hadir')->count(),
+            'izin' => $session->presensis->where('status', 'izin')->count(),
+            'sakit' => $session->presensis->where('status', 'sakit')->count(),
+            'alpha' => $session->kelas->siswa->count() - $session->presensis->count(),
         ];
-        
+
         return view('admin.qrcode.show', compact('session', 'qrCode', 'stats'));
     }
 

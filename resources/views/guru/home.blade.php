@@ -1,4 +1,4 @@
-@extends('layouts.guru')
+@extends('layouts.guru') 
 
 @section('content')
     <div class="bg-primary pt-10 pb-21"></div>

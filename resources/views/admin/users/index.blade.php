@@ -18,6 +18,82 @@
         </div>
     </div>
 
+<div class="row mt-6">
+        <div class="col-md-12">
+            <!-- Filter Card -->
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-funnel me-2"></i>Filter & Pencarian
+                        </h5>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="toggleFilter">
+                            <i class="bi bi-chevron-down"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body" id="filterSection">
+                    <form action="{{ route('admin.users.index') }}" method="GET">
+                        <div class="row g-3">
+                            <!-- Search -->
+                            <div class="col-md-3">
+                                <label class="form-label">Cari Nama/Email</label>
+                                <input type="text" name="search" class="form-control" 
+                                       placeholder="Ketik nama atau email..." 
+                                       value="{{ request('search') }}">
+                            </div>
+                            
+                            <!-- Filter Role -->
+                            <div class="col-md-2">
+                                <label class="form-label">Role</label>
+                                <select name="role" class="form-select">
+                                    <option value="">Semua Role</option>
+                                    <option value="1" {{ request('role') == '1' ? 'selected' : '' }}>Admin</option>
+                                    <option value="0" {{ request('role') == '0' ? 'selected' : '' }}>Guru</option>
+                                    <option value="2" {{ request('role') == '2' ? 'selected' : '' }}>Siswa</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Filter Status -->
+                            <div class="col-md-2">
+                                <label class="form-label">Status</label>
+                                <select name="status" class="form-select">
+                                    <option value="">Semua Status</option>
+                                    <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Aktif</option>
+                                    <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Nonaktif</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Filter Kelas -->
+                            <div class="col-md-3">
+                                <label class="form-label">Kelas</label>
+                                <select name="kelas_id" class="form-select">
+                                    <option value="">Semua Kelas</option>
+                                    @foreach($kelas as $k)
+                                        <option value="{{ $k->id }}" {{ request('kelas_id') == $k->id ? 'selected' : '' }}>
+                                            {{ $k->nama_kelas }} - {{ $k->jurusan->nama_jurusan }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            
+                            <!-- Buttons -->
+                            <div class="col-md-2">
+                                <label class="form-label">&nbsp;</label>
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-search"></i>
+                                    </button>
+                                    <a href="{{ route('admin.users.index') }}" class="btn btn-secondary">
+                                        <i class="bi bi-arrow-clockwise"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+    
     <div class="row mt-6">
         <div class="col-md-12">
             <div class="card">
@@ -28,6 +104,28 @@
                         <a href="{{ route('admin.users.index', ['role' => '1']) }}" class="btn btn-sm btn-outline-danger {{ request('role') == '1' ? 'active' : '' }}">Admin</a>
                         <a href="{{ route('admin.users.index', ['role' => '0']) }}" class="btn btn-sm btn-outline-info {{ request('role') == '0' ? 'active' : '' }}">Guru</a>
                         <a href="{{ route('admin.users.index', ['role' => '2']) }}" class="btn btn-sm btn-outline-success {{ request('role') == '2' ? 'active' : '' }}">Siswa</a>
+
+                        <!-- Bulk Actions Dropdown -->
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-danger dropdown-toggle" type="button" 
+                                    id="bulkActionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-trash me-1"></i>Pilih
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="bulkActionsDropdown">
+                                <li>
+                                    <a class="dropdown-item text-danger" href="#" 
+                                       onclick="confirmDeleteByRole('0', 'guru')">
+                                        <i class="bi bi-person-x me-2"></i>Hapus Semua Guru
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item text-danger" href="#" 
+                                       onclick="confirmDeleteByRole('2', 'siswa')">
+                                        <i class="bi bi-people-fill me-2"></i>Hapus Semua Siswa
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
                 <div class="card-body">
@@ -104,14 +202,30 @@
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="7" class="text-center py-4">
+                                    <td colspan="8" class="text-center py-4">
                                         <i class="bi bi-inbox fs-1 text-muted"></i>
-                                        <p class="text-muted mt-2">Tidak ada data user</p>
+                                        <p class="text-muted mt-2">
+                                            @if(request()->hasAny(['search', 'role', 'status', 'kelas_id']))
+                                                Tidak ada data user yang sesuai dengan filter
+                                            @else
+                                                Tidak ada data user
+                                            @endif
+                                        </p>
                                     </td>
                                 </tr>
                                 @endforelse
                             </tbody>
                         </table>
+                    </div>
+
+                    <div class="mt-4 d-flex justify-content-between align-items-center">
+                        <div>
+                            Menampilkan {{ $users->firstItem() ?? 0 }} - {{ $users->lastItem() ?? 0 }} 
+                            dari {{ $users->total() }} user
+                        </div>
+                        <div>
+                            {{ $users->appends(request()->query())->links() }}
+                        </div>
                     </div>
                     
                     <div class="mt-4">

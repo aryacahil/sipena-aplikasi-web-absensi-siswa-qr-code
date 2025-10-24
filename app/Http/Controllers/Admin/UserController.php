@@ -10,12 +10,32 @@ use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
-    public function index(Request $request)
+public function index(Request $request)
     {
         $query = User::with('kelas.jurusan');
         
+        // Filter by role
         if ($request->has('role') && $request->role !== '') {
             $query->where('role', $request->role);
+        }
+        
+        // Filter by status
+        if ($request->has('status') && $request->status !== '') {
+            $query->where('status', $request->status);
+        }
+        
+        // Filter by kelas
+        if ($request->has('kelas_id') && $request->kelas_id !== '') {
+            $query->where('kelas_id', $request->kelas_id);
+        }
+        
+        // Search by name or email
+        if ($request->has('search') && $request->search !== '') {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
         }
         
         $users = $query->latest()->paginate(10);

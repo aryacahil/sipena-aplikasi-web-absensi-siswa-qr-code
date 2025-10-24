@@ -86,7 +86,6 @@ Route::middleware(['auth', 'user-role:siswa'])->group(function() {
 
 Route::middleware(['auth', 'user-role:admin'])->group(function() {
     Route::prefix('admin')->name('admin.')->group(function() {
-        // QR Code Management
         Route::resource('qrcode', QRCodeController::class);
         Route::get('qrcode/{session}/download', [QRCodeController::class, 'downloadQr'])
             ->name('qrcode.download');
@@ -111,6 +110,8 @@ Route::middleware(['auth', 'user-role:siswa'])->group(function() {
     Route::prefix('siswa')->name('siswa.')->group(function() {
         Route::get('presensi/scan', [\App\Http\Controllers\Siswa\ScanController::class, 'scan'])
             ->name('presensi.scan');
+        Route::get('presensi/verify/{code}', [\App\Http\Controllers\Siswa\ScanController::class, 'verifyForm'])
+            ->name('presensi.verify-form');
         Route::post('presensi/verify', [\App\Http\Controllers\Siswa\ScanController::class, 'verify'])
             ->name('presensi.verify');
         Route::get('presensi/history', [\App\Http\Controllers\Siswa\ScanController::class, 'history'])
