@@ -129,9 +129,47 @@ public function index(Request $request)
 
     public function destroy(User $user)
     {
+        
         $user->delete();
 
         return redirect()->route('admin.users.index')
             ->with('success', 'User berhasil dihapus');
     }
+
+    public function bulkDeleteByRole(Request $request)
+{
+    try {
+        $validated = $request->validate([
+            'role' => 'required|in:0,1,2'
+        ]);
+
+        $role = $validated['role'];
+        $roleName = ['0' => 'guru', '1' => 'admin', '2' => 'siswa'][$role];
+        
+        // Hitung jumlah user yang akan dihapus
+        $count = User::where('role', $role)->count();
+        
+        if ($count === 0) {
+            return response()->json([
+                'success' => false,
+                'message' => "Tidak ada {$roleName} yang dapat dihapus"
+            ], 404);
+        }
+
+        // Hapus semua user dengan role tertentu
+        User::where('role', $role)->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Berhasil menghapus {$count} {$roleName}",
+            'count' => $count
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+        ], 500);
+    }
+}
 }

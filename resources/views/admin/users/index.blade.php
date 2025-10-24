@@ -109,7 +109,7 @@
                         <div class="dropdown">
                             <button class="btn btn-sm btn-outline-danger dropdown-toggle" type="button" 
                                     id="bulkActionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-trash me-1"></i>Pilih
+                                <i class="bi bi-trash me-1"></i> Hapus Massal
                             </button>
                             <ul class="dropdown-menu" aria-labelledby="bulkActionsDropdown">
                                 <li>
@@ -762,6 +762,156 @@
             });
         });
     });
+
+// Function untuk konfirmasi dan hapus berdasarkan role
+// TAMBAHKAN di bagian @push('scripts') di index.blade.php SETELAH script delete confirmation
+function confirmDeleteByRole(role, roleName) {
+    // Hitung jumlah user dengan role tersebut
+    fetch(`{{ route('admin.users.index') }}?role=${role}`)
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const tbody = doc.querySelector('tbody');
+            const rows = tbody.querySelectorAll('tr');
+            
+            // Cek apakah ada data (bukan row "tidak ada data")
+            const firstRow = rows[0];
+            if (firstRow && firstRow.querySelector('td[colspan]')) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Tidak Ada Data',
+                    text: `Tidak ada ${roleName} yang dapat dihapus`,
+                    confirmButtonColor: '#6c757d'
+                });
+                return;
+            }
+            
+            const count = rows.length;
+            
+            Swal.fire({
+                title: `Hapus Semua ${roleName.charAt(0).toUpperCase() + roleName.slice(1)}?`,
+                html: `
+                    <div class="text-start">
+                        <p class="mb-3">Anda akan menghapus <strong>${count} ${roleName}</strong> dari sistem.</p>
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            <strong>PERINGATAN:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>Data yang dihapus <strong>TIDAK DAPAT dikembalikan</strong></li>
+                                <li>Semua data terkait (presensi, dll) akan terhapus</li>
+                                <li>Proses ini tidak dapat dibatalkan</li>
+                            </ul>
+                        </div>
+                        <p class="text-muted small mb-0">Ketik <code>HAPUS SEMUA</code> untuk konfirmasi</p>
+                    </div>
+                `,
+                icon: 'warning',
+                input: 'text',
+                inputPlaceholder: 'Ketik: HAPUS SEMUA',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="bi bi-trash me-1"></i> Ya, Hapus Semua!',
+                cancelButtonText: '<i class="bi bi-x-circle me-1"></i> Batal',
+                reverseButtons: true,
+                inputValidator: (value) => {
+                    if (value !== 'HAPUS SEMUA') {
+                        return 'Ketik "HAPUS SEMUA" untuk konfirmasi!'
+                    }
+                },
+                preConfirm: () => {
+                    return new Promise((resolve) => {
+                        Swal.fire({
+                            title: 'Konfirmasi Terakhir',
+                            text: `Yakin ingin menghapus ${count} ${roleName}?`,
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonColor: '#dc3545',
+                            cancelButtonColor: '#6c757d',
+                            confirmButtonText: 'Ya, Hapus!',
+                            cancelButtonText: 'Batal'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                resolve(true);
+                            } else {
+                                Swal.close();
+                            }
+                        });
+                    });
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Tampilkan loading
+                    Swal.fire({
+                        title: 'Menghapus...',
+                        html: `Sedang menghapus ${count} ${roleName}...<br><small class="text-muted">Mohon tunggu, proses ini mungkin memakan waktu</small>`,
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    
+                    // Kirim request ke server
+                    fetch('{{ route("admin.users.bulk-delete") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({ role: role })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil Dihapus!',
+                                html: `
+                                    <p>${data.message}</p>
+                                    <div class="alert alert-success mt-3">
+                                        <i class="bi bi-check-circle me-2"></i>
+                                        <strong>${data.count} ${roleName}</strong> telah dihapus dari sistem
+                                    </div>
+                                `,
+                                confirmButtonColor: '#28a745'
+                            }).then(() => {
+                                // Reload halaman
+                                window.location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Gagal Menghapus',
+                                text: data.message,
+                                confirmButtonColor: '#dc3545'
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Terjadi Kesalahan',
+                            html: `
+                                <p>Gagal menghapus ${roleName}</p>
+                                <p class="text-muted small">${error.message}</p>
+                            `,
+                            confirmButtonColor: '#dc3545'
+                        });
+                    });
+                }
+            });
+        })
+        .catch(error => {
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal Memuat Data',
+                text: 'Tidak dapat menghitung jumlah user',
+                confirmButtonColor: '#dc3545'
+            });
+        });
+}
 
     // Reset form when create modal is closed
     document.getElementById('createUserModal').addEventListener('hidden.bs.modal', function () {

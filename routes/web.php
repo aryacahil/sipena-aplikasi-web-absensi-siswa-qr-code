@@ -45,6 +45,8 @@ Route::middleware(['auth', 'user-role:guru'])->group(function() {
 
 Route::middleware(['auth', 'user-role:admin'])->group(function() {
     Route::get('/admin/home', [HomeController::class, 'adminHome'])->name('admin.home');
+    Route::post('admin/users/bulk-delete', [UserController::class, 'bulkDeleteByRole'])
+        ->name('admin.users.bulk-delete');
     
     Route::resource('admin/users', UserController::class)
         ->names([
