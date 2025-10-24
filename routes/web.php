@@ -96,15 +96,17 @@ Route::middleware(['auth', 'user-role:admin'])->group(function() {
 
 Route::middleware(['auth', 'user-role:guru'])->group(function() {
     Route::prefix('guru')->name('guru.')->group(function() {
-        Route::resource('presensi', PresensiController::class);
-        Route::post('presensi/{session}/close', [PresensiController::class, 'close'])
-            ->name('presensi.close');
-        Route::post('presensi/{session}/reopen', [PresensiController::class, 'reopen'])
-            ->name('presensi.reopen');
-        Route::get('presensi/{session}/download-qr', [PresensiController::class, 'downloadQr'])
-            ->name('presensi.download-qr');
-        Route::post('presensi/{session}/absen-manual', [PresensiController::class, 'absenManual'])
-            ->name('presensi.absen-manual');
+        Route::get('qrcode', [PresensiController::class, 'index'])->name('qrcode.index');
+        Route::post('qrcode', [PresensiController::class, 'store'])->name('qrcode.store');
+        Route::get('qrcode/{id}', [PresensiController::class, 'show'])->name('qrcode.show');
+        Route::delete('qrcode/{id}', [PresensiController::class, 'destroy'])->name('qrcode.destroy');
+        
+        Route::post('qrcode/{session}/close', [PresensiController::class, 'close'])->name('qrcode.close');
+        Route::post('qrcode/{session}/reopen', [PresensiController::class, 'reopen'])->name('qrcode.reopen');
+        Route::get('qrcode/{session}/download-qr', [PresensiController::class, 'downloadQr'])->name('qrcode.download-qr');
+        Route::post('qrcode/{session}/absen-manual', [PresensiController::class, 'absenManual'])->name('qrcode.absen-manual');
+        Route::put('qrcode/{session}/update/{presensi}', [PresensiController::class, 'updatePresensi'])->name('qrcode.update-presensi');
+        Route::delete('qrcode/{session}/delete/{presensi}', [PresensiController::class, 'deletePresensi'])->name('qrcode.delete-presensi');
     });
 });
 

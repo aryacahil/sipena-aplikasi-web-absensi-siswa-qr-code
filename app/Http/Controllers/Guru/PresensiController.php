@@ -13,19 +13,15 @@ class PresensiController extends Controller
 {
     public function index()
     {
-        $sessions = PresensiSession::with(['kelas.jurusan', 'guru'])
+        $sessions = PresensiSession::with(['kelas.jurusan', 'kelas.siswa', 'creator', 'presensis'])
             ->where('created_by', auth()->id())
+            ->whereDate('tanggal', '>=', now()->subDays(7))
             ->latest()
             ->paginate(10);
             
-        return view('guru.presensi.index', compact('sessions'));
-    }
-
-    public function create()
-    {
-        $kelas = Kelas::with('jurusan')->orderBy('tingkat')->orderBy('nama_kelas')->get();
+        $dataKelas = Kelas::with('jurusan', 'siswa')->orderBy('tingkat')->orderBy('nama_kelas')->get();
         
-        return view('guru.presensi.create', compact('kelas'));
+        return view('guru.qrcode.index', compact('sessions', 'dataKelas'));
     }
 
     public function store(Request $request)
@@ -37,7 +33,7 @@ class PresensiController extends Controller
             'jam_selesai' => 'required|after:jam_mulai',
             'latitude' => 'required|numeric|between:-90,90',
             'longitude' => 'required|numeric|between:-180,180',
-            'radius' => 'nullable|integer|min:50|max:500',
+            'radius' => 'nullable|integer|min:50|max:1000',
             'keterangan' => 'nullable|string',
         ], [
             'kelas_id.required' => 'Kelas wajib dipilih',
@@ -55,7 +51,7 @@ class PresensiController extends Controller
 
         $session = PresensiSession::create($validated);
 
-        return redirect()->route('guru.presensi.show', $session->id)
+        return redirect()->route('guru.qrcode.show', $session->id)
             ->with('success', 'Session presensi berhasil dibuat');
     }
 
@@ -67,7 +63,7 @@ class PresensiController extends Controller
                 $query->where('status', 'active');
             }, 
             'presensis.siswa', 
-            'guru'
+            'creator'
         ])->findOrFail($id);
             
         if ($session->created_by !== auth()->id()) {
@@ -88,7 +84,7 @@ class PresensiController extends Controller
         $siswaIds = $session->presensis->pluck('siswa_id')->toArray();
         $siswaBelumAbsen = $session->kelas->siswa->whereNotIn('id', $siswaIds);
         
-        return view('guru.presensi.show', compact(
+        return view('guru.qrcode.show', compact(
             'session', 
             'qrCode', 
             'totalSiswa', 
@@ -132,7 +128,7 @@ class PresensiController extends Controller
             
         $session->delete();
         
-        return redirect()->route('guru.presensi.index')
+        return redirect()->route('guru.qrcode.index')
             ->with('success', 'Session presensi berhasil dihapus');
     }
 
