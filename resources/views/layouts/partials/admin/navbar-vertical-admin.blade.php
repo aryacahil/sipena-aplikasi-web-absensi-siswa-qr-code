@@ -73,7 +73,7 @@
              </li>
 
              <li class="nav-item">
-                <a class="nav-link" href="{{ route('admin.qrcode.index') }}">
+                <a class="nav-link" href="#">
                     <i data-feather="QR code" class="bi bi-qr-code icon-xs me-2"></i>
                     Generate QR Code
                 </a>
