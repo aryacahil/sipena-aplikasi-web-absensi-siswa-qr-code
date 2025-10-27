@@ -10,26 +10,22 @@ use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
-public function index(Request $request)
+    public function index(Request $request)
     {
         $query = User::with('kelas.jurusan');
         
-        // Filter by role
         if ($request->has('role') && $request->role !== '') {
             $query->where('role', $request->role);
         }
         
-        // Filter by status
         if ($request->has('status') && $request->status !== '') {
             $query->where('status', $request->status);
         }
         
-        // Filter by kelas
         if ($request->has('kelas_id') && $request->kelas_id !== '') {
             $query->where('kelas_id', $request->kelas_id);
         }
         
-        // Search by name or email
         if ($request->has('search') && $request->search !== '') {
             $search = $request->search;
             $query->where(function($q) use ($search) {
@@ -83,13 +79,57 @@ public function index(Request $request)
 
     public function show(User $user)
     {
-        $user->load('kelas.jurusan'); 
+        $user->load('kelas.jurusan');
+        
+        if (request()->ajax() || request()->wantsJson()) {
+            $roleRaw = $user->getRawOriginal('role');
+            
+            return response()->json([
+                'success' => true,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $roleRaw, 
+                    'role_display' => $user->role, 
+                    'status' => $user->status,
+                    'kelas_id' => $user->kelas_id,
+                    'parent_phone' => $user->parent_phone,
+                    'kelas' => $user->kelas,
+                    'created_at' => $user->created_at,
+                    'updated_at' => $user->updated_at,
+                ]
+            ]);
+        }
+        
         return view('admin.users.show', compact('user'));
     }
 
     public function edit(User $user)
     {
-        $kelas = Kelas::with('jurusan')->get(); 
+        $user->load('kelas.jurusan');
+        $kelas = Kelas::with('jurusan')->get();
+        
+        if (request()->ajax() || request()->wantsJson()) {
+            $roleRaw = $user->getRawOriginal('role');
+            
+            return response()->json([
+                'success' => true,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $roleRaw, 
+                    'role_display' => $user->role, 
+                    'status' => $user->status,
+                    'kelas_id' => $user->kelas_id,
+                    'parent_phone' => $user->parent_phone,
+                    'kelas' => $user->kelas,
+                ],
+                'kelas' => $kelas
+            ]);
+        }
+        
         return view('admin.users.edit', compact('user', 'kelas'));
     }
 
@@ -129,7 +169,6 @@ public function index(Request $request)
 
     public function destroy(User $user)
     {
-        
         $user->delete();
 
         return redirect()->route('admin.users.index')
@@ -137,39 +176,37 @@ public function index(Request $request)
     }
 
     public function bulkDeleteByRole(Request $request)
-{
-    try {
-        $validated = $request->validate([
-            'role' => 'required|in:0,1,2'
-        ]);
+    {
+        try {
+            $validated = $request->validate([
+                'role' => 'required|in:0,1,2'
+            ]);
 
-        $role = $validated['role'];
-        $roleName = ['0' => 'guru', '1' => 'admin', '2' => 'siswa'][$role];
-        
-        // Hitung jumlah user yang akan dihapus
-        $count = User::where('role', $role)->count();
-        
-        if ($count === 0) {
+            $role = $validated['role'];
+            $roleName = ['0' => 'guru', '1' => 'admin', '2' => 'siswa'][$role];
+            
+            $count = User::where('role', $role)->count();
+            
+            if ($count === 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Tidak ada {$roleName} yang dapat dihapus"
+                ], 404);
+            }
+
+            User::where('role', $role)->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Berhasil menghapus {$count} {$roleName}",
+                'count' => $count
+            ]);
+
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => "Tidak ada {$roleName} yang dapat dihapus"
-            ], 404);
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
         }
-
-        // Hapus semua user dengan role tertentu
-        User::where('role', $role)->delete();
-
-        return response()->json([
-            'success' => true,
-            'message' => "Berhasil menghapus {$count} {$roleName}",
-            'count' => $count
-        ]);
-
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Terjadi kesalahan: ' . $e->getMessage()
-        ], 500);
     }
-}
 }
