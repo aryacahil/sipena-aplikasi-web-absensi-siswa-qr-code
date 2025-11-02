@@ -67,6 +67,15 @@ Route::middleware(['auth', 'user-role:admin'])->group(function() {
     ]);
     
     // Kelas Management
+    Route::get('admin/kelas/{kela}/available-siswa', [KelasController::class, 'availableSiswa'])
+    ->name('admin.kelas.available-siswa');
+Route::post('admin/kelas/{kela}/add-siswa', [KelasController::class, 'addSiswa'])
+    ->name('admin.kelas.add-siswa');
+Route::delete('admin/kelas/{kela}/remove-siswa', [KelasController::class, 'removeSiswa'])
+    ->name('admin.kelas.remove-siswa');
+Route::delete('admin/kelas/{kela}/remove-all-siswa', [KelasController::class, 'removeAllSiswa'])
+    ->name('admin.kelas.remove-all-siswa');
+    
     Route::resource('admin/kelas', KelasController::class)->names([
         'index' => 'admin.kelas.index',
         'create' => 'admin.kelas.create',

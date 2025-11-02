@@ -53,8 +53,8 @@ class UserController extends Controller
             'email' => 'required|email|unique:users,email',
             'password' => 'required|min:8|confirmed',
             'role' => 'required|in:0,1,2',
-            'kelas_id' => 'required_if:role,2|nullable|exists:kelas,id',
-            'parent_phone' => 'required_if:role,2|nullable|string|max:20',
+            'kelas_id' => 'nullable|exists:kelas,id',
+            'parent_phone' => 'nullable|string|max:20',
             'status' => 'required|in:active,inactive',
         ], [
             'name.required' => 'Nama wajib diisi',
@@ -65,8 +65,6 @@ class UserController extends Controller
             'password.min' => 'Password minimal 8 karakter',
             'password.confirmed' => 'Konfirmasi password tidak cocok',
             'role.required' => 'Role wajib dipilih',
-            'kelas_id.required_if' => 'Kelas wajib dipilih untuk siswa',
-            'parent_phone.required_if' => 'No telepon orang tua wajib diisi untuk siswa',
         ]);
 
         $validated['password'] = Hash::make($validated['password']);
@@ -140,8 +138,8 @@ class UserController extends Controller
             'email' => 'required|email|unique:users,email,' . $user->id,
             'password' => 'nullable|min:8|confirmed',
             'role' => 'required|in:0,1,2',
-            'kelas_id' => 'required_if:role,2|nullable|exists:kelas,id', 
-            'parent_phone' => 'required_if:role,2|nullable|string|max:20',
+            'kelas_id' => 'nullable|exists:kelas,id', 
+            'parent_phone' => 'nullable|string|max:20',
             'status' => 'required|in:active,inactive',
         ], [
             'name.required' => 'Nama wajib diisi',
@@ -151,8 +149,6 @@ class UserController extends Controller
             'password.min' => 'Password minimal 8 karakter',
             'password.confirmed' => 'Konfirmasi password tidak cocok',
             'role.required' => 'Role wajib dipilih',
-            'kelas_id.required_if' => 'Kelas wajib dipilih untuk siswa',
-            'parent_phone.required_if' => 'No telepon orang tua wajib diisi untuk siswa',
         ]);
 
         if ($request->filled('password')) {

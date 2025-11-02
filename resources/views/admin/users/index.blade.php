@@ -388,22 +388,22 @@
                                 <option value="inactive">Nonaktif</option>
                             </select>
                         </div>
-                        <div class="col-md-6" id="create_kelas_group" style="display: none;">
-                            <label class="form-label">Kelas <span class="text-danger">*</span></label>
-                            <select class="form-select" id="create_kelas_id" name="kelas_id">
-                                <option value="">Pilih Kelas</option>
-                                @foreach($kelas as $item)
-                                    <option value="{{ $item->id }}">
-                                        {{ $item->nama_kelas }} - {{ $item->jurusan->nama_jurusan }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
+<div class="col-md-6" id="create_kelas_group" style="display: none;">
+    <label class="form-label">Kelas</label>
+    <select class="form-select" id="create_kelas_id" name="kelas_id">
+        <option value="">Pilih Kelas</option>
+        @foreach($kelas as $item)
+            <option value="{{ $item->id }}">
+                {{ $item->nama_kelas }} - {{ $item->jurusan->nama_jurusan }}
+            </option>
+        @endforeach
+    </select>
+</div>
                         <div class="col-md-6" id="create_parent_phone_group" style="display: none;">
-                            <label class="form-label">No. Telepon Orang Tua <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="create_parent_phone" 
-                                   name="parent_phone" placeholder="08xxxxxxxxxx">
-                        </div>
+    <label class="form-label">No. Telepon Orang Tua</label>
+    <input type="text" class="form-control" id="create_parent_phone" 
+           name="parent_phone" placeholder="08xxxxxxxxxx">
+</div>
                         <div class="col-md-6">
                             <label class="form-label">Kata Sandi <span class="text-danger">*</span></label>
                             <input type="password" class="form-control" name="password" required>
@@ -489,21 +489,21 @@
                                 </select>
                             </div>
                             <div class="col-md-6" id="edit_kelas_group" style="display: none;">
-                                <label class="form-label">Kelas <span class="text-danger">*</span></label>
-                                <select class="form-select" id="edit_kelas_id" name="kelas_id">
-                                    <option value="">Pilih Kelas</option>
-                                    @foreach($kelas as $item)
-                                        <option value="{{ $item->id }}">
-                                            {{ $item->nama_kelas }} - {{ $item->jurusan->nama_jurusan }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="col-md-6" id="edit_parent_phone_group" style="display: none;">
-                                <label class="form-label">No. Telepon Orang Tua</label>
-                                <input type="text" class="form-control" id="edit_parent_phone" 
-                                       name="parent_phone" placeholder="08xxxxxxxxxx">
-                            </div>
+    <label class="form-label">Kelas</label>
+    <select class="form-select" id="edit_kelas_id" name="kelas_id">
+        <option value="">Pilih Kelas</option>
+        @foreach($kelas as $item)
+            <option value="{{ $item->id }}">
+                {{ $item->nama_kelas }} - {{ $item->jurusan->nama_jurusan }}
+            </option>
+        @endforeach
+    </select>
+</div>
+<div class="col-md-6" id="edit_parent_phone_group" style="display: none;">
+    <label class="form-label">No. Telepon Orang Tua</label>
+    <input type="text" class="form-control" id="edit_parent_phone" 
+           name="parent_phone" placeholder="08xxxxxxxxxx">
+</div>
                             <div class="col-12">
                                 <div class="alert alert-info">
                                     <i class="bi bi-info-circle me-2"></i>

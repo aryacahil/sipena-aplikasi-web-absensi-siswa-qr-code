@@ -25,13 +25,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (role == '2') {
             kelasGroup.style.display = 'block';
             parentPhoneGroup.style.display = 'block';
-            kelasSelect.required = true;
-            parentPhoneInput.required = true;
         } else {
             kelasGroup.style.display = 'none';
             parentPhoneGroup.style.display = 'none';
-            kelasSelect.required = false;
-            parentPhoneInput.required = false;
+            // Clear values when hidden
+            kelasSelect.value = '';
+            parentPhoneInput.value = '';
         }
     };
 
@@ -45,13 +44,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (role == '2') {
             kelasGroup.style.display = 'block';
             parentPhoneGroup.style.display = 'block';
-            kelasSelect.required = true;
-            parentPhoneInput.required = true;
         } else {
             kelasGroup.style.display = 'none';
             parentPhoneGroup.style.display = 'none';
-            kelasSelect.required = false;
-            parentPhoneInput.required = false;
+            // Clear values when hidden
+            kelasSelect.value = '';
+            parentPhoneInput.value = '';
         }
     };
 
@@ -95,6 +93,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         kelasInfo = `<tr>
                             <td class="fw-semibold text-muted">Kelas</td>
                             <td>${user.kelas.nama_kelas} - ${user.kelas.jurusan.nama_jurusan}</td>
+                        </tr>`;
+                    } else {
+                        kelasInfo = `<tr>
+                            <td class="fw-semibold text-muted">Kelas</td>
+                            <td><span class="badge bg-warning">Belum Ada Kelas</span></td>
                         </tr>`;
                     }
                     
@@ -194,9 +197,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     if (user.kelas_id) {
                         document.getElementById('edit_kelas_id').value = user.kelas_id;
+                    } else {
+                        document.getElementById('edit_kelas_id').value = '';
                     }
                     if (user.parent_phone) {
                         document.getElementById('edit_parent_phone').value = user.parent_phone;
+                    } else {
+                        document.getElementById('edit_parent_phone').value = '';
                     }
                     
                     toggleStudentFieldsEdit();

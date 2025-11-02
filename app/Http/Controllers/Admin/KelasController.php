@@ -99,7 +99,6 @@ class KelasController extends Controller
                             'id' => $siswa->id,
                             'name' => $siswa->name,
                             'email' => $siswa->email,
-                            'nisn' => $siswa->nisn ?? null,
                         ];
                     }),
                 ]
@@ -163,10 +162,12 @@ class KelasController extends Controller
 
     public function availableSiswa(Kelas $kela)
     {
-        // Get siswa yang belum memiliki kelas atau role = 2 (siswa)
+        // Get siswa yang belum memiliki kelas (kelas_id null atau kosong)
         $siswa = User::where('role', 2)
-            ->whereNull('kelas_id')
-            ->orWhere('kelas_id', '')
+            ->where(function($query) {
+                $query->whereNull('kelas_id')
+                      ->orWhere('kelas_id', '');
+            })
             ->get(['id', 'name', 'email']);
 
         return response()->json([
@@ -178,36 +179,129 @@ class KelasController extends Controller
     public function addSiswa(Request $request, Kelas $kela)
     {
         $request->validate([
-            'siswa_id' => 'required|exists:users,id',
+            'siswa_ids' => 'required|array',
+            'siswa_ids.*' => 'exists:users,id',
         ]);
 
-        $siswa = User::findOrFail($request->siswa_id);
-        
-        // Update kelas_id pada user
-        $siswa->kelas_id = $kela->id;
-        $siswa->save();
+        $addedCount = 0;
+        $errors = [];
+
+        foreach ($request->siswa_ids as $siswaId) {
+            $siswa = User::find($siswaId);
+            
+            if ($siswa && !$siswa->kelas_id) {
+                $siswa->kelas_id = $kela->id;
+                $siswa->save();
+                $addedCount++;
+            } else {
+                $errors[] = $siswa ? $siswa->name : "Siswa ID: $siswaId";
+            }
+        }
+
+        if ($addedCount > 0) {
+            return response()->json([
+                'success' => true,
+                'message' => "$addedCount siswa berhasil ditambahkan ke kelas",
+                'errors' => $errors
+            ]);
+        }
 
         return response()->json([
-            'success' => true,
-            'message' => 'Siswa berhasil ditambahkan ke kelas'
-        ]);
+            'success' => false,
+            'message' => 'Tidak ada siswa yang ditambahkan',
+            'errors' => $errors
+        ], 422);
     }
 
-    public function removeSiswa(Kelas $kela, User $siswa)
+    public function removeSiswa(Request $request, Kelas $kela)
+    {
+        // Support both single and multiple removal
+        if ($request->has('siswa_ids')) {
+            // Bulk removal
+            $request->validate([
+                'siswa_ids' => 'required|array',
+                'siswa_ids.*' => 'exists:users,id',
+            ]);
+
+            $removedCount = 0;
+            $errors = [];
+
+            foreach ($request->siswa_ids as $siswaId) {
+                $siswa = User::find($siswaId);
+                
+                if ($siswa && $siswa->kelas_id == $kela->id) {
+                    $siswa->kelas_id = null;
+                    $siswa->save();
+                    $removedCount++;
+                } else {
+                    $errors[] = $siswa ? $siswa->name : "Siswa ID: $siswaId";
+                }
+            }
+
+            if ($removedCount > 0) {
+                return response()->json([
+                    'success' => true,
+                    'message' => "$removedCount siswa berhasil dikeluarkan dari kelas",
+                    'errors' => $errors
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak ada siswa yang dikeluarkan',
+                'errors' => $errors
+            ], 422);
+        } else {
+            // Single removal (original functionality)
+            try {
+                $siswa = User::findOrFail($request->siswa_id);
+                
+                if ($siswa->kelas_id != $kela->id) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Siswa tidak berada di kelas ini'
+                    ], 422);
+                }
+                
+                $siswa->kelas_id = null;
+                $siswa->save();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Siswa berhasil dikeluarkan dari kelas'
+                ]);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal mengeluarkan siswa dari kelas'
+                ], 500);
+            }
+        }
+    }
+
+    public function removeAllSiswa(Kelas $kela)
     {
         try {
-            // Set kelas_id menjadi null
-            $siswa->kelas_id = null;
-            $siswa->save();
+            $siswaCount = $kela->siswa()->count();
+            
+            if ($siswaCount == 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tidak ada siswa di kelas ini'
+                ], 422);
+            }
+
+            // Remove all siswa from class
+            User::where('kelas_id', $kela->id)->update(['kelas_id' => null]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Siswa berhasil dikeluarkan dari kelas'
+                'message' => "$siswaCount siswa berhasil dikeluarkan dari kelas"
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengeluarkan siswa dari kelas'
+                'message' => 'Gagal mengeluarkan semua siswa dari kelas'
             ], 500);
         }
     }

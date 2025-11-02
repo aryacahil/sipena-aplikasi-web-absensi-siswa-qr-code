@@ -1,7 +1,6 @@
 @extends('layouts.admin')
 
 @section('content')
-<meta name="csrf-token" content="{{ csrf_token() }}">
 <!-- Meta tags untuk notifikasi -->
 @if(session('success'))
 <meta name="success-message" content="{{ session('success') }}">
@@ -368,6 +367,76 @@
                 <div class="text-center py-5">
                     <div class="spinner-border text-primary" role="status"></div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Add Siswa -->
+<div class="modal fade" id="addSiswaModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title">
+                    <i class="bi bi-person-plus me-2"></i>Tambah Siswa ke Kelas
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <input type="hidden" id="add_siswa_kelas_id">
+                
+                <!-- Search Box -->
+                <div class="mb-3">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" 
+                               class="form-control" 
+                               id="search_siswa" 
+                               placeholder="Cari siswa berdasarkan nama atau email...">
+                    </div>
+                    <small class="text-muted">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Hanya siswa yang belum memiliki kelas yang ditampilkan
+                    </small>
+                </div>
+
+                <!-- Stats Badge & Actions -->
+                <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-light rounded">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted">
+                            <i class="bi bi-people-fill me-2"></i>Siswa Tersedia:
+                        </span>
+                        <span class="badge bg-primary" id="available_siswa_count">0</span>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary btn-select-all-add-siswa">
+                        <i class="bi bi-check-square me-1"></i>Pilih Semua
+                    </button>
+                </div>
+
+                <!-- Siswa List Container -->
+                <div id="siswa_list_container" style="max-height: 400px; overflow-y: auto;">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-secondary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="text-muted mt-2">Memuat daftar siswa...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer bg-light d-flex justify-content-between">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Tutup
+                </button>
+                <button type="button" 
+                        class="btn btn-primary btn-add-selected-to-class" 
+                        style="display: none;">
+                    <i class="bi bi-plus-circle me-1"></i>
+                    Tambahkan Terpilih (<span class="selected-count">0</span>)
+                </button>
             </div>
         </div>
     </div>
