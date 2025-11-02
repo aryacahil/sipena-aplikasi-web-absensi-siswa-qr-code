@@ -80,14 +80,7 @@
             </li>
             
             <li class="nav-item">
-                <a class="nav-link" href="#">
-                    <i data-feather="QR code scan" class="bi bi-qr-code-scan icon-xs me-2"></i>
-                    Scan Absensi
-                </a>
-            </li>
-
-            <li class="nav-item">
-                <a class="nav-link" href="#">
+                <a class="nav-link" href="{{ route('admin.presensi.index') }}">
                     <i data-feather="File text" class="bi bi-file-text icon-xs me-2"></i>
                     Absensi Siswa
                 </a>

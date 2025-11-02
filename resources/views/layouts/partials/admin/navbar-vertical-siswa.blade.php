@@ -18,7 +18,7 @@
              </li>
              <!-- Nav item -->
             <li class="nav-item">
-                 <div class="navbar-heading">Absensi</div>
+                 <div class="navbar-heading">Manajemen Absensi</div>
              </li>
             </li>
             

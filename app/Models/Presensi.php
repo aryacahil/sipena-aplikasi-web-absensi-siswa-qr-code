@@ -13,19 +13,23 @@ class Presensi extends Model
         'session_id',
         'siswa_id',
         'status',
-        'waktu_presensi',
         'latitude',
         'longitude',
-        'metode',
+        'metode',  
         'keterangan',
         'bukti_file',
         'notifikasi_terkirim',
     ];
 
     protected $casts = [
-        'waktu_presensi' => 'datetime',
         'notifikasi_terkirim' => 'boolean',
     ];
+
+    // Accessor untuk waktu_presensi (menggunakan created_at)
+    public function getWaktuPresensiAttribute()
+    {
+        return $this->created_at;
+    }
 
     public function session()
     {

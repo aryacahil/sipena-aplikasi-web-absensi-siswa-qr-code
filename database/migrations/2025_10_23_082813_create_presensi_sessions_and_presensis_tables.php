@@ -11,7 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Tabel untuk menyimpan sesi presensi 
+        // ===============================
+        // TABEL PRESENSI_SESSION
+        // ===============================
         Schema::create('presensi_sessions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('kelas_id')->constrained('kelas')->onDelete('cascade');
@@ -26,14 +28,16 @@ return new class extends Migration
             $table->enum('status', ['active', 'inactive', 'expired'])->default('active');
             $table->text('keterangan')->nullable();
             $table->timestamps();
-            
+
             // Index untuk performa
             $table->index(['kelas_id', 'tanggal']);
             $table->index('qr_code');
             $table->index('status');
         });
 
-        // Tabel untuk menyimpan data presensi siswa
+        // ===============================
+        // TABEL PRESENSIS
+        // ===============================
         Schema::create('presensis', function (Blueprint $table) {
             $table->id();
             $table->foreignId('session_id')->constrained('presensi_sessions')->onDelete('cascade');
@@ -43,17 +47,20 @@ return new class extends Migration
             $table->decimal('latitude', 10, 8)->nullable();
             $table->decimal('longitude', 11, 8)->nullable();
             $table->text('keterangan')->nullable();
-            $table->enum('tipe_absen', ['qr', 'manual'])->default('qr');
+            $table->enum('metode', ['qr', 'manual'])
+                  ->default('manual')
+                  ->comment('Metode presensi: qr atau manual');
             $table->boolean('is_valid_location')->default(true);
             $table->timestamps();
-            
+
             // Unique constraint - siswa hanya bisa absen 1x per session
             $table->unique(['session_id', 'siswa_id']);
-            
+
             // Index untuk performa
             $table->index('siswa_id');
             $table->index('status');
             $table->index('waktu_absen');
+            $table->index('metode');
         });
     }
 
