@@ -36,7 +36,7 @@ return new class extends Migration
         // Tabel untuk menyimpan data presensi siswa
         Schema::create('presensis', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('presensi_session_id')->constrained('presensi_sessions')->onDelete('cascade');
+            $table->foreignId('session_id')->constrained('presensi_sessions')->onDelete('cascade');
             $table->foreignId('siswa_id')->constrained('users')->onDelete('cascade');
             $table->timestamp('waktu_absen')->nullable();
             $table->enum('status', ['hadir', 'izin', 'sakit', 'alpha'])->default('hadir');
@@ -48,7 +48,7 @@ return new class extends Migration
             $table->timestamps();
             
             // Unique constraint - siswa hanya bisa absen 1x per session
-            $table->unique(['presensi_session_id', 'siswa_id']);
+            $table->unique(['session_id', 'siswa_id']);
             
             // Index untuk performa
             $table->index('siswa_id');
