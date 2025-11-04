@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.guru')
 @section('title', 'Generate QR Code')
 
 @section('content')
@@ -38,7 +38,7 @@
                         <h5 class="mb-3">
                             <i class="bi bi-funnel me-2"></i>Filter QR Code
                         </h5>
-                        <form action="{{ route('admin.qrcode.index') }}" method="GET">
+                        <form action="{{ route('guru.qrcode.index') }}" method="GET">
                             <div class="row g-3">
                                 <div class="col-md-4">
                                     <label class="form-label fw-semibold small">Kelas</label>
@@ -84,15 +84,15 @@
                         
                         <div class="d-flex gap-2 flex-wrap">
 \                            <div class="btn-group" role="group">
-                                <a href="{{ route('admin.qrcode.index') }}" 
+                                <a href="{{ route('guru.qrcode.index') }}" 
                                    class="btn btn-sm {{ !request('status') ? 'btn-primary' : 'btn-outline-primary' }}">
                                     Semua
                                 </a>
-                                <a href="{{ route('admin.qrcode.index', ['status' => 'active']) }}" 
+                                <a href="{{ route('guru.qrcode.index', ['status' => 'active']) }}" 
                                    class="btn btn-sm {{ request('status') == 'active' ? 'btn-success' : 'btn-outline-success' }}">
                                     Aktif
                                 </a>
-                                <a href="{{ route('admin.qrcode.index', ['status' => 'expired']) }}" 
+                                <a href="{{ route('guru.qrcode.index', ['status' => 'expired']) }}" 
                                    class="btn btn-sm {{ request('status') == 'expired' ? 'btn-secondary' : 'btn-outline-secondary' }}">
                                     Expired
                                 </a>
@@ -172,7 +172,7 @@
                                                     title="Detail">
                                                 <i class="bi bi-eye"></i>
                                             </button>
-                                            <a href="{{ route('admin.qrcode.download', $session->id) }}" 
+                                            <a href="{{ route('guru.qrcode.download', $session->id) }}" 
                                                class="btn btn-sm btn-success" 
                                                title="Download">
                                                 <i class="bi bi-download"></i>
@@ -184,7 +184,7 @@
                                                     title="Toggle Status">
                                                 <i class="bi bi-arrow-repeat"></i>
                                             </button>
-                                            <form action="{{ route('admin.qrcode.destroy', $session->id) }}" 
+                                            <form action="{{ route('guru.qrcode.destroy', $session->id) }}" 
                                                   method="POST" class="d-inline delete-form">
                                                 @csrf
                                                 @method('DELETE')
@@ -238,7 +238,7 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="{{ route('admin.qrcode.store') }}" method="POST" id="createQRForm">
+            <form action="{{ route('guru.qrcode.store') }}" method="POST" id="createQRForm">
                 @csrf
                 <div class="modal-body">
                     <div class="row g-3">
@@ -378,6 +378,6 @@
 @endsection
 
 @push('scripts')
-<link rel="stylesheet" href="{{ asset('css/admin/qrcode.css') }}">
-<script src="{{ asset('js/admin/qrcode.js') }}"></script>
+<link rel="stylesheet" href="{{ asset('css/guru/qrcode.css') }}">
+<script src="{{ asset('js/guru/qrcode.js') }}"></script>
 @endpush

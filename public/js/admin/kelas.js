@@ -1,4 +1,3 @@
-// Global variables
 let allSiswaData = [];
 let currentKelasId = null;
 let selectedSiswaIds = new Set();
@@ -6,7 +5,6 @@ let selectedSiswaIds = new Set();
 document.addEventListener('DOMContentLoaded', function() {
     const csrfToken = document.querySelector('input[name="_token"]').value;
 
-    // ==================== SHOW KELAS ====================
     document.body.addEventListener('click', function(e) {
         const showButton = e.target.closest('.btn-show-kelas');
         if (showButton) {
@@ -139,7 +137,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     `;
 
-                    // Initialize select all checkbox handler
                     initSelectAllCheckbox();
                 }
             })
@@ -155,7 +152,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // ==================== SELECT ALL CHECKBOX ====================
     function initSelectAllCheckbox() {
         const selectAllCheckbox = document.getElementById('selectAllSiswa');
         const siswaCheckboxes = document.querySelectorAll('.siswa-checkbox');
@@ -175,7 +171,6 @@ document.addEventListener('DOMContentLoaded', function() {
             checkbox.addEventListener('change', function() {
                 updateSelectedCount();
                 
-                // Update select all checkbox state
                 if (selectAllCheckbox) {
                     const allChecked = Array.from(siswaCheckboxes).every(cb => cb.checked);
                     const someChecked = Array.from(siswaCheckboxes).some(cb => cb.checked);
@@ -199,7 +194,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // ==================== REMOVE SELECTED SISWA (BULK) ====================
     document.body.addEventListener('click', function(e) {
         const removeSelectedBtn = e.target.closest('.btn-remove-selected-siswa');
         if (removeSelectedBtn) {
@@ -252,7 +246,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                 timer: 2000,
                                 showConfirmButton: false
                             }).then(() => {
-                                // Refresh halaman untuk update jumlah siswa
                                 location.reload();
                             });
                         } else {
@@ -278,7 +271,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // ==================== REMOVE ALL SISWA ====================
     document.body.addEventListener('click', function(e) {
         const removeAllBtn = e.target.closest('.btn-remove-all-siswa');
         if (removeAllBtn) {
@@ -321,7 +313,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                 timer: 2000,
                                 showConfirmButton: false
                             }).then(() => {
-                                // Refresh halaman untuk update jumlah siswa
                                 location.reload();
                             });
                         } else {
@@ -347,7 +338,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // ==================== EDIT KELAS ====================
     document.body.addEventListener('click', function(e) {
         const editButton = e.target.closest('.btn-edit-kelas');
         if (editButton) {
@@ -407,7 +397,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // ==================== DELETE KELAS ====================
     document.body.addEventListener('click', function(e) {
         const deleteButton = e.target.closest('.btn-delete');
         if (deleteButton && deleteButton.closest('.delete-form')) {
@@ -438,7 +427,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // ==================== OPEN ADD SISWA MODAL ====================
     document.body.addEventListener('click', function(e) {
         const addButton = e.target.closest('.btn-add-siswa-modal');
         if (addButton) {
@@ -447,38 +435,31 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Opening add siswa modal for kelas:', kelasId);
             
             currentKelasId = kelasId;
-            // Clear selected IDs when opening modal
             selectedSiswaIds.clear();
             console.log('Cleared selected IDs:', Array.from(selectedSiswaIds));
             
-            // Close show modal
             const showModalElement = document.getElementById('showKelasModal');
             const showModal = bootstrap.Modal.getInstance(showModalElement);
             if (showModal) showModal.hide();
             
-            // Open add siswa modal
             const addModalElement = document.getElementById('addSiswaModal');
             const modal = new bootstrap.Modal(addModalElement);
             document.getElementById('add_siswa_kelas_id').value = kelasId;
             
-            // Reset search
             const searchInput = document.getElementById('search_siswa');
             if (searchInput) searchInput.value = '';
             
-            // Reset button visibility
             const addSelectedBtn = document.querySelector('.btn-add-selected-to-class');
             if (addSelectedBtn) {
                 addSelectedBtn.style.display = 'none';
             }
             
-            // Load siswa
             loadAvailableSiswaList(kelasId);
             
             modal.show();
         }
     });
 
-    // ==================== SEARCH SISWA ====================
     const searchInput = document.getElementById('search_siswa');
     if (searchInput) {
         searchInput.addEventListener('input', function(e) {
@@ -497,7 +478,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // ==================== REMOVE SISWA (SINGLE) ====================
     document.body.addEventListener('click', function(e) {
         const removeButton = e.target.closest('.btn-remove-siswa-single');
         if (removeButton) {
@@ -546,7 +526,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                 timer: 2000,
                                 showConfirmButton: false
                             }).then(() => {
-                                // Refresh halaman untuk update jumlah siswa
                                 location.reload();
                             });
                         } else {
@@ -572,7 +551,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // ==================== SELECT ALL IN ADD MODAL ====================
     document.body.addEventListener('click', function(e) {
         const selectAllBtn = e.target.closest('.btn-select-all-add-siswa');
         if (selectAllBtn) {
@@ -580,13 +558,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const allCheckboxes = document.querySelectorAll('.siswa-checkbox-add');
             
             if (selectedSiswaIds.size === allSiswaData.length) {
-                // Deselect all
                 selectedSiswaIds.clear();
                 allCheckboxes.forEach(checkbox => {
                     checkbox.checked = false;
                 });
             } else {
-                // Select all
                 allSiswaData.forEach(siswa => {
                     selectedSiswaIds.add(siswa.id.toString());
                 });
@@ -599,7 +575,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // ==================== ADD SISWA TO CLASS (SINGLE) ====================
     document.body.addEventListener('click', function(e) {
         const addBtn = e.target.closest('.btn-add-to-class');
         if (addBtn) {
@@ -648,7 +623,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                 timer: 2000,
                                 showConfirmButton: false
                             }).then(() => {
-                                // Refresh halaman untuk update jumlah siswa
                                 location.reload();
                             });
                         } else {
@@ -674,7 +648,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // ==================== ADD SELECTED SISWA TO CLASS ====================
     document.body.addEventListener('click', function(e) {
         const addSelectedBtn = e.target.closest('.btn-add-selected-to-class');
         if (addSelectedBtn) {
@@ -694,7 +667,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            // Get names of selected siswa
             const selectedNames = allSiswaData
                 .filter(siswa => siswaIdsArray.includes(siswa.id.toString()))
                 .map(siswa => siswa.name);
@@ -750,7 +722,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                 timer: 2000,
                                 showConfirmButton: false
                             }).then(() => {
-                                // Refresh halaman untuk update jumlah siswa
                                 location.reload();
                             });
                         } else {
@@ -776,7 +747,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // ==================== FORM VALIDATION ====================
     const createForm = document.getElementById('createKelasForm');
     if (createForm) {
         createForm.addEventListener('submit', function(e) {
@@ -798,7 +768,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // ==================== MODAL RESET ====================
     const createModal = document.getElementById('createKelasModal');
     if (createModal) {
         createModal.addEventListener('hidden.bs.modal', function() {
@@ -824,11 +793,9 @@ document.addEventListener('DOMContentLoaded', function() {
             allSiswaData = [];
             currentKelasId = null;
             
-            // Reset search
             const searchInput = document.getElementById('search_siswa');
             if (searchInput) searchInput.value = '';
             
-            // Clean up modal backdrop
             setTimeout(() => {
                 const backdrops = document.querySelectorAll('.modal-backdrop');
                 backdrops.forEach(backdrop => backdrop.remove());
@@ -839,14 +806,12 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // ==================== AUTO UPPERCASE ====================
     document.body.addEventListener('input', function(e) {
         if (e.target.matches('input[name="kode_kelas"]')) {
             e.target.value = e.target.value.toUpperCase();
         }
     });
 
-    // ==================== NOTIFICATIONS ====================
     if (typeof Swal !== 'undefined') {
         const successMeta = document.querySelector('meta[name="success-message"]');
         const errorMeta = document.querySelector('meta[name="error-message"]');
@@ -877,11 +842,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Kelas JS fully loaded');
 });
 
-// ==================== HELPER FUNCTIONS ====================
 
-/**
- * Load available siswa list from API
- */
 function loadAvailableSiswaList(kelasId) {
     console.log('Loading available siswa for kelas:', kelasId);
     
@@ -889,7 +850,6 @@ function loadAvailableSiswaList(kelasId) {
     const container = document.getElementById('siswa_list_container');
     const countBadge = document.getElementById('available_siswa_count');
     
-    // Show loading
     container.innerHTML = `
         <div class="text-center py-4">
             <div class="spinner-border text-secondary" role="status">
@@ -934,9 +894,6 @@ function loadAvailableSiswaList(kelasId) {
     });
 }
 
-/**
- * Render siswa list in the modal
- */
 function renderSiswaList(siswaArray) {
     console.log('Rendering siswa list:', siswaArray.length, 'items');
     console.log('Current selected IDs:', Array.from(selectedSiswaIds));
@@ -993,13 +950,9 @@ function renderSiswaList(siswaArray) {
     
     console.log('HTML rendered, initializing checkboxes...');
     
-    // Initialize checkbox handlers
     initAddModalCheckboxes();
 }
 
-/**
- * Update add selected button visibility and text
- */
 function updateAddSelectedButton() {
     const btn = document.querySelector('.btn-add-selected-to-class');
     const count = selectedSiswaIds.size;
@@ -1019,7 +972,6 @@ function updateAddSelectedButton() {
         }
     }
     
-    // Update select all button text
     const selectAllBtn = document.querySelector('.btn-select-all-add-siswa');
     if (selectAllBtn && allSiswaData.length > 0) {
         if (selectedSiswaIds.size === allSiswaData.length && allSiswaData.length > 0) {
@@ -1034,19 +986,14 @@ function updateAddSelectedButton() {
     }
 }
 
-/**
- * Initialize checkbox handlers in add modal
- */
 function initAddModalCheckboxes() {
     const checkboxes = document.querySelectorAll('.siswa-checkbox-add');
     
-    // Remove existing event listeners by cloning
     checkboxes.forEach(checkbox => {
         const newCheckbox = checkbox.cloneNode(true);
         checkbox.parentNode.replaceChild(newCheckbox, checkbox);
     });
     
-    // Add new event listeners
     const newCheckboxes = document.querySelectorAll('.siswa-checkbox-add');
     newCheckboxes.forEach(checkbox => {
         checkbox.addEventListener('change', function(e) {
@@ -1065,6 +1012,5 @@ function initAddModalCheckboxes() {
         });
     });
     
-    // Update button on initial load
     updateAddSelectedButton();
 }

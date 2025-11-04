@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\Guru;
 
 use App\Http\Controllers\Controller;
 use App\Models\PresensiSession;
@@ -38,7 +38,7 @@ class PresensiController extends Controller
                 ->where('status', 'alpha')->count(),
         ];
 
-        return view('admin.presensi.index', compact('kelasList', 'jurusans', 'stats'));
+        return view('guru.presensi.index', compact('kelasList', 'jurusans', 'stats'));
     }
 
     public function showKelas(Request $request, Kelas $kelas)
@@ -117,7 +117,7 @@ class PresensiController extends Controller
             ]);
         }
 
-        return view('admin.presensi.kelas', compact(
+        return view('guru.presensi.kelas', compact(
             'kelas', 
             'attendanceData', 
             'stats', 
@@ -209,7 +209,7 @@ class PresensiController extends Controller
         }
 
         return redirect()
-            ->route('admin.presensi.index')
+            ->route('guru.presensi.index')
             ->with('success', 'Presensi berhasil ditambahkan');
     }
 
@@ -247,7 +247,7 @@ class PresensiController extends Controller
                 ]);
             }
             
-            return view('admin.presensi.edit', compact('presensi'));
+            return view('guru.presensi.edit', compact('presensi'));
         } catch (\Exception $e) {
             Log::error('Error in edit presensi', [
                 'presensi_id' => $presensi->id ?? 'unknown',
@@ -296,7 +296,7 @@ class PresensiController extends Controller
         }
 
         return redirect()
-            ->route('admin.presensi.index')
+            ->route('guru.presensi.index')
             ->with('success', 'Presensi berhasil diperbarui');
     }
 
@@ -318,7 +318,7 @@ class PresensiController extends Controller
         }
 
         return redirect()
-            ->route('admin.presensi.index')
+            ->route('guru.presensi.index')
             ->with('success', 'Presensi berhasil dihapus');
     }
 }

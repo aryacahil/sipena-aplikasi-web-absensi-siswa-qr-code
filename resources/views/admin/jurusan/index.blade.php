@@ -1,7 +1,8 @@
 @extends('layouts.admin')
+@section('title', 'Manajemen Jurusan')
 
 @section('content')
-<@if(session('success'))
+@if(session('success'))
 <meta name="success-message" content="{{ session('success') }}">
 @endif
 @if(session('error'))

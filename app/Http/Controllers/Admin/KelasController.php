@@ -14,7 +14,6 @@ class KelasController extends Controller
     {
         $query = Kelas::with(['jurusan', 'waliKelas'])->withCount('siswa');
         
-        // Filter berdasarkan pencarian
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
@@ -23,17 +22,14 @@ class KelasController extends Controller
             });
         }
         
-        // Filter berdasarkan tingkat
         if ($request->filled('tingkat')) {
             $query->where('tingkat', $request->tingkat);
         }
         
-        // Filter berdasarkan jurusan
         if ($request->filled('jurusan_id')) {
             $query->where('jurusan_id', $request->jurusan_id);
         }
         
-        // Default sorting (terbaru)
         $query->latest();
         
         $kelas = $query->paginate(10);
@@ -162,7 +158,6 @@ class KelasController extends Controller
 
     public function availableSiswa(Kelas $kela)
     {
-        // Get siswa yang belum memiliki kelas (kelas_id null atau kosong)
         $siswa = User::where('role', 2)
             ->where(function($query) {
                 $query->whereNull('kelas_id')
@@ -215,9 +210,7 @@ class KelasController extends Controller
 
     public function removeSiswa(Request $request, Kelas $kela)
     {
-        // Support both single and multiple removal
         if ($request->has('siswa_ids')) {
-            // Bulk removal
             $request->validate([
                 'siswa_ids' => 'required|array',
                 'siswa_ids.*' => 'exists:users,id',
@@ -252,7 +245,6 @@ class KelasController extends Controller
                 'errors' => $errors
             ], 422);
         } else {
-            // Single removal (original functionality)
             try {
                 $siswa = User::findOrFail($request->siswa_id);
                 
@@ -291,7 +283,6 @@ class KelasController extends Controller
                 ], 422);
             }
 
-            // Remove all siswa from class
             User::where('kelas_id', $kela->id)->update(['kelas_id' => null]);
 
             return response()->json([

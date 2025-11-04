@@ -1,8 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // CSRF Token Setup
     const csrfToken = document.querySelector('input[name="_token"]').value;
 
-    // ==================== SHOW JURUSAN ====================
     const showButtons = document.querySelectorAll('.btn-show-jurusan');
     showButtons.forEach(button => {
         button.addEventListener('click', function() {
@@ -10,7 +8,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const modal = new bootstrap.Modal(document.getElementById('showJurusanModal'));
             const content = document.getElementById('showJurusanContent');
             
-            // Show loading
             content.innerHTML = `
                 <div class="text-center py-5">
                     <div class="spinner-border text-primary" role="status"></div>
@@ -19,7 +16,6 @@ document.addEventListener('DOMContentLoaded', function() {
             
             modal.show();
             
-            // Fetch data
             fetch(`/admin/jurusan/${jurusanId}`, {
                 method: 'GET',
                 headers: {
@@ -156,7 +152,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // ==================== EDIT JURUSAN ====================
     const editButtons = document.querySelectorAll('.btn-edit-jurusan');
     editButtons.forEach(button => {
         button.addEventListener('click', function() {
@@ -167,14 +162,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const formContent = document.getElementById('editJurusanFormContent');
             const submitBtn = document.getElementById('editJurusanSubmitBtn');
             
-            // Reset and show loading
             loading.style.display = 'block';
             formContent.style.display = 'none';
             submitBtn.style.display = 'none';
             
             modal.show();
             
-            // Fetch data
             fetch(`/admin/jurusan/${jurusanId}/edit`, {
                 method: 'GET',
                 headers: {
@@ -188,15 +181,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.success) {
                     const jurusan = data.jurusan;
                     
-                    // Set form action
                     form.action = `/admin/jurusan/${jurusan.id}`;
                     
-                    // Fill form
                     document.getElementById('edit_kode_jurusan').value = jurusan.kode_jurusan;
                     document.getElementById('edit_nama_jurusan').value = jurusan.nama_jurusan;
                     document.getElementById('edit_deskripsi').value = jurusan.deskripsi || '';
                     
-                    // Show form
                     loading.style.display = 'none';
                     formContent.style.display = 'block';
                     submitBtn.style.display = 'inline-block';
@@ -215,7 +205,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // ==================== DELETE JURUSAN ====================
     const deleteButtons = document.querySelectorAll('.btn-delete');
     deleteButtons.forEach(button => {
         button.addEventListener('click', function(e) {
@@ -235,7 +224,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 reverseButtons: true
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // Show loading
                     Swal.fire({
                         title: 'Menghapus...',
                         allowOutsideClick: false,
@@ -248,8 +236,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // ==================== FORM VALIDATION ====================
-    // Create Form
     const createForm = document.getElementById('createJurusanForm');
     if (createForm) {
         createForm.addEventListener('submit', function(e) {
@@ -269,7 +255,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Edit Form
     const editForm = document.getElementById('editJurusanForm');
     if (editForm) {
         editForm.addEventListener('submit', function(e) {
@@ -289,8 +274,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // ==================== MODAL RESET ====================
-    // Reset Create Modal
     const createModal = document.getElementById('createJurusanModal');
     if (createModal) {
         createModal.addEventListener('hidden.bs.modal', function() {
@@ -298,7 +281,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Reset Edit Modal
     const editModal = document.getElementById('editJurusanModal');
     if (editModal) {
         editModal.addEventListener('hidden.bs.modal', function() {
@@ -309,7 +291,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // ==================== SEARCH AUTO SUBMIT ====================
     const searchInput = document.querySelector('input[name="search"]');
     if (searchInput) {
         let searchTimeout;
@@ -323,7 +304,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // ==================== AUTO UPPERCASE FOR KODE JURUSAN ====================
     const kodeJurusanInputs = document.querySelectorAll('input[name="kode_jurusan"]');
     kodeJurusanInputs.forEach(input => {
         input.addEventListener('input', function() {
@@ -332,9 +312,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// ==================== NOTIFIKASI (Di luar DOMContentLoaded) ====================
 if (typeof Swal !== 'undefined') {
-    // Check for success message
     const successMessage = document.querySelector('meta[name="success-message"]');
     if (successMessage) {
         Swal.fire({
@@ -352,7 +330,6 @@ if (typeof Swal !== 'undefined') {
         });
     }
 
-    // Check for error message
     const errorMessage = document.querySelector('meta[name="error-message"]');
     if (errorMessage) {
         Swal.fire({

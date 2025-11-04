@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.guru')
 @section('title', 'Manajemen Absensi')
 
 @section('content')
@@ -21,7 +21,7 @@
                     <p class="text-white-50 mb-0">Pilih kelas untuk melihat data presensi siswa</p>
                 </div>
                 <div>
-                    <a href="{{ route('admin.qrcode.index') }}" class="btn btn-white">
+                    <a href="{{ route('guru.qrcode.index') }}" class="btn btn-white">
                         <i class="bi bi-qr-code me-2"></i>Kelola QR Code
                     </a>
                 </div>
@@ -100,7 +100,7 @@
             <div class="card shadow-sm">
                 
                 <div class="card-header bg-white border-bottom">
-                    <form action="{{ route('admin.presensi.index') }}" method="GET">
+                    <form action="{{ route('guru.presensi.index') }}" method="GET">
                         <div class="row g-3 align-items-end">
                             <div class="col-md-4">
                                 <label class="form-label fw-semibold small">Filter Jurusan</label>
@@ -320,5 +320,5 @@
 @endsection
 @push('scripts')
 <link rel="stylesheet" href="{{ asset('css/admin/presensi.css') }}">
-<script src="{{ asset('js/admin/presensi.js') }}"></script>
+<script src="{{ asset('js/guru/presensi.js') }}"></script>
 @endpush

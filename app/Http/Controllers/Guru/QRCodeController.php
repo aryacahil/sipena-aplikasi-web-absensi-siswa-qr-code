@@ -16,7 +16,6 @@ class QRCodeController extends Controller
         $query = PresensiSession::with(['kelas.jurusan', 'creator'])
             ->withCount('presensis');
 
-        // Filter
         if ($request->filled('kelas_id')) {
             $query->where('kelas_id', $request->kelas_id);
         }
@@ -32,13 +31,13 @@ class QRCodeController extends Controller
         $sessions = $query->latest()->paginate(10);
         $kelas = Kelas::with('jurusan')->get();
 
-        return view('admin.qrcode.index', compact('sessions', 'kelas'));
+        return view('guru.qrcode.index', compact('sessions', 'kelas'));
     }
 
     public function create()
     {
         $kelas = Kelas::with('jurusan')->get();
-        return view('admin.qrcode.create', compact('kelas'));
+        return view('guru.qrcode.create', compact('kelas'));
     }
 
     public function store(Request $request)
@@ -60,7 +59,7 @@ class QRCodeController extends Controller
         $session = PresensiSession::create($validated);
 
         return redirect()
-            ->route('admin.qrcode.show', $session->id)
+            ->route('guru.qrcode.show', $session->id)
             ->with('success', 'QR Code berhasil dibuat');
     }
 
@@ -68,14 +67,13 @@ class QRCodeController extends Controller
     {
         $qrcode->load(['kelas.jurusan', 'creator', 'presensis.siswa']);
         
-        // Generate QR Code
         $url = route('siswa.presensi.scan', ['code' => $qrcode->qr_code]);
         $qrCodeSvg = QrCode::size(300)
             ->style('round')
             ->eye('circle')
             ->generate($url);
 
-        return view('admin.qrcode.show', compact('qrcode', 'qrCodeSvg'));
+        return view('guru.qrcode.show', compact('qrcode', 'qrCodeSvg'));
     }
 
     public function download(PresensiSession $qrcode)

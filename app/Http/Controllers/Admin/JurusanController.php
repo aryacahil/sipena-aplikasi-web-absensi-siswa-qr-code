@@ -123,7 +123,6 @@ class JurusanController extends Controller
     public function destroy(Jurusan $jurusan)
     {
         try {
-            // Cek apakah jurusan memiliki kelas
             if ($jurusan->kelas()->count() > 0) {
                 return redirect()->route('admin.jurusan.index')
                     ->with('error', 'Jurusan tidak dapat dihapus karena masih memiliki ' . $jurusan->kelas()->count() . ' kelas');

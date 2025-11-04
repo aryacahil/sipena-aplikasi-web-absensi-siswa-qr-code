@@ -1,4 +1,5 @@
 @extends('layouts.admin')
+@section('title', 'Dashboard')
 
 @section('content')
     <div class="bg-primary pt-10 pb-21"></div>

@@ -55,7 +55,6 @@ class PresensiSession extends Model
         return $this->hasMany(Presensi::class, 'session_id');
     }
 
-    // Check if session is currently active
     public function isActive()
     {
         if ($this->status !== 'active') {
@@ -76,10 +75,9 @@ class PresensiSession extends Model
         return $now->between($startTime, $endTime);
     }
 
-    // Calculate distance between two coordinates (Haversine formula)
     public static function calculateDistance($lat1, $lon1, $lat2, $lon2)
     {
-        $earthRadius = 6371000; // meters
+        $earthRadius = 6371000;
 
         $latFrom = deg2rad($lat1);
         $lonFrom = deg2rad($lon1);

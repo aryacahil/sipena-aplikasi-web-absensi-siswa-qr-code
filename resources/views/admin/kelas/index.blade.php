@@ -1,4 +1,5 @@
 @extends('layouts.admin')
+@section('title', 'Manajemen Kelas')
 
 @section('content')
 @if(session('success'))

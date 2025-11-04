@@ -16,7 +16,6 @@ class QRCodeController extends Controller
         $query = PresensiSession::with(['kelas.jurusan', 'creator'])
             ->withCount('presensis');
 
-        // Filter
         if ($request->filled('kelas_id')) {
             $query->where('kelas_id', $request->kelas_id);
         }
@@ -68,20 +67,17 @@ class QRCodeController extends Controller
 {
     $qrcode->load(['kelas.jurusan', 'creator', 'presensis.siswa']);
     
-    // Generate QR Code
     $url = route('siswa.presensi.scan', ['code' => $qrcode->qr_code]);
     $qrCodeSvg = QrCode::size(300)
         ->style('round')
         ->eye('circle')
         ->generate($url);
 
-    // Get siswa yang belum presensi
     $siswaIds = $qrcode->presensis()->pluck('siswa_id')->toArray();
     $siswaBelumPresensi = $qrcode->kelas->siswa()
         ->whereNotIn('id', $siswaIds)
         ->get();
 
-    // Statistics
     $stats = [
         'hadir' => $qrcode->presensis()->where('status', 'hadir')->count(),
         'belum' => $siswaBelumPresensi->count(),

@@ -1,11 +1,14 @@
+<!-- Sidebar -->
  <nav class="navbar-vertical navbar">
      <div class="nav-scroller">
+         <!-- Brand logo -->
          <a class="navbar-brand">
              <img src="{{ asset('admin_assets/images/brand/logo/logo_sekolah.png') }}" alt="" />
              <span class="ms-2 fw-semibold text-white" style="font-size:16px; letter-spacing:0.5px;">
                 SMKN 1 BENDO
             </span>
          </a>
+         <!-- Navbar nav -->
          <ul class="navbar-nav flex-column" id="sideNavbar">
              <li class="nav-item">
                  <a class="nav-link" href="{{ route('admin.home') }}">
@@ -13,10 +16,12 @@
                  </a>
              </li>
 
+             <!-- Nav item -->
              <li class="nav-item">
                  <div class="navbar-heading">Manajemen</div>
              </li>
 
+             <!-- Manajemen User -->
              <li class="nav-item">
                 <a class="nav-link has-arrow" href="#!" data-bs-toggle="collapse" 
                    data-bs-target="#navUsers" aria-expanded="false" aria-controls="navUsers">
@@ -45,6 +50,7 @@
                 </div>
             </li>
 
+             <!-- Manajemen Jurusan -->
              <li class="nav-item">
                 <li class="nav-item">
                 <a class="nav-link" href="{{ route('admin.jurusan.index') }}">
@@ -53,10 +59,18 @@
                 </a>
             </li>
 
+             <!-- Manajemen Kelas -->
              <li class="nav-item">
                 <a class="nav-link" href="{{ route('admin.kelas.index') }}">
                     <i data-feather="Easel" class="bi bi-easel icon-xs me-2"></i>
                     Manajemen Kelas
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" href="{{ route('admin.presensi.index') }}">
+                    <i data-feather="File text" class="bi bi-file-text icon-xs me-2"></i>
+                    Manajemen Absensi
                 </a>
             </li>
 
@@ -65,19 +79,13 @@
              </li>
              
              <li class="nav-item">
-                <a class="nav-link" href="{{ route('admin.presensi.index') }}">
-                    <i data-feather="File text" class="bi bi-file-text icon-xs me-2"></i>
-                    Manajemen Absensi
-                </a>
-            </li>
-
-             <li class="nav-item">
                 <a class="nav-link" href="{{ route('admin.qrcode.index') }}">
                     <i data-feather="QR code" class="bi bi-qr-code icon-xs me-2"></i>
                     Generate QR Code
                 </a>
             </li>
             
+             <!-- Laporan Section -->
              <li class="nav-item">
                  <div class="navbar-heading">Laporan</div>
              </li>
