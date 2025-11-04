@@ -82,7 +82,7 @@
             <li class="nav-item">
                 <a class="nav-link" href="{{ route('admin.presensi.index') }}">
                     <i data-feather="File text" class="bi bi-file-text icon-xs me-2"></i>
-                    Absensi Siswa
+                    Manajemen Absensi
                 </a>
             </li>
 

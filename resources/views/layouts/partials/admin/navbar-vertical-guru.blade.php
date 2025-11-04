@@ -45,7 +45,7 @@
                 <a class="nav-link has-arrow " href="#!"
                     aria-controls="navPages">
                     <i data-feather="File text" class="bi bi-file-text icon-xs me-2">
-                    </i> Absensi Siswa
+                    </i> Manajemen Absensi
                 </a>
 
             <li class="nav-item">

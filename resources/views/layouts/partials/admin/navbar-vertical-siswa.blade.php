@@ -18,12 +18,12 @@
              </li>
              <!-- Nav item -->
             <li class="nav-item">
-                 <div class="navbar-heading">Manajemen Absensi</div>
+                 <div class="navbar-heading">Absensi</div>
              </li>
             </li>
             
             <li class="nav-item">
-                <a class="nav-link has-arrow " href="{{ route('siswa.presensi.scan') }}"
+                <a class="nav-link has-arrow " href="#"
                     aria-controls="navPages">
                     <i data-feather="QR code scan" class="bi bi-qr-code-scan icon-xs me-2">
                     </i> Scan Absensi

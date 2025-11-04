@@ -1,481 +1,509 @@
+// ============================================
+// PRESENSI.JS - Data Presensi Siswa
+// ============================================
+
 document.addEventListener('DOMContentLoaded', function() {
     const csrfToken = document.querySelector('input[name="_token"]').value;
-    let currentKelasId = null;
-    let currentFilterDate = null;
-    let currentSessionId = null;
 
-    console.log('Presensi Index JS Loaded');
+    // Check for success/error messages
+    checkNotifications();
 
-    // ==================== SHOW KELAS DETAIL ====================
+    // ============================================
+    // SHOW KELAS - LIHAT DETAIL PRESENSI
+    // ============================================
     document.querySelectorAll('.btn-show-kelas').forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            const kelasId = this.getAttribute('data-kelas-id');
-            currentKelasId = kelasId;
-            currentFilterDate = null;
-            
-            console.log('Kelas clicked:', kelasId);
-            
-            const modal = new bootstrap.Modal(document.getElementById('showKelasModal'));
-            const content = document.getElementById('showKelasContent');
-            
-            content.innerHTML = `
-                <div class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status"></div>
-                    <p class="text-muted mt-2">Memuat data...</p>
-                </div>
-            `;
-            
-            modal.show();
-            loadKelasData(kelasId, currentFilterDate);
+        button.addEventListener('click', function() {
+            const kelasId = this.dataset.kelasId;
+            showKelasDetail(kelasId);
         });
     });
 
-    // ==================== LOAD KELAS DATA ====================
-    function loadKelasData(kelasId, filterDate = null) {
-        let url = `/admin/presensi/kelas/${kelasId}`;
-        if (filterDate) {
-            url += `?tanggal=${filterDate}`;
-        }
+    function showKelasDetail(kelasId) {
+        const modal = new bootstrap.Modal(document.getElementById('showKelasModal'));
+        const contentDiv = document.getElementById('showKelasContent');
+        
+        // Show loading
+        contentDiv.innerHTML = `
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="text-muted mt-2">Memuat data...</p>
+            </div>
+        `;
+        
+        modal.show();
 
-        console.log('Loading data from:', url);
-
-        fetch(url, {
+        // Fetch kelas data
+        fetch(`/admin/presensi/kelas/${kelasId}`, {
             method: 'GET',
             headers: {
-                'X-CSRF-TOKEN': csrfToken,
                 'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': csrfToken
             }
         })
-        .then(response => {
-            console.log('Response status:', response.status);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
-            console.log('Data received:', data);
             if (data.success) {
-                renderKelasDetail(data);
+                renderKelasDetail(data, contentDiv);
             } else {
-                throw new Error('Data tidak valid');
+                showError(contentDiv, 'Gagal memuat data');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            document.getElementById('showKelasContent').innerHTML = `
-                <div class="alert alert-danger">
-                    <i class="bi bi-exclamation-triangle me-2"></i>
-                    Gagal memuat data kelas. ${error.message}
-                </div>
-            `;
+            showError(contentDiv, 'Terjadi kesalahan saat memuat data');
         });
     }
 
-    // ==================== RENDER KELAS DETAIL ====================
-    function renderKelasDetail(data) {
-        const container = document.getElementById('showKelasContent');
+    function renderKelasDetail(data, contentDiv) {
         const kelas = data.kelas;
-        const attendanceData = data.attendance_data;
-        const stats = data.stats;
+        const attendanceData = data.attendance_data || [];
+        const stats = data.stats || {};
         const activeSession = data.active_session;
-        const availableDates = data.available_dates;
-        const filterDate = data.filter_date;
+        const availableDates = data.available_dates || [];
+        const filterDate = data.filter_date || '';
 
-        // Store current session ID
-        currentSessionId = activeSession ? activeSession.id : null;
+        // PERUBAHAN: Hapus bagian header dengan nama kelas
+        let html = `
+            <!-- Info Section - TANPA JUDUL KELAS -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <i class="bi bi-mortarboard text-primary fs-4"></i>
+                            <span class="text-muted">${kelas.jurusan.nama_jurusan}</span>
+                            <span class="badge bg-primary-soft text-primary"># ${kelas.kode_kelas}</span>
+                        </div>
+                        ${activeSession ? `
+                            <div>
+                                <span class="badge bg-success">
+                                    <i class="bi bi-clock me-1"></i>Sesi Aktif
+                                </span>
+                                <small class="text-muted ms-2">
+                                    ${activeSession.jam_mulai} - ${activeSession.jam_selesai}
+                                </small>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
 
-        // Generate date filter options
-        let dateOptions = '<option value="">Hari Ini</option>';
-        if (availableDates && availableDates.length > 0) {
-            availableDates.forEach(date => {
-                const selected = date === filterDate ? 'selected' : '';
-                const dateObj = new Date(date);
-                const formattedDate = dateObj.toLocaleDateString('id-ID', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric'
-                });
-                dateOptions += `<option value="${date}" ${selected}>${formattedDate}</option>`;
-            });
-        }
+            <!-- Statistics Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-md-2">
+                    <div class="card bg-light border-0">
+                        <div class="card-body p-3 text-center">
+                            <div class="text-primary mb-1">
+                                <i class="bi bi-people-fill fs-4"></i>
+                            </div>
+                            <h3 class="mb-0 fw-bold">${stats.total_siswa || 0}</h3>
+                            <small class="text-muted">TOTAL</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-2">
+                    <div class="card bg-success-soft border-0">
+                        <div class="card-body p-3 text-center">
+                            <div class="text-success mb-1">
+                                <i class="bi bi-check-circle-fill fs-4"></i>
+                            </div>
+                            <h3 class="mb-0 fw-bold text-success">${stats.hadir || 0}</h3>
+                            <small class="text-muted">HADIR</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-2">
+                    <div class="card bg-warning-soft border-0">
+                        <div class="card-body p-3 text-center">
+                            <div class="text-warning mb-1">
+                                <i class="bi bi-clipboard-check fs-4"></i>
+                            </div>
+                            <h3 class="mb-0 fw-bold text-warning">${stats.izin || 0}</h3>
+                            <small class="text-muted">IZIN</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-2">
+                    <div class="card bg-info-soft border-0">
+                        <div class="card-body p-3 text-center">
+                            <div class="text-info mb-1">
+                                <i class="bi bi-heart-pulse-fill fs-4"></i>
+                            </div>
+                            <h3 class="mb-0 fw-bold text-info">${stats.sakit || 0}</h3>
+                            <small class="text-muted">SAKIT</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-2">
+                    <div class="card bg-danger-soft border-0">
+                        <div class="card-body p-3 text-center">
+                            <div class="text-danger mb-1">
+                                <i class="bi bi-x-circle-fill fs-4"></i>
+                            </div>
+                            <h3 class="mb-0 fw-bold text-danger">${stats.alpha || 0}</h3>
+                            <small class="text-muted">ALPHA</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-2">
+                    <div class="card bg-secondary-soft border-0">
+                        <div class="card-body p-3 text-center">
+                            <div class="text-secondary mb-1">
+                                <i class="bi bi-clock fs-4"></i>
+                            </div>
+                            <h3 class="mb-0 fw-bold text-secondary">${stats.belum || 0}</h3>
+                            <small class="text-muted">BELUM</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-        // Generate attendance list
-        let attendanceHtml = '';
-        if (attendanceData && attendanceData.length > 0) {
+            <!-- Filter & Actions -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex gap-2">
+                    <input type="date" 
+                           class="form-control form-control-sm" 
+                           id="filterTanggal" 
+                           value="${filterDate}"
+                           style="width: auto;">
+                    <button class="btn btn-sm btn-primary" id="btnFilterDate">
+                        <i class="bi bi-funnel me-1"></i>Filter
+                    </button>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 50px;">NO</th>
+                            <th>SISWA</th>
+                            <th class="text-center">WAKTU</th>
+                            <th class="text-center">STATUS</th>
+                            <th class="text-center">METODE</th>
+                            <th class="text-center" style="width: 100px;">AKSI</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        if (attendanceData.length === 0) {
+            html += `
+                <tr>
+                    <td colspan="6" class="text-center py-5">
+                        <i class="bi bi-inbox fs-1 text-muted"></i>
+                        <p class="text-muted mt-2 mb-0">Belum ada data presensi</p>
+                    </td>
+                </tr>
+            `;
+        } else {
             attendanceData.forEach((item, index) => {
+                const siswa = item.siswa;
+                const presensi = item.presensi;
+                const status = item.status;
+                
                 let statusBadge = '';
                 let statusIcon = '';
-
-                switch(item.status) {
+                
+                switch(status) {
                     case 'hadir':
-                        statusBadge = 'bg-success';
-                        statusIcon = 'bi-check-circle-fill';
+                        statusBadge = '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Hadir</span>';
+                        statusIcon = 'check-circle-fill text-success';
                         break;
                     case 'izin':
-                        statusBadge = 'bg-warning';
-                        statusIcon = 'bi-file-text-fill';
+                        statusBadge = '<span class="badge bg-warning"><i class="bi bi-clipboard-check me-1"></i>Izin</span>';
+                        statusIcon = 'clipboard-check text-warning';
                         break;
                     case 'sakit':
-                        statusBadge = 'bg-info';
-                        statusIcon = 'bi-heart-pulse-fill';
+                        statusBadge = '<span class="badge bg-info"><i class="bi bi-heart-pulse-fill me-1"></i>Sakit</span>';
+                        statusIcon = 'heart-pulse-fill text-info';
                         break;
                     case 'alpha':
-                        statusBadge = 'bg-danger';
-                        statusIcon = 'bi-x-circle-fill';
+                        statusBadge = '<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Alpha</span>';
+                        statusIcon = 'x-circle-fill text-danger';
                         break;
                     default:
-                        statusBadge = 'bg-secondary';
-                        statusIcon = 'bi-clock-fill';
+                        statusBadge = '<span class="badge bg-secondary"><i class="bi bi-clock me-1"></i>Belum</span>';
+                        statusIcon = 'clock text-secondary';
                 }
 
-                const metodeBadge = item.presensi && item.presensi.metode === 'qr' 
-                    ? '<span class="badge bg-primary-soft text-primary"><i class="bi bi-qr-code me-1"></i>QR</span>'
-                    : item.presensi ? '<span class="badge bg-secondary-soft text-secondary"><i class="bi bi-pencil me-1"></i>Manual</span>' : '';
+                const metodeBadge = presensi && presensi.metode === 'qr' 
+                    ? '<span class="badge bg-primary-soft text-primary"><i class="bi bi-qr-code me-1"></i>QR Code</span>'
+                    : '<span class="badge bg-secondary-soft text-secondary"><i class="bi bi-pencil me-1"></i>Manual</span>';
 
-                attendanceHtml += `
+                html += `
                     <tr>
-                        <td class="text-center">
-                            <span class="text-muted fw-semibold">${index + 1}</span>
-                        </td>
+                        <td class="text-center">${index + 1}</td>
                         <td>
                             <div class="d-flex align-items-center">
-                                <div class="avatar-circle me-3">
-                                    ${item.siswa.name.charAt(0).toUpperCase()}
-                                </div>
+                                <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(siswa.name)}&background=random" 
+                                     class="rounded-circle me-2" 
+                                     width="32" 
+                                     height="32"
+                                     alt="${siswa.name}">
                                 <div>
-                                    <h6 class="mb-0">${item.siswa.name}</h6>
-                                    <small class="text-muted">${item.siswa.email}</small>
+                                    <h6 class="mb-0">${siswa.name}</h6>
+                                    <small class="text-muted">${siswa.email}</small>
                                 </div>
                             </div>
                         </td>
                         <td class="text-center">
-                            ${item.presensi ? `<small class="text-muted">${item.presensi.waktu_presensi}</small>` : '-'}
+                            <small class="text-muted">
+                                ${presensi ? presensi.waktu_presensi : '-'}
+                            </small>
                         </td>
+                        <td class="text-center">${statusBadge}</td>
+                        <td class="text-center">${presensi ? metodeBadge : '-'}</td>
                         <td class="text-center">
-                            <span class="badge ${statusBadge}">
-                                <i class="bi ${statusIcon} me-1"></i>${item.status.toUpperCase()}
-                            </span>
-                        </td>
-                        <td class="text-center">
-                            ${metodeBadge}
-                        </td>
-                        <td class="text-center">
-                            ${item.presensi ? `
-                                <div class="d-flex justify-content-center gap-1">
-                                    <button type="button" 
-                                            class="btn btn-sm btn-primary btn-edit-presensi-modal" 
-                                            data-presensi-id="${item.presensi.id}"
+                            <div class="d-flex justify-content-center gap-1">
+                                ${status === 'belum' && activeSession ? `
+                                    <button class="btn btn-sm btn-success btn-add-manual-presensi" 
+                                            data-siswa-id="${siswa.id}"
+                                            data-siswa-name="${siswa.name}"
+                                            data-session-id="${activeSession.id}"
+                                            title="Tambah Presensi">
+                                        <i class="bi bi-plus-circle"></i>
+                                    </button>
+                                ` : ''}
+                                ${presensi ? `
+                                    <button class="btn btn-sm btn-primary btn-edit-presensi" 
+                                            data-presensi-id="${presensi.id}"
                                             title="Edit">
                                         <i class="bi bi-pencil"></i>
                                     </button>
-                                    <button type="button" 
-                                            class="btn btn-sm btn-danger btn-delete-presensi" 
-                                            data-presensi-id="${item.presensi.id}"
-                                            data-siswa-name="${item.siswa.name}"
+                                    <button class="btn btn-sm btn-danger btn-delete-presensi" 
+                                            data-presensi-id="${presensi.id}"
+                                            data-siswa-name="${siswa.name}"
                                             title="Hapus">
                                         <i class="bi bi-trash"></i>
                                     </button>
-                                </div>
-                            ` : `
-                                <button type="button" 
-                                        class="btn btn-sm btn-success btn-add-presensi-manual" 
-                                        data-siswa-id="${item.siswa.id}"
-                                        data-siswa-name="${item.siswa.name}"
-                                        title="Tambah Presensi">
-                                    <i class="bi bi-plus-circle"></i>
-                                </button>
-                            `}
+                                ` : ''}
+                            </div>
                         </td>
                     </tr>
                 `;
             });
-        } else {
-            attendanceHtml = `
-                <tr>
-                    <td colspan="6" class="text-center py-4">
-                        <i class="bi bi-inbox fs-3 text-muted"></i>
-                        <p class="text-muted mt-2 mb-0">Belum ada data siswa</p>
-                    </td>
-                </tr>
-            `;
         }
 
-        container.innerHTML = `
-            <div class="row g-4">
-                <!-- Header Info -->
-                <div class="col-12">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h4 class="mb-1">${kelas.nama_kelas}</h4>
-                            <p class="text-muted mb-0">
-                                <i class="bi bi-mortarboard me-1"></i>${kelas.jurusan.nama_jurusan}
-                                <span class="ms-3"><i class="bi bi-hash me-1"></i>${kelas.kode_kelas}</span>
-                            </p>
-                        </div>
-                        ${activeSession ? `
-                        <div>
-                            <span class="badge bg-success fs-6">
-                                <i class="bi bi-qr-code me-1"></i>Sesi Aktif
-                            </span>
-                            <p class="text-muted small mb-0 mt-1">
-                                ${activeSession.jam_mulai} - ${activeSession.jam_selesai}
-                            </p>
-                        </div>
-                        ` : ''}
-                    </div>
-                </div>
-
-                <!-- Statistics -->
-                <div class="col-12">
-                    <div class="row g-3">
-                        <div class="col">
-                            <div class="stat-card bg-primary-soft">
-                                <div class="stat-icon text-primary">
-                                    <i class="bi bi-people-fill"></i>
-                                </div>
-                                <div class="stat-number">${stats.total_siswa}</div>
-                                <div class="stat-label">Total</div>
-                            </div>
-                        </div>
-                        <div class="col">
-                            <div class="stat-card bg-success-soft">
-                                <div class="stat-icon text-success">
-                                    <i class="bi bi-check-circle-fill"></i>
-                                </div>
-                                <div class="stat-number">${stats.hadir}</div>
-                                <div class="stat-label">Hadir</div>
-                            </div>
-                        </div>
-                        <div class="col">
-                            <div class="stat-card bg-warning-soft">
-                                <div class="stat-icon text-warning">
-                                    <i class="bi bi-file-text-fill"></i>
-                                </div>
-                                <div class="stat-number">${stats.izin}</div>
-                                <div class="stat-label">Izin</div>
-                            </div>
-                        </div>
-                        <div class="col">
-                            <div class="stat-card bg-info-soft">
-                                <div class="stat-icon text-info">
-                                    <i class="bi bi-heart-pulse-fill"></i>
-                                </div>
-                                <div class="stat-number">${stats.sakit}</div>
-                                <div class="stat-label">Sakit</div>
-                            </div>
-                        </div>
-                        <div class="col">
-                            <div class="stat-card bg-danger-soft">
-                                <div class="stat-icon text-danger">
-                                    <i class="bi bi-x-circle-fill"></i>
-                                </div>
-                                <div class="stat-number">${stats.alpha}</div>
-                                <div class="stat-label">Alpha</div>
-                            </div>
-                        </div>
-                        <div class="col">
-                            <div class="stat-card bg-secondary-soft">
-                                <div class="stat-icon text-secondary">
-                                    <i class="bi bi-clock-fill"></i>
-                                </div>
-                                <div class="stat-number">${stats.belum}</div>
-                                <div class="stat-label">Belum</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Filter & Actions -->
-                <div class="col-12">
-                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                        <div class="d-flex gap-2">
-                            <select class="form-select form-select-sm" id="filterDateSelect" style="width: auto;">
-                                ${dateOptions}
-                            </select>
-                            <button type="button" class="btn btn-sm btn-outline-primary" id="refreshDataBtn">
-                                <i class="bi bi-arrow-clockwise me-1"></i>Refresh
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Table -->
-                <div class="col-12">
-                    <div class="table-responsive">
-                        <table class="table table-hover table-nowrap mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th class="text-center" style="width: 60px;">No</th>
-                                    <th>Siswa</th>
-                                    <th class="text-center">Waktu</th>
-                                    <th class="text-center">Status</th>
-                                    <th class="text-center">Metode</th>
-                                    <th class="text-center" style="width: 150px;">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${attendanceHtml}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+        html += `
+                    </tbody>
+                </table>
             </div>
         `;
 
-        attachModalEventListeners();
+        contentDiv.innerHTML = html;
+
+        // Attach event listeners
+        attachModalEventListeners(kelas.id, activeSession);
     }
 
-    // ==================== ATTACH EVENT LISTENERS ====================
-    function attachModalEventListeners() {
-        // Filter date change
-        const filterDateSelect = document.getElementById('filterDateSelect');
-        if (filterDateSelect) {
-            filterDateSelect.addEventListener('change', function() {
-                currentFilterDate = this.value;
-                loadKelasData(currentKelasId, currentFilterDate);
-            });
-        }
+    function attachModalEventListeners(kelasId, activeSession) {
+        // Filter date
+        document.getElementById('btnFilterDate')?.addEventListener('click', function() {
+            const tanggal = document.getElementById('filterTanggal').value;
+            window.location.href = `/admin/presensi/kelas/${kelasId}?tanggal=${tanggal}`;
+        });
 
-        // Refresh button
-        const refreshBtn = document.getElementById('refreshDataBtn');
-        if (refreshBtn) {
-            refreshBtn.addEventListener('click', function() {
-                loadKelasData(currentKelasId, currentFilterDate);
-            });
-        }
-
-        // Add manual presensi buttons
-        document.querySelectorAll('.btn-add-presensi-manual').forEach(button => {
-            button.addEventListener('click', function() {
-                const siswaId = this.getAttribute('data-siswa-id');
-                const siswaName = this.getAttribute('data-siswa-name');
-                openAddManualModal(siswaId, siswaName);
+        // Add manual presensi
+        document.querySelectorAll('.btn-add-manual-presensi').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const siswaId = this.dataset.siswaId;
+                const siswaName = this.dataset.siswaName;
+                const sessionId = this.dataset.sessionId;
+                openManualPresensiModal(siswaId, siswaName, sessionId);
             });
         });
 
-        // Edit buttons
-        document.querySelectorAll('.btn-edit-presensi-modal').forEach(button => {
-            button.addEventListener('click', function() {
-                const presensiId = this.getAttribute('data-presensi-id');
-                openEditModal(presensiId);
+        // Edit presensi
+        document.querySelectorAll('.btn-edit-presensi').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const presensiId = this.dataset.presensiId;
+                openEditPresensiModal(presensiId);
             });
         });
 
-        // Delete buttons
-        document.querySelectorAll('.btn-delete-presensi').forEach(button => {
-            button.addEventListener('click', function() {
-                const presensiId = this.getAttribute('data-presensi-id');
-                const siswaName = this.getAttribute('data-siswa-name');
-                deletePresensi(presensiId, siswaName);
+        // Delete presensi
+        document.querySelectorAll('.btn-delete-presensi').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const presensiId = this.dataset.presensiId;
+                const siswaName = this.dataset.siswaName;
+                confirmDeletePresensi(presensiId, siswaName);
             });
         });
     }
 
-    // ==================== ADD MANUAL PRESENSI ====================
-    function openAddManualModal(siswaId, siswaName) {
-        if (!currentSessionId) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Tidak Ada Sesi Aktif',
-                text: 'Tidak ada sesi presensi aktif untuk hari ini. Silakan buat QR Code terlebih dahulu.',
-                confirmButtonColor: '#dc3545'
-            });
-            return;
-        }
-
-        const modal = new bootstrap.Modal(document.getElementById('addManualPresensiModal'));
-        const form = document.getElementById('addManualPresensiForm');
-        
-        // Set form action and data
-        form.action = `/admin/presensi/session/${currentSessionId}/manual`;
+    // ============================================
+    // ADD MANUAL PRESENSI
+    // ============================================
+    function openManualPresensiModal(siswaId, siswaName, sessionId) {
         document.getElementById('manual_siswa_id').value = siswaId;
         document.getElementById('manual_siswa_name').textContent = siswaName;
         
-        // Reset form
-        form.reset();
-        document.getElementById('manual_siswa_id').value = siswaId;
-        document.getElementById('manual_status').value = 'hadir';
-        document.getElementById('manual_keterangan').value = '';
+        const form = document.getElementById('addManualPresensiForm');
+        form.action = `/admin/presensi/session/${sessionId}/manual`;
         
+        const modal = new bootstrap.Modal(document.getElementById('addManualPresensiModal'));
         modal.show();
     }
 
-    // Handle add manual form submit
-    const addManualForm = document.getElementById('addManualPresensiForm');
-    if (addManualForm) {
-        addManualForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
-            const submitBtn = this.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menyimpan...';
-            
-            fetch(this.action, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json',
-                },
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('addManualPresensiModal'));
-                    modal.hide();
-                    
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil!',
-                        text: data.message || 'Presensi berhasil ditambahkan',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-                    
-                    loadKelasData(currentKelasId, currentFilterDate);
-                } else {
-                    throw new Error(data.message || 'Gagal menambahkan presensi');
-                }
-            })
-            .catch(error => {
+    document.getElementById('addManualPresensiForm')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const actionUrl = this.action;
+        
+        fetch(actionUrl, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: data.message,
+                    timer: 2000,
+                    showConfirmButton: false
+                }).then(() => {
+                    location.reload();
+                });
+            } else {
                 Swal.fire({
                     icon: 'error',
                     title: 'Gagal!',
-                    text: error.message,
-                    confirmButtonColor: '#dc3545'
+                    text: data.message || 'Terjadi kesalahan'
                 });
-            })
-            .finally(() => {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalText;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: 'Terjadi kesalahan saat menyimpan data'
             });
         });
-    }
+    });
 
-    // ==================== EDIT PRESENSI ====================
-    function openEditModal(presensiId) {
+    // ============================================
+    // EDIT PRESENSI
+    // ============================================
+    function openEditPresensiModal(presensiId) {
         const modal = new bootstrap.Modal(document.getElementById('editPresensiModal'));
         const form = document.getElementById('editPresensiForm');
         const loading = document.getElementById('editPresensiLoading');
-        const formContent = document.getElementById('editPresensiFormContent');
+        const content = document.getElementById('editPresensiFormContent');
         const submitBtn = document.getElementById('editPresensiSubmitBtn');
         
         loading.style.display = 'block';
-        formContent.style.display = 'none';
+        content.style.display = 'none';
         submitBtn.style.display = 'none';
         
         modal.show();
         
         fetch(`/admin/presensi/${presensiId}/edit`, {
-            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                form.action = `/admin/presensi/${presensiId}`;
+                document.getElementById('edit_status').value = data.presensi.status;
+                document.getElementById('edit_keterangan').value = data.presensi.keterangan || '';
+                
+                loading.style.display = 'none';
+                content.style.display = 'block';
+                submitBtn.style.display = 'inline-block';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: 'Gagal memuat data presensi'
+            });
+        });
+    }
+
+    document.getElementById('editPresensiForm')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const actionUrl = this.action;
+        
+        fetch(actionUrl, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: data.message,
+                    timer: 2000,
+                    showConfirmButton: false
+                }).then(() => {
+                    location.reload();
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal!',
+                    text: data.message || 'Terjadi kesalahan'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: 'Terjadi kesalahan saat memperbarui data'
+            });
+        });
+    });
+
+    // ============================================
+    // DELETE PRESENSI
+    // ============================================
+    function confirmDeletePresensi(presensiId, siswaName) {
+        Swal.fire({
+            title: 'Hapus Presensi?',
+            html: `Anda yakin ingin menghapus presensi <strong>${siswaName}</strong>?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                deletePresensi(presensiId);
+            }
+        });
+    }
+
+    function deletePresensi(presensiId) {
+        fetch(`/admin/presensi/${presensiId}`, {
+            method: 'DELETE',
             headers: {
                 'X-CSRF-TOKEN': csrfToken,
                 'Accept': 'application/json',
@@ -485,137 +513,46 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                const presensi = data.presensi;
-                
-                form.action = `/admin/presensi/${presensi.id}`;
-                document.getElementById('edit_status').value = presensi.status;
-                document.getElementById('edit_keterangan').value = presensi.keterangan || '';
-                
-                loading.style.display = 'none';
-                formContent.style.display = 'block';
-                submitBtn.style.display = 'inline-block';
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: data.message,
+                    timer: 2000,
+                    showConfirmButton: false
+                }).then(() => {
+                    location.reload();
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal!',
+                    text: data.message || 'Terjadi kesalahan'
+                });
             }
         })
         .catch(error => {
             console.error('Error:', error);
             Swal.fire({
                 icon: 'error',
-                title: 'Gagal!',
-                text: 'Gagal memuat data presensi',
-                confirmButtonColor: '#dc3545'
-            });
-            modal.hide();
-        });
-    }
-
-    // Handle edit form submit
-    const editForm = document.getElementById('editPresensiForm');
-    if (editForm) {
-        editForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
-            const submitBtn = this.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Memperbarui...';
-            
-            fetch(this.action, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json',
-                },
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('editPresensiModal'));
-                    modal.hide();
-                    
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil!',
-                        text: 'Presensi berhasil diperbarui',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-                    
-                    loadKelasData(currentKelasId, currentFilterDate);
-                } else {
-                    throw new Error(data.message || 'Gagal memperbarui presensi');
-                }
-            })
-            .catch(error => {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Gagal!',
-                    text: error.message,
-                    confirmButtonColor: '#dc3545'
-                });
-            })
-            .finally(() => {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalText;
+                title: 'Error!',
+                text: 'Terjadi kesalahan saat menghapus data'
             });
         });
     }
 
-    // ==================== DELETE PRESENSI ====================
-    function deletePresensi(presensiId, siswaName) {
-        Swal.fire({
-            title: 'Hapus Presensi?',
-            html: `Hapus data presensi <strong>${siswaName}</strong>?`,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#dc3545',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Ya, Hapus!',
-            cancelButtonText: 'Batal',
-            reverseButtons: true
-        }).then((result) => {
-            if (result.isConfirmed) {
-                Swal.fire({
-                    title: 'Menghapus...',
-                    allowOutsideClick: false,
-                    didOpen: () => Swal.showLoading()
-                });
-
-                fetch(`/admin/presensi/${presensiId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken,
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil!',
-                        text: 'Presensi berhasil dihapus',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-                    loadKelasData(currentKelasId, currentFilterDate);
-                })
-                .catch(error => {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Gagal!',
-                        text: 'Gagal menghapus presensi',
-                        confirmButtonColor: '#dc3545'
-                    });
-                });
-            }
-        });
+    // ============================================
+    // UTILITIES
+    // ============================================
+    function showError(container, message) {
+        container.innerHTML = `
+            <div class="text-center py-5">
+                <i class="bi bi-exclamation-triangle fs-1 text-danger"></i>
+                <p class="text-muted mt-3 mb-0">${message}</p>
+            </div>
+        `;
     }
 
-    // ==================== NOTIFICATIONS ====================
-    if (typeof Swal !== 'undefined') {
+    function checkNotifications() {
         const successMeta = document.querySelector('meta[name="success-message"]');
         const errorMeta = document.querySelector('meta[name="error-message"]');
         
@@ -623,12 +560,9 @@ document.addEventListener('DOMContentLoaded', function() {
             Swal.fire({
                 icon: 'success',
                 title: 'Berhasil!',
-                text: successMeta.getAttribute('content'),
+                text: successMeta.content,
                 timer: 3000,
-                timerProgressBar: true,
-                showConfirmButton: false,
-                toast: true,
-                position: 'top-end'
+                showConfirmButton: false
             });
         }
         
@@ -636,8 +570,7 @@ document.addEventListener('DOMContentLoaded', function() {
             Swal.fire({
                 icon: 'error',
                 title: 'Gagal!',
-                text: errorMeta.getAttribute('content'),
-                confirmButtonColor: '#dc3545'
+                text: errorMeta.content
             });
         }
     }
