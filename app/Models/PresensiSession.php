@@ -42,7 +42,7 @@ class PresensiSession extends Model
 
     public function kelas()
     {
-        return $this->belongsTo(Kelas::class);
+        return $this->belongsTo(Kelas::class);{{  }}
     }
 
     public function creator()

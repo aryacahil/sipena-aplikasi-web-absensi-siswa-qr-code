@@ -83,7 +83,7 @@
                         </div>
                         
                         <div class="d-flex gap-2 flex-wrap">
-\                            <div class="btn-group" role="group">
+                            <div class="btn-group" role="group">
                                 <a href="{{ route('guru.qrcode.index') }}" 
                                    class="btn btn-sm {{ !request('status') ? 'btn-primary' : 'btn-outline-primary' }}">
                                     Semua

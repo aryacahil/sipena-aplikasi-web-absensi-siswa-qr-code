@@ -45,10 +45,10 @@
              </li>
             </li>
             <li class="nav-item">
-                <a class="nav-link has-arrow " href="#!"
+                <a class="nav-link has-arrow " href="{{ route('guru.export-import.index') }}"
                     aria-controls="navPages">
                     <i data-feather="File earmark text" class="bi bi-file-earmark-text icon-xs me-2">
-                    </i> Export Excel / PDF
+                    </i> Ekspor & Impor
                 </a>
 
              

@@ -114,6 +114,18 @@ Route::middleware(['auth', 'user-role:admin'])->group(function() {
         ->name('admin.presensi.manual');
     Route::post('admin/presensi/session/{session}/bulk', [App\Http\Controllers\Admin\PresensiController::class, 'bulkCreate'])
         ->name('admin.presensi.bulkCreate');
+
+    // Export & Import
+    Route::get('admin/export-import', [App\Http\Controllers\Admin\ExportImportController::class, 'index'])
+        ->name('admin.export-import.index');
+    Route::post('admin/export/siswa', [App\Http\Controllers\Admin\ExportImportController::class, 'exportSiswa'])
+        ->name('admin.export.siswa');
+    Route::post('admin/export/presensi', [App\Http\Controllers\Admin\ExportImportController::class, 'exportPresensi'])
+        ->name('admin.export.presensi');
+    Route::get('admin/download/template', [App\Http\Controllers\Admin\ExportImportController::class, 'downloadTemplate'])
+        ->name('admin.download.template');
+    Route::post('admin/import/siswa', [App\Http\Controllers\Admin\ExportImportController::class, 'importSiswa'])
+        ->name('admin.import.siswa');
 });
 
 Route::middleware(['auth', 'user-role:guru'])->group(function() {
@@ -138,6 +150,17 @@ Route::middleware(['auth', 'user-role:guru'])->group(function() {
     Route::post('guru/presensi/session/{session}', [App\Http\Controllers\Guru\PresensiController::class, 'store'])->name('guru.presensi.store');
     Route::post('guru/presensi/session/{session}/manual', [App\Http\Controllers\Guru\PresensiController::class, 'storeManual'])->name('guru.presensi.manual');
     Route::post('guru/presensi/session/{session}/bulk', [App\Http\Controllers\Guru\PresensiController::class, 'bulkCreate'])->name('guru.presensi.bulkCreate');
+
+    Route::get('guru/export-import', [App\Http\Controllers\Guru\ExportImportController::class, 'index'])
+        ->name('guru.export-import.index');
+    Route::post('guru/export/siswa', [App\Http\Controllers\Guru\ExportImportController::class, 'exportSiswa'])
+        ->name('guru.export.siswa');
+    Route::post('guru/export/presensi', [App\Http\Controllers\Guru\ExportImportController::class, 'exportPresensi'])
+        ->name('guru.export.presensi');
+    Route::get('guru/download/template', [App\Http\Controllers\Guru\ExportImportController::class, 'downloadTemplate'])
+        ->name('guru.download.template');
+    Route::post('guru/import/siswa', [App\Http\Controllers\Guru\ExportImportController::class, 'importSiswa'])
+        ->name('guru.import.siswa');
 });
 
 Route::middleware(['auth', 'user-role:siswa'])->group(function() {

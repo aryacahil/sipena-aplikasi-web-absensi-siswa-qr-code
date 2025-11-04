@@ -91,9 +91,9 @@
              </li>
 
             <li class="nav-item">
-                <a class="nav-link" href="#">
+                <a class="nav-link" href="{{ route('admin.export-import.index') }}">
                     <i data-feather="File earmark text" class="bi bi-file-earmark-text icon-xs me-2"></i>
-                    Export Excel / PDF
+                    Ekspor & Impor
                 </a>
             </li>
 
