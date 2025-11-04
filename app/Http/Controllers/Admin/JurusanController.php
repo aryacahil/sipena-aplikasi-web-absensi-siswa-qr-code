@@ -12,7 +12,6 @@ class JurusanController extends Controller
     {
         $query = Jurusan::withCount('kelas');
         
-        // Search functionality
         if ($request->has('search') && $request->search !== '') {
             $search = $request->search;
             $query->where(function($q) use ($search) {
@@ -52,7 +51,6 @@ class JurusanController extends Controller
 
     public function show(Jurusan $jurusan)
     {
-        // Load relasi kelas dengan wali kelas dan hitung jumlah siswa
         $jurusan->loadCount('kelas');
         $jurusan->load(['kelas' => function($query) {
             $query->with('waliKelas')->withCount('siswa');

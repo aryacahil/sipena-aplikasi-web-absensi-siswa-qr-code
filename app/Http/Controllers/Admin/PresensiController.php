@@ -1,4 +1,5 @@
 <?php
+// File: app/Http/Controllers/Admin/PresensiController.php
 
 namespace App\Http\Controllers\Admin;
 
@@ -9,15 +10,18 @@ use App\Models\Kelas;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class PresensiController extends Controller
 {
+    /**
+     * Tampilkan daftar kelas untuk dipilih
+     */
     public function index(Request $request)
     {
-        // Tampilkan daftar kelas
         $query = Kelas::with(['jurusan', 'siswa']);
 
-        // Filter berdasarkan jurusan jika ada
+        // Filter berdasarkan jurusan
         if ($request->filled('jurusan_id')) {
             $query->where('jurusan_id', $request->jurusan_id);
         }
@@ -28,75 +32,53 @@ class PresensiController extends Controller
         }
 
         $kelasList = $query->withCount('siswa')->get();
-
-        // Get all jurusan for filter
         $jurusans = \App\Models\Jurusan::all();
 
-        // Statistics (total semua kelas)
+        // Statistics (hari ini)
         $today = now()->format('Y-m-d');
         $stats = [
             'total_kelas' => $kelasList->count(),
-            'total_siswa' => User::where('role', 'siswa')->count(),
-            'hadir_hari_ini' => Presensi::whereHas('session', function($q) use ($today) {
-                $q->whereDate('tanggal', $today);
-            })->where('status', 'hadir')->count(),
-            'alpha_hari_ini' => Presensi::whereHas('session', function($q) use ($today) {
-                $q->whereDate('tanggal', $today);
-            })->where('status', 'alpha')->count(),
+            'total_siswa' => User::where('role', 2)->count(),
+            'hadir_hari_ini' => Presensi::whereDate('tanggal_presensi', $today)
+                ->where('status', 'hadir')->count(),
+            'alpha_hari_ini' => Presensi::whereDate('tanggal_presensi', $today)
+                ->where('status', 'alpha')->count(),
         ];
 
         return view('admin.presensi.index', compact('kelasList', 'jurusans', 'stats'));
     }
 
-    public function showKelas(Request $request, $kelasId)
+    /**
+     * Tampilkan detail presensi per kelas
+     * TIDAK LAGI BERGANTUNG PADA SESSION!
+     */
+    public function showKelas(Request $request, Kelas $kelas)
     {
-        $kelas = Kelas::with(['jurusan', 'siswa'])->findOrFail($kelasId);
+        $kelas->load(['jurusan', 'siswa']);
         
-        // Get active session untuk kelas ini (hari ini)
-        $today = now()->format('Y-m-d');
-        $activeSession = PresensiSession::where('kelas_id', $kelasId)
-            ->whereDate('tanggal', $today)
-            ->where('status', 'active')
-            ->first();
+        // Default tanggal: hari ini
+        $filterDate = $request->filled('tanggal') ? $request->tanggal : now()->format('Y-m-d');
 
-        // Get all sessions untuk filter tanggal
-        $sessionsQuery = PresensiSession::where('kelas_id', $kelasId)
-            ->with(['presensis.siswa']);
-
-        // Filter berdasarkan tanggal
-        $filterDate = $request->filled('tanggal') ? $request->tanggal : $today;
-        $sessionsQuery->whereDate('tanggal', $filterDate);
-
-        $sessions = $sessionsQuery->latest()->get();
-
-        // Get semua siswa di kelas
+        // Ambil semua siswa di kelas
         $allSiswa = $kelas->siswa;
 
-        // Build attendance data
+        // Build attendance data berdasarkan TANGGAL SAJA (bukan session!)
         $attendanceData = [];
         foreach ($allSiswa as $siswa) {
-            $presensi = null;
-            $sessionInfo = null;
-            
-            // Cari presensi siswa di session yang ada
-            foreach ($sessions as $session) {
-                $found = $session->presensis->where('siswa_id', $siswa->id)->first();
-                if ($found) {
-                    $presensi = $found;
-                    $sessionInfo = $session;
-                    break;
-                }
-            }
+            // Cari presensi siswa di tanggal tersebut
+            $presensi = Presensi::where('kelas_id', $kelas->id)
+                ->where('siswa_id', $siswa->id)
+                ->whereDate('tanggal_presensi', $filterDate)
+                ->first();
 
             $attendanceData[] = [
                 'siswa' => $siswa,
                 'presensi' => $presensi,
-                'session' => $sessionInfo,
                 'status' => $presensi ? $presensi->status : 'belum',
             ];
         }
 
-        // Statistics untuk kelas ini
+        // Statistics untuk kelas ini pada tanggal tersebut
         $stats = [
             'total_siswa' => $allSiswa->count(),
             'hadir' => collect($attendanceData)->where('status', 'hadir')->count(),
@@ -106,13 +88,11 @@ class PresensiController extends Controller
             'belum' => collect($attendanceData)->where('status', 'belum')->count(),
         ];
 
-        // Get available dates untuk filter
-        $availableDates = PresensiSession::where('kelas_id', $kelasId)
-            ->selectRaw('DATE(tanggal) as date')
-            ->groupBy('date')
-            ->orderBy('date', 'desc')
-            ->limit(30)
-            ->pluck('date');
+        // Cek apakah ada sesi aktif (untuk info saja, tidak mempengaruhi input manual)
+        $activeSession = PresensiSession::where('kelas_id', $kelas->id)
+            ->whereDate('tanggal', $filterDate)
+            ->where('status', 'active')
+            ->first();
 
         // Return JSON if AJAX request
         if ($request->wantsJson() || $request->ajax()) {
@@ -136,13 +116,10 @@ class PresensiController extends Controller
                         'presensi' => $item['presensi'] ? [
                             'id' => $item['presensi']->id,
                             'status' => $item['presensi']->status,
-                            'waktu_presensi' => $item['presensi']->created_at ? $item['presensi']->created_at->format('H:i:s') : '-',
+                            'waktu_presensi' => $item['presensi']->created_at ? 
+                                $item['presensi']->created_at->format('H:i:s') : '-',
                             'metode' => $item['presensi']->metode,
                             'keterangan' => $item['presensi']->keterangan,
-                        ] : null,
-                        'session' => $item['session'] ? [
-                            'id' => $item['session']->id,
-                            'tanggal' => $item['session']->tanggal->format('d M Y'),
                         ] : null,
                         'status' => $item['status'],
                     ];
@@ -154,7 +131,6 @@ class PresensiController extends Controller
                     'jam_mulai' => $activeSession->jam_mulai->format('H:i'),
                     'jam_selesai' => $activeSession->jam_selesai->format('H:i'),
                 ] : null,
-                'available_dates' => $availableDates,
                 'filter_date' => $filterDate,
             ]);
         }
@@ -164,61 +140,86 @@ class PresensiController extends Controller
             'attendanceData', 
             'stats', 
             'activeSession',
-            'availableDates'
+            'filterDate'
         ));
     }
 
-    public function storeManual(Request $request, PresensiSession $session)
+    /**
+     * Store manual presensi (TANPA SESSION!) - FIXED!
+     */
+    public function storeManual(Request $request, Kelas $kelas)
     {
+        // Log request untuk debug
+        Log::info('storeManual called', [
+            'kelas_id' => $kelas->id,
+            'kelas_name' => $kelas->nama_kelas,
+            'request_data' => $request->all()
+        ]);
+
+        // Validate input
         $validated = $request->validate([
             'siswa_id' => 'required|exists:users,id',
+            'tanggal_presensi' => 'required|date',
             'status' => 'required|in:hadir,izin,sakit,alpha',
             'keterangan' => 'nullable|string|max:500',
         ]);
 
-        // Check if siswa belongs to the session's kelas
+        // Verify siswa belongs to kelas
         $siswa = User::findOrFail($validated['siswa_id']);
-        if (!$session->kelas->siswa->contains($siswa)) {
-            if ($request->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Siswa tidak terdaftar di kelas ini'
-                ], 422);
-            }
-            return back()->with('error', 'Siswa tidak terdaftar di kelas ini');
+        
+        if ($siswa->kelas_id != $kelas->id) {
+            Log::warning('Siswa tidak di kelas ini', [
+                'siswa_kelas_id' => $siswa->kelas_id,
+                'target_kelas_id' => $kelas->id
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Siswa tidak terdaftar di kelas ini'
+            ], 422);
         }
 
-        // Check if already exists
-        $exists = Presensi::where('session_id', $session->id)
+        // Check if already exists (unique per tanggal per kelas)
+        $exists = Presensi::where('kelas_id', $kelas->id)
             ->where('siswa_id', $validated['siswa_id'])
+            ->whereDate('tanggal_presensi', $validated['tanggal_presensi'])
             ->exists();
 
         if ($exists) {
-            if ($request->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Siswa sudah melakukan presensi'
-                ], 422);
-            }
-            return back()->with('error', 'Siswa sudah melakukan presensi');
+            Log::warning('Presensi sudah ada', [
+                'kelas_id' => $kelas->id,
+                'siswa_id' => $validated['siswa_id'],
+                'tanggal' => $validated['tanggal_presensi']
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Siswa sudah melakukan presensi pada tanggal ini'
+            ], 422);
         }
 
-        // Create presensi data
-        $presensiData = [
-            'session_id' => $session->id,
+        // ⭐ CRITICAL: Create presensi dengan kelas_id dari route parameter
+        $presensi = Presensi::create([
+            'kelas_id' => $kelas->id, // Dari route parameter, BUKAN dari request
             'siswa_id' => $validated['siswa_id'],
+            'tanggal_presensi' => $validated['tanggal_presensi'],
             'status' => $validated['status'],
             'metode' => 'manual',
-        ];
+            'keterangan' => $validated['keterangan'] ?? null,
+            'session_id' => null, // TIDAK ADA SESSION!
+            'latitude' => null,
+            'longitude' => null,
+            'is_valid_location' => true,
+        ]);
 
-        // Add keterangan if provided
-        if (!empty($validated['keterangan'])) {
-            $presensiData['keterangan'] = $validated['keterangan'];
-        }
+        Log::info('Presensi created successfully', [
+            'presensi_id' => $presensi->id,
+            'kelas_id' => $presensi->kelas_id,
+            'siswa_id' => $presensi->siswa_id,
+            'tanggal' => $presensi->tanggal_presensi
+        ]);
 
-        $presensi = Presensi::create($presensiData);
-
-        if ($request->wantsJson()) {
+        if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
                 'success' => true,
                 'message' => 'Presensi berhasil ditambahkan',
@@ -234,81 +235,72 @@ class PresensiController extends Controller
         }
 
         return redirect()
-            ->route('admin.presensi.kelas', $session->kelas_id)
+            ->route('admin.presensi.index')
             ->with('success', 'Presensi berhasil ditambahkan');
     }
 
-    public function create(PresensiSession $session)
-    {
-        $session->load('kelas.siswa');
-        
-        // Get siswa yang belum presensi
-        $siswaIds = $session->presensis()->pluck('siswa_id')->toArray();
-        $siswaAvailable = $session->kelas->siswa()
-            ->whereNotIn('id', $siswaIds)
-            ->get();
-
-        return view('admin.presensi.create', compact('session', 'siswaAvailable'));
-    }
-
-    public function store(Request $request, PresensiSession $session)
-    {
-        $validated = $request->validate([
-            'siswa_id' => 'required|exists:users,id',
-            'status' => 'required|in:hadir,izin,sakit,alpha',
-            'keterangan' => 'nullable|string|max:500',
-            'bukti_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
-        ]);
-
-        // Check if already exists
-        $exists = Presensi::where('session_id', $session->id)
-            ->where('siswa_id', $validated['siswa_id'])
-            ->exists();
-
-        if ($exists) {
-            return back()->with('error', 'Siswa sudah melakukan presensi');
-        }
-
-        $validated['session_id'] = $session->id;
-        $validated['waktu_presensi'] = now();
-        $validated['metode'] = 'manual';
-
-        // Handle file upload
-        if ($request->hasFile('bukti_file')) {
-            $file = $request->file('bukti_file');
-            $filename = time() . '_' . $file->getClientOriginalName();
-            $path = $file->storeAs('bukti_presensi', $filename, 'public');
-            $validated['bukti_file'] = $path;
-        }
-
-        Presensi::create($validated);
-
-        return redirect()
-            ->route('admin.presensi.kelas', $session->kelas_id)
-            ->with('success', 'Presensi berhasil ditambahkan');
-    }
-
+    /**
+     * Edit presensi
+     */
     public function edit(Presensi $presensi)
     {
-        $presensi->load(['session', 'siswa']);
-        
-        if (request()->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'presensi' => [
-                    'id' => $presensi->id,
-                    'status' => $presensi->status,
-                    'keterangan' => $presensi->keterangan,
-                    'siswa' => [
-                        'name' => $presensi->siswa->name,
-                    ],
-                ],
+        try {
+            // Load relasi dengan eager loading
+            $presensi->load(['kelas', 'siswa']);
+            
+            // Validasi data relasi exist
+            if (!$presensi->siswa) {
+                throw new \Exception('Data siswa tidak ditemukan');
+            }
+            
+            if (!$presensi->kelas) {
+                throw new \Exception('Data kelas tidak ditemukan');
+            }
+            
+            Log::info('Edit presensi called', [
+                'presensi_id' => $presensi->id,
+                'siswa_id' => $presensi->siswa_id,
+                'siswa_name' => $presensi->siswa->name ?? 'N/A',
+                'status' => $presensi->status
             ]);
+            
+            if (request()->wantsJson() || request()->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'presensi' => [
+                        'id' => $presensi->id,
+                        'status' => $presensi->status,
+                        'keterangan' => $presensi->keterangan ?? '',
+                        'siswa' => [
+                            'name' => $presensi->siswa->name,
+                        ],
+                    ],
+                ]);
+            }
+            
+            return view('admin.presensi.edit', compact('presensi'));
+        } catch (\Exception $e) {
+            Log::error('Error in edit presensi', [
+                'presensi_id' => $presensi->id ?? 'unknown',
+                'error' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile()
+            ]);
+            
+            if (request()->wantsJson() || request()->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal memuat data presensi: ' . $e->getMessage()
+                ], 500);
+            }
+            
+            return back()->with('error', 'Gagal memuat data presensi: ' . $e->getMessage());
         }
-        
-        return view('admin.presensi.edit', compact('presensi'));
     }
 
+    /**
+     * Update presensi
+     */
     public function update(Request $request, Presensi $presensi)
     {
         $validated = $request->validate([
@@ -319,7 +311,6 @@ class PresensiController extends Controller
 
         // Handle file upload
         if ($request->hasFile('bukti_file')) {
-            // Delete old file
             if ($presensi->bukti_file) {
                 Storage::disk('public')->delete($presensi->bukti_file);
             }
@@ -332,37 +323,31 @@ class PresensiController extends Controller
 
         $presensi->update($validated);
 
-        if ($request->wantsJson()) {
+        if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
                 'success' => true,
                 'message' => 'Presensi berhasil diperbarui',
-                'data' => [
-                    'presensi' => [
-                        'id' => $presensi->id,
-                        'status' => $presensi->status,
-                        'keterangan' => $presensi->keterangan,
-                    ],
-                ],
             ]);
         }
 
         return redirect()
-            ->route('admin.presensi.kelas', $presensi->session->kelas_id)
+            ->route('admin.presensi.index')
             ->with('success', 'Presensi berhasil diperbarui');
     }
 
+    /**
+     * Delete presensi
+     */
     public function destroy(Presensi $presensi)
     {
-        $kelasId = $presensi->session->kelas_id;
+        $kelasId = $presensi->kelas_id;
         
-        // Delete file if exists
         if ($presensi->bukti_file) {
             Storage::disk('public')->delete($presensi->bukti_file);
         }
 
         $presensi->delete();
 
-        // Return JSON for AJAX request
         if (request()->wantsJson() || request()->ajax()) {
             return response()->json([
                 'success' => true,
@@ -371,72 +356,7 @@ class PresensiController extends Controller
         }
 
         return redirect()
-            ->route('admin.presensi.kelas', $kelasId)
+            ->route('admin.presensi.index')
             ->with('success', 'Presensi berhasil dihapus');
-    }
-
-    public function bulkCreate(Request $request, PresensiSession $session)
-    {
-        $validated = $request->validate([
-            'siswa_ids' => 'required|array',
-            'siswa_ids.*' => 'exists:users,id',
-            'status' => 'required|in:hadir,izin,sakit,alpha',
-        ]);
-
-        $created = 0;
-        foreach ($validated['siswa_ids'] as $siswaId) {
-            // Check if not exists
-            $exists = Presensi::where('session_id', $session->id)
-                ->where('siswa_id', $siswaId)
-                ->exists();
-
-            if (!$exists) {
-                Presensi::create([
-                    'session_id' => $session->id,
-                    'siswa_id' => $siswaId,
-                    'status' => $validated['status'],
-                    'waktu_presensi' => now(),
-                    'metode' => 'manual',
-                ]);
-                $created++;
-            }
-        }
-
-        return redirect()
-            ->route('admin.presensi.kelas', $session->kelas_id)
-            ->with('success', "{$created} presensi berhasil ditambahkan");
-    }
-
-    public function show(Presensi $presensi)
-    {
-        $presensi->load(['session.kelas', 'siswa']);
-        
-        if (request()->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'presensi' => [
-                    'id' => $presensi->id,
-                    'status' => $presensi->status,
-                    'waktu_presensi' => $presensi->waktu_presensi->format('d M Y H:i:s'),
-                    'keterangan' => $presensi->keterangan,
-                    'metode' => $presensi->metode,
-                    'latitude' => $presensi->latitude,
-                    'longitude' => $presensi->longitude,
-                    'notifikasi_terkirim' => $presensi->notifikasi_terkirim,
-                    'siswa' => [
-                        'name' => $presensi->siswa->name,
-                        'email' => $presensi->siswa->email,
-                    ],
-                    'session' => [
-                        'tanggal' => $presensi->session->tanggal->format('Y-m-d'),
-                        'kelas' => [
-                            'nama_kelas' => $presensi->session->kelas->nama_kelas,
-                        ],
-                    ],
-                ],
-            ]);
-        }
-        
-        return view('admin.presensi.show', compact('presensi'));
     }
 }

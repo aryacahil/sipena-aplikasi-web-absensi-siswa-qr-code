@@ -1,20 +1,17 @@
 @extends('layouts.admin')
 
 @section('content')
-<!-- Meta tags untuk notifikasi -->
-@if(session('success'))
+<@if(session('success'))
 <meta name="success-message" content="{{ session('success') }}">
 @endif
 @if(session('error'))
 <meta name="error-message" content="{{ session('error') }}">
 @endif
 
-<!-- Hidden CSRF Token untuk AJAX -->
 <input type="hidden" name="_token" value="{{ csrf_token() }}">
 
 <div class="bg-primary pt-10 pb-21"></div>
 <div class="container-fluid mt-n22 px-6">
-    <!-- Header Section -->
     <div class="row">
         <div class="col-lg-12 col-md-12 col-12">
             <div class="d-flex justify-content-between align-items-center">
@@ -31,11 +28,9 @@
         </div>
     </div>
 
-    <!-- Main Content Card -->
     <div class="row mt-6">
         <div class="col-md-12">
             <div class="card shadow-sm">
-                <!-- Table Header -->
                 <div class="card-header bg-white border-bottom">
                     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
                         <div>
@@ -43,7 +38,6 @@
                         </div>
                         
                         <div class="d-flex gap-2 flex-wrap align-items-center">
-                            <!-- Search Box -->
                             <form action="{{ route('admin.jurusan.index') }}" method="GET" class="d-flex">
                                 <div class="input-group" style="width: 250px;">
                                     <input type="text" name="search" class="form-control form-control-sm" 
@@ -58,7 +52,6 @@
                     </div>
                 </div>
 
-                <!-- Table Body -->
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover table-nowrap mb-0">
@@ -141,7 +134,6 @@
                     </div>
                 </div>
 
-                <!-- Pagination Footer -->
                 @if($jurusans->total() > 0)
                 <div class="card-footer bg-white border-top">
                     <div class="d-flex justify-content-between align-items-center">
@@ -151,7 +143,6 @@
                         <nav aria-label="Navigasi halaman">
                             @if ($jurusans->hasPages())
                                 <ul class="pagination mb-0">
-                                    {{-- Previous Page Link --}}
                                     @if ($jurusans->onFirstPage())
                                         <li class="page-item disabled" aria-disabled="true">
                                             <span class="page-link">&laquo;</span>
@@ -162,7 +153,6 @@
                                         </li>
                                     @endif
 
-                                    {{-- Pagination Elements --}}
                                     @php
                                         $start = max($jurusans->currentPage() - 1, 1);
                                         $end = min($start + 2, $jurusans->lastPage());
@@ -199,7 +189,6 @@
                                         </li>
                                     @endif
 
-                                    {{-- Next Page Link --}}
                                     @if ($jurusans->hasMorePages())
                                         <li class="page-item">
                                             <a class="page-link" href="{{ $jurusans->appends(request()->query())->nextPageUrl() }}" rel="next">&raquo;</a>
@@ -221,7 +210,6 @@
     </div>
 </div>
 
-<!-- Modal Create Jurusan -->
 <div class="modal fade" id="createJurusanModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
@@ -258,7 +246,6 @@
     </div>
 </div>
 
-<!-- Modal Show Jurusan -->
 <div class="modal fade" id="showJurusanModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
@@ -280,7 +267,6 @@
     </div>
 </div>
 
-<!-- Modal Edit Jurusan -->
 <div class="modal fade" id="editJurusanModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">

@@ -36,31 +36,76 @@ return new class extends Migration
         });
 
         // ===============================
-        // TABEL PRESENSIS
+        // TABEL PRESENSIS (UPDATED - SESSION-FREE!)
         // ===============================
         Schema::create('presensis', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('session_id')->constrained('presensi_sessions')->onDelete('cascade');
-            $table->foreignId('siswa_id')->constrained('users')->onDelete('cascade');
+            
+            // SESSION ID - NULLABLE (untuk QR Code scan)
+            $table->foreignId('session_id')
+                  ->nullable()
+                  ->constrained('presensi_sessions')
+                  ->onDelete('cascade')
+                  ->comment('NULL jika presensi manual tanpa QR');
+            
+            // KELAS ID - WAJIB (untuk presensi manual)
+            $table->foreignId('kelas_id')
+                  ->constrained('kelas')
+                  ->onDelete('cascade')
+                  ->comment('Wajib diisi untuk semua jenis presensi');
+            
+            // SISWA ID
+            $table->foreignId('siswa_id')
+                  ->constrained('users')
+                  ->onDelete('cascade');
+            
+            // TANGGAL PRESENSI - WAJIB
+            $table->date('tanggal_presensi')
+                  ->comment('Tanggal presensi (tidak bergantung session)');
+            
+            // WAKTU ABSEN (tetap pakai created_at sebagai fallback)
             $table->timestamp('waktu_absen')->nullable();
-            $table->enum('status', ['hadir', 'izin', 'sakit', 'alpha'])->default('hadir');
+            
+            // STATUS PRESENSI
+            $table->enum('status', ['hadir', 'izin', 'sakit', 'alpha'])
+                  ->default('hadir');
+            
+            // KOORDINAT GPS
             $table->decimal('latitude', 10, 8)->nullable();
             $table->decimal('longitude', 11, 8)->nullable();
+            
+            // KETERANGAN
             $table->text('keterangan')->nullable();
+            
+            // METODE PRESENSI
             $table->enum('metode', ['qr', 'manual'])
                   ->default('manual')
-                  ->comment('Metode presensi: qr atau manual');
+                  ->comment('qr = via scan QR code, manual = input manual');
+            
+            // VALIDASI LOKASI
             $table->boolean('is_valid_location')->default(true);
+            
             $table->timestamps();
 
-            // Unique constraint - siswa hanya bisa absen 1x per session
-            $table->unique(['session_id', 'siswa_id']);
+            // ========================================
+            // UNIQUE CONSTRAINT - CRITICAL!
+            // ========================================
+            // Siswa hanya bisa 1x presensi per tanggal per kelas
+            $table->unique(
+                ['kelas_id', 'siswa_id', 'tanggal_presensi'], 
+                'unique_presensi_per_day'
+            );
 
-            // Index untuk performa
+            // ========================================
+            // INDEX untuk performa query
+            // ========================================
             $table->index('siswa_id');
+            $table->index('session_id'); // untuk QR scan
             $table->index('status');
             $table->index('waktu_absen');
             $table->index('metode');
+            $table->index('tanggal_presensi'); // PENTING untuk filter tanggal!
+            $table->index(['kelas_id', 'tanggal_presensi']); // composite index
         });
     }
 

@@ -12,7 +12,6 @@
 
 <div class="bg-primary pt-10 pb-21"></div>
 <div class="container-fluid mt-n22 px-6">
-    <!-- Header -->
     <div class="row">
         <div class="col-lg-12 col-md-12 col-12">
             <div class="d-flex justify-content-between align-items-center">
@@ -29,7 +28,6 @@
         </div>
     </div>
 
-    <!-- Statistics Cards -->
     <div class="row mt-6">
         <div class="col-xl-3 col-lg-6 col-md-6 col-12">
             <div class="card shadow-sm">
@@ -96,12 +94,10 @@
         </div>
     </div>
 
-    <!-- Main Card -->
     <div class="row mt-6">
         <div class="col-md-12">
             <div class="card shadow-sm">
                 
-                <!-- Filter Section -->
                 <div class="card-header bg-white border-bottom">
                     <form action="{{ route('admin.presensi.index') }}" method="GET">
                         <div class="row g-3 align-items-end">
@@ -131,7 +127,6 @@
                     </form>
                 </div>
 
-                <!-- Table Header -->
                 <div class="card-header bg-white border-bottom">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -141,7 +136,6 @@
                     </div>
                 </div>
 
-                <!-- Kelas Cards -->
                 <div class="card-body">
                     <div class="row g-4">
                         @forelse($kelasList as $kelas)
@@ -201,7 +195,6 @@
     </div>
 </div>
 
-<!-- Modal Show Kelas -->
 <div class="modal fade" id="showKelasModal" tabindex="-1">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
@@ -221,7 +214,6 @@
     </div>
 </div>
 
-<!-- Modal Add Manual Presensi -->
 <div class="modal fade" id="addManualPresensiModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -233,9 +225,12 @@
             </div>
             <form id="addManualPresensiForm" method="POST">
                 @csrf
+                <!-- Hidden Fields (will be populated by JavaScript) -->
+                <input type="hidden" id="manual_siswa_id" name="siswa_id">
+                <input type="hidden" id="manual_tanggal_presensi" name="tanggal_presensi">
+                <!-- kelas_id akan ditambahkan via JavaScript -->
+                
                 <div class="modal-body">
-                    <input type="hidden" id="manual_siswa_id" name="siswa_id">
-                    
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle me-2"></i>
                         Menambahkan presensi untuk: <strong id="manual_siswa_name"></strong>
@@ -243,7 +238,9 @@
                     
                     <div class="row g-3">
                         <div class="col-12">
-                            <label class="form-label fw-semibold">Status <span class="text-danger">*</span></label>
+                            <label class="form-label fw-semibold">
+                                Status <span class="text-danger">*</span>
+                            </label>
                             <select class="form-select" id="manual_status" name="status" required>
                                 <option value="hadir">Hadir</option>
                                 <option value="izin">Izin</option>
@@ -253,12 +250,18 @@
                         </div>
                         <div class="col-12">
                             <label class="form-label fw-semibold">Keterangan</label>
-                            <textarea class="form-control" id="manual_keterangan" name="keterangan" rows="3" placeholder="Masukkan keterangan (opsional)"></textarea>
+                            <textarea class="form-control" 
+                                      id="manual_keterangan" 
+                                      name="keterangan" 
+                                      rows="3" 
+                                      placeholder="Masukkan keterangan (opsional)"></textarea>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        Batal
+                    </button>
                     <button type="submit" class="btn btn-success">
                         <i class="bi bi-check-circle me-2"></i>Simpan Presensi
                     </button>
@@ -268,7 +271,6 @@
     </div>
 </div>
 
-<!-- Modal Edit Presensi -->
 <div class="modal fade" id="editPresensiModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">

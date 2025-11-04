@@ -12,7 +12,6 @@
 
 <div class="bg-primary pt-10 pb-21"></div>
 <div class="container-fluid mt-n22 px-6">
-    <!-- Header -->
     <div class="row">
         <div class="col-lg-12 col-md-12 col-12">
             <div class="d-flex justify-content-between align-items-center">
@@ -29,12 +28,10 @@
         </div>
     </div>
 
-    <!-- Main Card -->
     <div class="row mt-6">
         <div class="col-md-12">
             <div class="card shadow-sm">
                 
-                <!-- Filter Section -->
                 <div class="collapse" id="advancedFilter">
                     <div class="card-header bg-white border-bottom">
                         <h5 class="mb-3">
@@ -78,7 +75,6 @@
                     </div>
                 </div>
 
-                <!-- Table Header -->
                 <div class="card-header bg-white border-bottom">
                     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
                         <div>
@@ -86,8 +82,7 @@
                         </div>
                         
                         <div class="d-flex gap-2 flex-wrap">
-                            <!-- Quick Filter -->
-                            <div class="btn-group" role="group">
+\                            <div class="btn-group" role="group">
                                 <a href="{{ route('admin.qrcode.index') }}" 
                                    class="btn btn-sm {{ !request('status') ? 'btn-primary' : 'btn-outline-primary' }}">
                                     Semua
@@ -110,7 +105,6 @@
                     </div>
                 </div>
 
-                <!-- Table Body -->
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover table-nowrap mb-0">
@@ -216,7 +210,6 @@
                     </div>
                 </div>
 
-                <!-- Pagination -->
                 @if($sessions->total() > 0)
                 <div class="card-footer bg-white border-top">
                     <div class="d-flex justify-content-between align-items-center">
@@ -235,7 +228,6 @@
     </div>
 </div>
 
-<!-- Modal Create QR Code -->
 <div class="modal fade" id="createQRModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
@@ -249,7 +241,6 @@
                 @csrf
                 <div class="modal-body">
                     <div class="row g-3">
-                        <!-- Kelas -->
                         <div class="col-md-12">
                             <label class="form-label fw-semibold">
                                 Kelas <span class="text-danger">*</span>
@@ -265,7 +256,6 @@
                             </select>
                         </div>
 
-                        <!-- Tanggal -->
                         <div class="col-md-12">
                             <label class="form-label fw-semibold">
                                 Tanggal <span class="text-danger">*</span>
@@ -278,7 +268,6 @@
                                    required>
                         </div>
 
-                        <!-- Waktu -->
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">
                                 Jam Mulai <span class="text-danger">*</span>
@@ -301,7 +290,6 @@
                                    required>
                         </div>
 
-                        <!-- GPS Info Alert -->
                         <div class="col-12">
                             <div class="alert alert-info mb-0">
                                 <i class="bi bi-info-circle me-2"></i>
@@ -310,7 +298,6 @@
                             </div>
                         </div>
 
-                        <!-- Lokasi GPS -->
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">
                                 Latitude <span class="text-danger">*</span>
@@ -337,14 +324,12 @@
                             <small class="text-muted">Contoh: 111.5239</small>
                         </div>
 
-                        <!-- Get Current Location Button -->
                         <div class="col-12">
                             <button type="button" class="btn btn-outline-primary w-100" id="getLocationBtn">
                                 <i class="bi bi-geo-alt me-2"></i>Gunakan Lokasi Saat Ini
                             </button>
                         </div>
 
-                        <!-- Radius -->
                         <div class="col-md-12">
                             <label class="form-label fw-semibold">
                                 Radius (meter) <span class="text-danger">*</span>
@@ -371,7 +356,6 @@
     </div>
 </div>
 
-<!-- Modal Show QR Code -->
 <div class="modal fade" id="showQRModal" tabindex="-1">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">

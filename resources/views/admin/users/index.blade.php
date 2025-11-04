@@ -1,7 +1,6 @@
 @extends('layouts.admin')
 
 @section('content')
-<!-- Meta tags untuk notifikasi -->
 @if(session('success'))
 <meta name="success-message" content="{{ session('success') }}">
 @endif
@@ -9,12 +8,10 @@
 <meta name="error-message" content="{{ session('error') }}">
 @endif
 
-<!-- Hidden CSRF Token untuk AJAX -->
 <input type="hidden" name="_token" value="{{ csrf_token() }}">
 
 <div class="bg-primary pt-10 pb-21"></div>
 <div class="container-fluid mt-n22 px-6">
-    <!-- Header Section -->
     <div class="row">
         <div class="col-lg-12 col-md-12 col-12">
             <div class="d-flex justify-content-between align-items-center">
@@ -31,12 +28,10 @@
         </div>
     </div>
 
-    <!-- Main Content Card -->
     <div class="row mt-6">
         <div class="col-md-12">
             <div class="card shadow-sm">
                 
-                <!-- Advanced Filter Section (Collapsible) -->
                 <div class="collapse" id="advancedFilter">
                     <div class="card-header bg-white border-bottom">
                         <h5 class="mb-3">
@@ -85,7 +80,6 @@
                     </div>
                 </div>
 
-                <!-- Table Header with Actions -->
                 <div class="card-header bg-white border-bottom">
                     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
                         <div>
@@ -93,7 +87,6 @@
                         </div>
                         
                         <div class="d-flex gap-2 flex-wrap align-items-center">
-                            <!-- Quick Filter Pills -->
                             <div class="btn-group" role="group">
                                 <a href="{{ route('admin.users.index') }}" 
                                    class="btn btn-sm {{ !request('role') ? 'btn-primary' : 'btn-outline-primary' }}">
@@ -113,7 +106,6 @@
                                 </a>
                             </div>
 
-                            <!-- Hapus Dropdown -->
                             <div class="dropdown">
                                 <button class="btn btn-sm btn-outline-danger dropdown-toggle" type="button" 
                                         data-bs-toggle="dropdown">
@@ -135,13 +127,11 @@
                                 </ul>
                             </div>
 
-                            <!-- Toggle Filter Button -->
                             <button class="btn btn-sm btn-outline-secondary" type="button" 
                                     data-bs-toggle="collapse" data-bs-target="#advancedFilter">
                                 <i class="bi bi-funnel me-1"></i>Filter
                             </button>
 
-                            <!-- Search Box -->
                             <form action="{{ route('admin.users.index') }}" method="GET" class="d-flex">
                                 <div class="input-group" style="width: 250px;">
                                     <input type="text" name="search" class="form-control form-control-sm" 
@@ -156,7 +146,6 @@
                     </div>
                 </div>
 
-                <!-- Table Body -->
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover table-nowrap mb-0">
@@ -270,7 +259,6 @@
                     </div>
                 </div>
 
-                <!-- Pagination Footer -->
                 @if($users->total() > 0)
                 <div class="card-footer bg-white border-top">
                     <div class="d-flex justify-content-between align-items-center">
@@ -280,7 +268,6 @@
                         <nav aria-label="Navigasi halaman">
                             @if ($users->hasPages())
                                 <ul class="pagination mb-0">
-                                    {{-- Previous Page Link --}}
                                     @if ($users->onFirstPage())
                                         <li class="page-item disabled" aria-disabled="true">
                                             <span class="page-link">&laquo;</span>
@@ -291,7 +278,6 @@
                                         </li>
                                     @endif
 
-                                    {{-- Pagination Elements --}}
                                     @php
                                         $start = max($users->currentPage() - 1, 1);
                                         $end = min($start + 2, $users->lastPage());
@@ -328,7 +314,6 @@
                                         </li>
                                     @endif
 
-                                    {{-- Next Page Link --}}
                                     @if ($users->hasMorePages())
                                         <li class="page-item">
                                             <a class="page-link" href="{{ $users->appends(request()->query())->nextPageUrl() }}" rel="next">&raquo;</a>
@@ -350,7 +335,6 @@
     </div>
 </div>
 
-<!-- Modal Create User -->
 <div class="modal fade" id="createUserModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
@@ -423,7 +407,6 @@
     </div>
 </div>
 
-<!-- Modal Show User -->
 <div class="modal fade" id="showUserModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
@@ -445,7 +428,6 @@
     </div>
 </div>
 
-<!-- Modal Edit User -->
 <div class="modal fade" id="editUserModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">

@@ -139,25 +139,25 @@ Route::middleware(['auth', 'user-role:guru'])->group(function() {
 
     // Presensi Management (UPDATED - NEW SYSTEM WITH MANUAL INPUT)
     // Main route - Daftar Kelas
-    Route::get('guru/presensi', [App\Http\Controllers\Guru\PresensiController::class, 'index'])->name('guru.presensi.index');
+    // Route::get('guru/presensi', [App\Http\Controllers\Guru\PresensiController::class, 'index'])->name('guru.presensi.index');
     
-    // Show Kelas - Detail presensi per kelas (support AJAX/JSON)
-    Route::get('guru/presensi/kelas/{kelas}', [App\Http\Controllers\Guru\PresensiController::class, 'showKelas'])->name('guru.presensi.kelas');
+    // // Show Kelas - Detail presensi per kelas (support AJAX/JSON)
+    // Route::get('guru/presensi/kelas/{kelas}', [App\Http\Controllers\Guru\PresensiController::class, 'showKelas'])->name('guru.presensi.kelas');
     
-    // CRUD Presensi
-    Route::get('guru/presensi/{presensi}', [App\Http\Controllers\Guru\PresensiController::class, 'show'])->name('guru.presensi.show');
-    Route::get('guru/presensi/{presensi}/edit', [App\Http\Controllers\Guru\PresensiController::class, 'edit'])->name('guru.presensi.edit');
-    Route::put('guru/presensi/{presensi}', [App\Http\Controllers\Guru\PresensiController::class, 'update'])->name('guru.presensi.update');
-    Route::delete('guru/presensi/{presensi}', [App\Http\Controllers\Guru\PresensiController::class, 'destroy'])->name('guru.presensi.destroy');
+    // // CRUD Presensi
+    // Route::get('guru/presensi/{presensi}', [App\Http\Controllers\Guru\PresensiController::class, 'show'])->name('guru.presensi.show');
+    // Route::get('guru/presensi/{presensi}/edit', [App\Http\Controllers\Guru\PresensiController::class, 'edit'])->name('guru.presensi.edit');
+    // Route::put('guru/presensi/{presensi}', [App\Http\Controllers\Guru\PresensiController::class, 'update'])->name('guru.presensi.update');
+    // Route::delete('guru/presensi/{presensi}', [App\Http\Controllers\Guru\PresensiController::class, 'destroy'])->name('guru.presensi.destroy');
     
-    // Session based routes
-    Route::get('guru/presensi/session/{session}/create', [App\Http\Controllers\Guru\PresensiController::class, 'create'])->name('guru.presensi.create');
-    Route::post('guru/presensi/session/{session}', [App\Http\Controllers\Guru\PresensiController::class, 'store'])->name('guru.presensi.store');
+    // // Session based routes
+    // Route::get('guru/presensi/session/{session}/create', [App\Http\Controllers\Guru\PresensiController::class, 'create'])->name('guru.presensi.create');
+    // Route::post('guru/presensi/session/{session}', [App\Http\Controllers\Guru\PresensiController::class, 'store'])->name('guru.presensi.store');
     
-    // NEW: Manual Input Presensi (From Modal)
-    Route::post('guru/presensi/session/{session}/manual', [App\Http\Controllers\Guru\PresensiController::class, 'storeManual'])->name('guru.presensi.manual');
+    // // NEW: Manual Input Presensi (From Modal)
+    // Route::post('guru/presensi/session/{session}/manual', [App\Http\Controllers\Guru\PresensiController::class, 'storeManual'])->name('guru.presensi.manual');
     
-    Route::post('guru/presensi/session/{session}/bulk', [App\Http\Controllers\Guru\PresensiController::class, 'bulkCreate'])->name('guru.presensi.bulkCreate');
+    // Route::post('guru/presensi/session/{session}/bulk', [App\Http\Controllers\Guru\PresensiController::class, 'bulkCreate'])->name('guru.presensi.bulkCreate');
 });
 
 // ============================================

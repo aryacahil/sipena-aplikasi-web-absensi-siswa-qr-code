@@ -1,5 +1,5 @@
 // ============================================
-// PRESENSI.JS - Data Presensi Siswa (FIXED & COMPLETE)
+// PRESENSI.JS - Data Presensi Siswa
 // ============================================
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    function showKelasDetail(kelasId, filterDate = null) {
+    function showKelasDetail(kelasId) {
         const modal = new bootstrap.Modal(document.getElementById('showKelasModal'));
         const contentDiv = document.getElementById('showKelasContent');
         
@@ -32,13 +32,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         modal.show();
 
-        // Build URL with optional filter
-        const url = filterDate 
-            ? `/admin/presensi/kelas/${kelasId}?tanggal=${filterDate}`
-            : `/admin/presensi/kelas/${kelasId}`;
-
         // Fetch kelas data
-        fetch(url, {
+        fetch(`/admin/presensi/kelas/${kelasId}`, {
             method: 'GET',
             headers: {
                 'Accept': 'application/json',
@@ -49,7 +44,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                renderKelasDetail(data, contentDiv, kelasId);
+                renderKelasDetail(data, contentDiv);
             } else {
                 showError(contentDiv, 'Gagal memuat data');
             }
@@ -60,15 +55,17 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    function renderKelasDetail(data, contentDiv, kelasId) {
+    function renderKelasDetail(data, contentDiv) {
         const kelas = data.kelas;
         const attendanceData = data.attendance_data || [];
         const stats = data.stats || {};
         const activeSession = data.active_session;
+        const availableDates = data.available_dates || [];
         const filterDate = data.filter_date || '';
 
+        // PERUBAHAN: Hapus bagian header dengan nama kelas
         let html = `
-            <!-- Info Section -->
+            <!-- Info Section - TANPA JUDUL KELAS -->
             <div class="row mb-4">
                 <div class="col-12">
                     <div class="d-flex align-items-center justify-content-between mb-3">
@@ -79,8 +76,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                         ${activeSession ? `
                             <div>
-                                <span class="badge bg-success fs-6">
-                                    <i class="bi bi-clock me-1"></i>Sesi QR Aktif
+                                <span class="badge bg-success">
+                                    <i class="bi bi-clock me-1"></i>Sesi Aktif
                                 </span>
                                 <small class="text-muted ms-2">
                                     ${activeSession.jam_mulai} - ${activeSession.jam_selesai}
@@ -105,7 +102,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 </div>
                 <div class="col-6 col-md-2">
-                    <div class="card border-0" style="background-color: #d4edda;">
+                    <div class="card bg-success-soft border-0">
                         <div class="card-body p-3 text-center">
                             <div class="text-success mb-1">
                                 <i class="bi bi-check-circle-fill fs-4"></i>
@@ -116,7 +113,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 </div>
                 <div class="col-6 col-md-2">
-                    <div class="card border-0" style="background-color: #fff3cd;">
+                    <div class="card bg-warning-soft border-0">
                         <div class="card-body p-3 text-center">
                             <div class="text-warning mb-1">
                                 <i class="bi bi-clipboard-check fs-4"></i>
@@ -127,7 +124,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 </div>
                 <div class="col-6 col-md-2">
-                    <div class="card border-0" style="background-color: #d1ecf1;">
+                    <div class="card bg-info-soft border-0">
                         <div class="card-body p-3 text-center">
                             <div class="text-info mb-1">
                                 <i class="bi bi-heart-pulse-fill fs-4"></i>
@@ -138,7 +135,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 </div>
                 <div class="col-6 col-md-2">
-                    <div class="card border-0" style="background-color: #f8d7da;">
+                    <div class="card bg-danger-soft border-0">
                         <div class="card-body p-3 text-center">
                             <div class="text-danger mb-1">
                                 <i class="bi bi-x-circle-fill fs-4"></i>
@@ -149,7 +146,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 </div>
                 <div class="col-6 col-md-2">
-                    <div class="card border-0" style="background-color: #e2e3e5;">
+                    <div class="card bg-secondary-soft border-0">
                         <div class="card-body p-3 text-center">
                             <div class="text-secondary mb-1">
                                 <i class="bi bi-clock fs-4"></i>
@@ -169,7 +166,7 @@ document.addEventListener('DOMContentLoaded', function() {
                            id="filterTanggal" 
                            value="${filterDate}"
                            style="width: auto;">
-                    <button class="btn btn-sm btn-primary" id="btnFilterDate" data-kelas-id="${kelasId}">
+                    <button class="btn btn-sm btn-primary" id="btnFilterDate">
                         <i class="bi bi-funnel me-1"></i>Filter
                     </button>
                 </div>
@@ -177,15 +174,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
             <!-- Table -->
             <div class="table-responsive">
-                <table class="table table-hover table-bordered align-middle">
+                <table class="table table-hover align-middle">
                     <thead class="table-light">
                         <tr>
-                            <th style="width: 50px;" class="text-center">NO</th>
+                            <th style="width: 50px;">NO</th>
                             <th>SISWA</th>
-                            <th class="text-center" style="width: 120px;">WAKTU</th>
-                            <th class="text-center" style="width: 120px;">STATUS</th>
-                            <th class="text-center" style="width: 100px;">METODE</th>
-                            <th class="text-center" style="width: 120px;">AKSI</th>
+                            <th class="text-center">WAKTU</th>
+                            <th class="text-center">STATUS</th>
+                            <th class="text-center">METODE</th>
+                            <th class="text-center" style="width: 100px;">AKSI</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -196,7 +193,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <tr>
                     <td colspan="6" class="text-center py-5">
                         <i class="bi bi-inbox fs-1 text-muted"></i>
-                        <p class="text-muted mt-2 mb-0">Belum ada data siswa</p>
+                        <p class="text-muted mt-2 mb-0">Belum ada data presensi</p>
                     </td>
                 </tr>
             `;
@@ -207,38 +204,46 @@ document.addEventListener('DOMContentLoaded', function() {
                 const status = item.status;
                 
                 let statusBadge = '';
+                let statusIcon = '';
                 
                 switch(status) {
                     case 'hadir':
                         statusBadge = '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Hadir</span>';
+                        statusIcon = 'check-circle-fill text-success';
                         break;
                     case 'izin':
                         statusBadge = '<span class="badge bg-warning"><i class="bi bi-clipboard-check me-1"></i>Izin</span>';
+                        statusIcon = 'clipboard-check text-warning';
                         break;
                     case 'sakit':
                         statusBadge = '<span class="badge bg-info"><i class="bi bi-heart-pulse-fill me-1"></i>Sakit</span>';
+                        statusIcon = 'heart-pulse-fill text-info';
                         break;
                     case 'alpha':
                         statusBadge = '<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Alpha</span>';
+                        statusIcon = 'x-circle-fill text-danger';
                         break;
                     default:
                         statusBadge = '<span class="badge bg-secondary"><i class="bi bi-clock me-1"></i>Belum</span>';
+                        statusIcon = 'clock text-secondary';
                 }
 
                 const metodeBadge = presensi && presensi.metode === 'qr' 
                     ? '<span class="badge bg-primary-soft text-primary"><i class="bi bi-qr-code me-1"></i>QR Code</span>'
-                    : (presensi ? '<span class="badge bg-secondary-soft text-secondary"><i class="bi bi-pencil me-1"></i>Manual</span>' : '-');
+                    : '<span class="badge bg-secondary-soft text-secondary"><i class="bi bi-pencil me-1"></i>Manual</span>';
 
                 html += `
                     <tr>
                         <td class="text-center">${index + 1}</td>
                         <td>
                             <div class="d-flex align-items-center">
-                                <div class="avatar avatar-sm rounded-circle bg-primary-soft text-primary me-2">
-                                    <span class="fw-bold">${siswa.name.charAt(0)}</span>
-                                </div>
+                                <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(siswa.name)}&background=random" 
+                                     class="rounded-circle me-2" 
+                                     width="32" 
+                                     height="32"
+                                     alt="${siswa.name}">
                                 <div>
-                                    <div class="fw-semibold">${siswa.name}</div>
+                                    <h6 class="mb-0">${siswa.name}</h6>
                                     <small class="text-muted">${siswa.email}</small>
                                 </div>
                             </div>
@@ -249,21 +254,20 @@ document.addEventListener('DOMContentLoaded', function() {
                             </small>
                         </td>
                         <td class="text-center">${statusBadge}</td>
-                        <td class="text-center">${metodeBadge}</td>
+                        <td class="text-center">${presensi ? metodeBadge : '-'}</td>
                         <td class="text-center">
                             <div class="d-flex justify-content-center gap-1">
-                                ${status === 'belum' ? `
+                                ${status === 'belum' && activeSession ? `
                                     <button class="btn btn-sm btn-success btn-add-manual-presensi" 
                                             data-siswa-id="${siswa.id}"
                                             data-siswa-name="${siswa.name}"
-                                            data-kelas-id="${kelasId}"
-                                            data-tanggal="${filterDate}"
+                                            data-session-id="${activeSession.id}"
                                             title="Tambah Presensi">
                                         <i class="bi bi-plus-circle"></i>
                                     </button>
                                 ` : ''}
                                 ${presensi ? `
-                                    <button class="btn btn-sm btn-warning btn-edit-presensi" 
+                                    <button class="btn btn-sm btn-primary btn-edit-presensi" 
                                             data-presensi-id="${presensi.id}"
                                             title="Edit">
                                         <i class="bi bi-pencil"></i>
@@ -271,8 +275,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <button class="btn btn-sm btn-danger btn-delete-presensi" 
                                             data-presensi-id="${presensi.id}"
                                             data-siswa-name="${siswa.name}"
-                                            data-kelas-id="${kelasId}"
-                                            data-tanggal="${filterDate}"
                                             title="Hapus">
                                         <i class="bi bi-trash"></i>
                                     </button>
@@ -293,35 +295,26 @@ document.addEventListener('DOMContentLoaded', function() {
         contentDiv.innerHTML = html;
 
         // Attach event listeners
-        attachModalEventListeners(kelasId, filterDate);
+        attachModalEventListeners(kelas.id, activeSession);
     }
 
-    function attachModalEventListeners(kelasId, currentFilterDate) {
-        // Filter date button
-        const btnFilterDate = document.getElementById('btnFilterDate');
-        if (btnFilterDate) {
-            btnFilterDate.addEventListener('click', function() {
-                const tanggal = document.getElementById('filterTanggal').value;
-                // Hide current modal first
-                const currentModal = bootstrap.Modal.getInstance(document.getElementById('showKelasModal'));
-                if (currentModal) {
-                    currentModal.hide();
-                }
-                // Reload with new date
-                setTimeout(() => {
-                    showKelasDetail(kelasId, tanggal);
-                }, 300);
-            });
-        }
+    function attachModalEventListeners(kelasId, activeSession) {
+        // Filter date
+        document.getElementById('btnFilterDate')?.addEventListener('click', function() {
+            const tanggal = document.getElementById('filterTanggal').value;
+            window.location.href = `/admin/presensi/kelas/${kelasId}?tanggal=${tanggal}`;
+            // Set default ke hari ini jika kosong
+            const today = new Date().toISOString().split('T')[0];
+            filterInput.value = today;
+        });
 
         // Add manual presensi
         document.querySelectorAll('.btn-add-manual-presensi').forEach(btn => {
             btn.addEventListener('click', function() {
                 const siswaId = this.dataset.siswaId;
                 const siswaName = this.dataset.siswaName;
-                const kelasIdVal = this.dataset.kelasId;
-                const tanggal = this.dataset.tanggal;
-                openManualPresensiModal(siswaId, siswaName, kelasIdVal, tanggal);
+                const sessionId = this.dataset.sessionId;
+                openManualPresensiModal(siswaId, siswaName, sessionId);
             });
         });
 
@@ -338,55 +331,20 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.addEventListener('click', function() {
                 const presensiId = this.dataset.presensiId;
                 const siswaName = this.dataset.siswaName;
-                const kelasIdVal = this.dataset.kelasId;
-                const tanggal = this.dataset.tanggal;
-                confirmDeletePresensi(presensiId, siswaName, kelasIdVal, tanggal);
+                confirmDeletePresensi(presensiId, siswaName);
             });
         });
     }
 
     // ============================================
-    // ADD MANUAL PRESENSI - FIXED ROUTE!
+    // ADD MANUAL PRESENSI
     // ============================================
-    function openManualPresensiModal(siswaId, siswaName, kelasId, tanggal) {
-        // Set form values
+    function openManualPresensiModal(siswaId, siswaName, sessionId) {
         document.getElementById('manual_siswa_id').value = siswaId;
         document.getElementById('manual_siswa_name').textContent = siswaName;
         
         const form = document.getElementById('addManualPresensiForm');
-        
-        // ⭐ PERBAIKAN: Route yang benar menggunakan kelas, bukan session!
-        form.action = `/admin/presensi/kelas/${kelasId}/manual`;
-        
-        // Store kelas_id and tanggal for reload
-        form.dataset.kelasId = kelasId;
-        form.dataset.tanggal = tanggal;
-        
-        // ⭐ CRITICAL FIX: Add hidden tanggal_presensi field
-        let tanggalInput = document.getElementById('manual_tanggal_presensi');
-        if (!tanggalInput) {
-            tanggalInput = document.createElement('input');
-            tanggalInput.type = 'hidden';
-            tanggalInput.id = 'manual_tanggal_presensi';
-            tanggalInput.name = 'tanggal_presensi';
-            form.appendChild(tanggalInput);
-        }
-        tanggalInput.value = tanggal;
-        
-        // ⭐ CRITICAL FIX: Add hidden kelas_id field (needed for database)
-        let kelasInput = document.getElementById('manual_kelas_id');
-        if (!kelasInput) {
-            kelasInput = document.createElement('input');
-            kelasInput.type = 'hidden';
-            kelasInput.id = 'manual_kelas_id';
-            kelasInput.name = 'kelas_id';
-            form.appendChild(kelasInput);
-        }
-        kelasInput.value = kelasId;
-        
-        // Reset form
-        document.getElementById('manual_status').value = 'hadir';
-        document.getElementById('manual_keterangan').value = '';
+        form.action = `/admin/presensi/session/${sessionId}/manual`;
         
         const modal = new bootstrap.Modal(document.getElementById('addManualPresensiModal'));
         modal.show();
@@ -397,15 +355,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const formData = new FormData(this);
         const actionUrl = this.action;
-        const kelasId = this.dataset.kelasId;
-        const tanggal = this.dataset.tanggal;
-        
-        // Debug log
-        console.log('Submitting to:', actionUrl);
-        console.log('Form data:');
-        for (let pair of formData.entries()) {
-            console.log(pair[0] + ': ' + pair[1]);
-        }
         
         fetch(actionUrl, {
             method: 'POST',
@@ -426,8 +375,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     timer: 2000,
                     showConfirmButton: false
                 }).then(() => {
-                    // Close modal
-                    bootstrap.Modal.getInstance(document.getElementById('addManualPresensiModal')).hide();
                     location.reload();
                 });
             } else {
@@ -458,77 +405,36 @@ document.addEventListener('DOMContentLoaded', function() {
         const content = document.getElementById('editPresensiFormContent');
         const submitBtn = document.getElementById('editPresensiSubmitBtn');
         
-        // Show loading
         loading.style.display = 'block';
         content.style.display = 'none';
         submitBtn.style.display = 'none';
         
         modal.show();
         
-        console.log('Fetching presensi data:', presensiId);
-        console.log('URL:', `/admin/presensi/${presensiId}/edit`);
-        
-        // Create abort controller for timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-        
         fetch(`/admin/presensi/${presensiId}/edit`, {
-            method: 'GET',
             headers: {
                 'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': csrfToken
-            },
-            signal: controller.signal
-        })
-        .then(response => {
-            clearTimeout(timeoutId);
-            console.log('Response status:', response.status);
-            console.log('Response headers:', response.headers);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                'X-Requested-With': 'XMLHttpRequest'
             }
-            return response.json();
         })
+        .then(response => response.json())
         .then(data => {
-            console.log('Presensi data loaded:', data);
-            
             if (data.success) {
-                // Set form action
                 form.action = `/admin/presensi/${presensiId}`;
-                
-                // Populate form
                 document.getElementById('edit_status').value = data.presensi.status;
                 document.getElementById('edit_keterangan').value = data.presensi.keterangan || '';
                 
-                // Show form
                 loading.style.display = 'none';
                 content.style.display = 'block';
                 submitBtn.style.display = 'inline-block';
-            } else {
-                throw new Error(data.message || 'Gagal memuat data');
             }
         })
         .catch(error => {
-            clearTimeout(timeoutId);
-            console.error('Error loading presensi:', error);
-            
-            loading.style.display = 'none';
-            modal.hide();
-            
-            let errorMessage = 'Gagal memuat data presensi';
-            if (error.name === 'AbortError') {
-                errorMessage = 'Request timeout - Server tidak merespon';
-            } else {
-                errorMessage += ': ' + error.message;
-            }
-            
+            console.error('Error:', error);
             Swal.fire({
                 icon: 'error',
                 title: 'Error!',
-                text: errorMessage,
-                footer: 'Coba refresh halaman atau hubungi administrator'
+                text: 'Gagal memuat data presensi'
             });
         });
     }
@@ -539,17 +445,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const formData = new FormData(this);
         const actionUrl = this.action;
         
-        console.log('Updating presensi to:', actionUrl);
-        
-        // Disable submit button
-        const submitBtn = document.getElementById('editPresensiSubmitBtn');
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = `
-    <div class="d-inline-flex align-items-center gap-2">
-        <span class="spinner-border spinner-border-sm"></span>
-        <span>Menyimpan...</span>
-  </div>`;
-        
         fetch(actionUrl, {
             method: 'POST',
             headers: {
@@ -559,20 +454,8 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             body: formData
         })
-        .then(response => {
-            console.log('Update response status:', response.status);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
-            console.log('Update response:', data);
-            
-            // Re-enable button
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Perbarui';
-            
             if (data.success) {
                 Swal.fire({
                     icon: 'success',
@@ -581,7 +464,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     timer: 2000,
                     showConfirmButton: false
                 }).then(() => {
-                    bootstrap.Modal.getInstance(document.getElementById('editPresensiModal')).hide();
                     location.reload();
                 });
             } else {
@@ -593,16 +475,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .catch(error => {
-            console.error('Error updating presensi:', error);
-            
-            // Re-enable button
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Perbarui';
-            
+            console.error('Error:', error);
             Swal.fire({
                 icon: 'error',
                 title: 'Error!',
-                text: 'Terjadi kesalahan saat memperbarui data: ' + error.message
+                text: 'Terjadi kesalahan saat memperbarui data'
             });
         });
     });
@@ -610,7 +487,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // ============================================
     // DELETE PRESENSI
     // ============================================
-    function confirmDeletePresensi(presensiId, siswaName, kelasId, tanggal) {
+    function confirmDeletePresensi(presensiId, siswaName) {
         Swal.fire({
             title: 'Hapus Presensi?',
             html: `Anda yakin ingin menghapus presensi <strong>${siswaName}</strong>?`,
@@ -622,12 +499,12 @@ document.addEventListener('DOMContentLoaded', function() {
             cancelButtonText: 'Batal'
         }).then((result) => {
             if (result.isConfirmed) {
-                deletePresensi(presensiId, kelasId, tanggal);
+                deletePresensi(presensiId);
             }
         });
     }
 
-    function deletePresensi(presensiId, kelasId, tanggal) {
+    function deletePresensi(presensiId) {
         fetch(`/admin/presensi/${presensiId}`, {
             method: 'DELETE',
             headers: {
@@ -646,8 +523,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     timer: 2000,
                     showConfirmButton: false
                 }).then(() => {
-                    // Reload kelas data
-                    location.reload();;
+                    location.reload();
                 });
             } else {
                 Swal.fire({
@@ -675,9 +551,6 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="text-center py-5">
                 <i class="bi bi-exclamation-triangle fs-1 text-danger"></i>
                 <p class="text-muted mt-3 mb-0">${message}</p>
-                <button class="btn btn-primary mt-3" onclick="location.reload()">
-                    <i class="bi bi-arrow-clockwise me-2"></i>Muat Ulang
-                </button>
             </div>
         `;
     }
