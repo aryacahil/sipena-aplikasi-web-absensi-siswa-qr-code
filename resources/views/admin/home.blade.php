@@ -29,8 +29,8 @@
                             </div>
                         </div>
                         <div>
-                            <h1 class="fw-bold">1</h1>
-                            <p class="mb-0"><span class="text-dark me-2">2</span>Completed</p>
+                            <h1 class="fw-bold">{{ $stats['total_siswa'] }}</h1>
+                            <p class="mb-0"><span class="text-dark me-2">{{ $stats['siswa_completed'] }}</span>Aktif</p>
                         </div>
                     </div>
                 </div>
@@ -48,8 +48,8 @@
                             </div>
                         </div>
                         <div>
-                            <h1 class="fw-bold">1</h1>
-                            <p class="mb-0"><span class="text-dark me-2">28</span>Completed</p>
+                            <h1 class="fw-bold">{{ $stats['total_guru'] }}</h1>
+                            <p class="mb-0"><span class="text-dark me-2">{{ $stats['guru_completed'] }}</span>Aktif</p>
                         </div>
                     </div>
                 </div>
@@ -67,8 +67,8 @@
                             </div>
                         </div>
                         <div>
-                            <h1 class="fw-bold">12</h1>
-                            <p class="mb-0"><span class="text-dark me-2">1</span>Completed</p>
+                            <h1 class="fw-bold">{{ $stats['total_kelas'] }}</h1>
+                            <p class="mb-0"><span class="text-dark me-2">{{ $stats['kelas_completed'] }}</span>Berisi Siswa</p>
                         </div>
                     </div>
                 </div>
@@ -86,8 +86,8 @@
                             </div>
                         </div>
                         <div>
-                            <h1 class="fw-bold">2</h1>
-                            <p class="mb-0"><span class="text-success me-2">5</span>Completed</p>
+                            <h1 class="fw-bold">{{ $stats['total_admin'] }}</h1>
+                            <p class="mb-0"><span class="text-success me-2">{{ $stats['admin_completed'] }}</span>Aktif</p>
                         </div>
                     </div>
                 </div>
@@ -114,18 +114,19 @@
                                 <!-- Filter Kelas -->
                                 <select class="form-select form-select-sm" id="filterKelas" style="width: auto;">
                                     <option value="all">Semua Kelas</option>
-                                    <option value="X-TKJ-1">X TKJ 1</option>
-                                    <option value="X-TKJ-2">X TKJ 2</option>
-                                    <option value="XI-TKJ-1">XI TKJ 1</option>
-                                    <option value="XI-TKJ-2">XI TKJ 2</option>
+                                    @foreach($jurusans as $jurusan)
+                                        @foreach($jurusan->kelas as $kelas)
+                                            <option value="{{ $kelas->id }}">{{ $kelas->nama_kelas }}</option>
+                                        @endforeach
+                                    @endforeach
                                 </select>
 
                                 <!-- Filter Jurusan -->
                                 <select class="form-select form-select-sm" id="filterJurusan" style="width: auto;">
                                     <option value="all">Semua Jurusan</option>
-                                    <option value="TKJ">TKJ</option>
-                                    <option value="RPL">RPL</option>
-                                    <option value="MM">Multimedia</option>
+                                    @foreach($jurusans as $jurusan)
+                                        <option value="{{ $jurusan->id }}">{{ $jurusan->nama_jurusan }}</option>
+                                    @endforeach
                                 </select>
 
                                 <!-- Tombol Reset -->
@@ -142,13 +143,13 @@
             </div>
         </div>
 
-        <!-- Tambahan: Tabel Jurusan dan Kelas -->
+        <!-- Tabel Jurusan dan Kelas -->
         <div class="row mt-6">
             <div class="col-md-12 col-12">
                 <div class="card">
                     <div class="card-header bg-white py-4 d-flex justify-content-between align-items-center">
                         <h4 class="mb-0">Data Jurusan dan Kelas</h4>
-                        <a href="#" class="btn btn-primary btn-sm">Lihat Semua</a>
+                        <a href="{{ route('admin.jurusan.index') }}" class="btn btn-primary btn-sm">Lihat Semua</a>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
@@ -163,34 +164,29 @@
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    @forelse($jurusans as $index => $jurusan)
                                     <tr>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
+                                        <td>{{ $index + 1 }}</td>
+                                        <td>{{ $jurusan->nama_jurusan }}</td>
+                                        <td><span class="badge bg-primary">{{ $jurusan->kode_jurusan }}</span></td>
+                                        <td class="text-center">{{ $jurusan->kelas_count }}</td>
+                                        <td>
+                                            @if($jurusan->kelas->count() > 0)
+                                                @foreach($jurusan->kelas as $kelas)
+                                                    <span class="badge bg-info me-1 mb-1">
+                                                        {{ $kelas->nama_kelas }} ({{ $kelas->siswa_count }} siswa)
+                                                    </span>
+                                                @endforeach
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
                                     </tr>
+                                    @empty
                                     <tr>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
+                                        <td colspan="5" class="text-center">Belum ada data jurusan</td>
                                     </tr>
-                                    <tr>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                    </tr>
-                                    <tr>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                    </tr>
+                                    @endforelse
                                 </tbody>
                             </table>
                         </div>
@@ -207,63 +203,49 @@
         document.addEventListener('DOMContentLoaded', function() {
             const ctx = document.getElementById('attendanceChart').getContext('2d');
             
-            // Data set untuk berbagai filter
-            const dataByPeriod = {
+            // Data dari backend
+            const chartDataFromBackend = {
                 week: {
-                    labels: ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'],
-                    hadir: [85, 92, 88, 90, 87],
-                    izin: [8, 5, 7, 6, 8],
-                    sakit: [5, 2, 3, 3, 4],
-                    alpha: [2, 1, 2, 1, 1]
-                },
-                month: {
-                    labels: ['Minggu 1', 'Minggu 2', 'Minggu 3', 'Minggu 4'],
-                    hadir: [430, 445, 425, 440],
-                    izin: [34, 28, 32, 30],
-                    sakit: [17, 15, 19, 16],
-                    alpha: [9, 7, 8, 6]
-                },
-                year: {
-                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'],
-                    hadir: [1720, 1680, 1750, 1700, 1730, 1690, 1710, 1740, 1720, 1700, 1680, 1650],
-                    izin: [135, 140, 130, 145, 138, 142, 136, 133, 139, 141, 144, 148],
-                    sakit: [68, 72, 65, 70, 67, 71, 69, 66, 68, 70, 73, 75],
-                    alpha: [32, 35, 30, 33, 31, 34, 33, 32, 31, 30, 34, 36]
+                    labels: @json($chartData['labels']),
+                    hadir: @json($chartData['hadir']),
+                    izin: @json($chartData['izin']),
+                    sakit: @json($chartData['sakit']),
+                    alpha: @json($chartData['alpha'])
                 }
             };
 
             let currentChart;
 
-            function createChart(period = 'week') {
-                const data = dataByPeriod[period];
+            function createChart(period = 'week', data = null) {
+                const chartData = data || chartDataFromBackend[period] || chartDataFromBackend.week;
                 
                 if (currentChart) {
                     currentChart.destroy();
                 }
 
                 const attendanceData = {
-                    labels: data.labels,
+                    labels: chartData.labels,
                     datasets: [{
                         label: 'Hadir',
-                        data: data.hadir,
+                        data: chartData.hadir,
                         backgroundColor: 'rgba(25, 135, 84, 0.7)',
                         borderColor: 'rgba(25, 135, 84, 1)',
                         borderWidth: 2
                     }, {
                         label: 'Izin',
-                        data: data.izin,
+                        data: chartData.izin,
                         backgroundColor: 'rgba(255, 193, 7, 0.7)',
                         borderColor: 'rgba(255, 193, 7, 1)',
                         borderWidth: 2
                     }, {
                         label: 'Sakit',
-                        data: data.sakit,
+                        data: chartData.sakit,
                         backgroundColor: 'rgba(13, 110, 253, 0.7)',
                         borderColor: 'rgba(13, 110, 253, 1)',
                         borderWidth: 2
                     }, {
                         label: 'Alpha',
-                        data: data.alpha,
+                        data: chartData.alpha,
                         backgroundColor: 'rgba(220, 53, 69, 0.7)',
                         borderColor: 'rgba(220, 53, 69, 1)',
                         borderWidth: 2
@@ -303,7 +285,7 @@
                             y: {
                                 beginAtZero: true,
                                 ticks: {
-                                    stepSize: period === 'year' ? 200 : period === 'month' ? 50 : 10
+                                    stepSize: Math.max(...chartData.hadir, ...chartData.izin, ...chartData.sakit, ...chartData.alpha) > 100 ? 20 : 5
                                 },
                                 title: {
                                     display: true,
@@ -325,24 +307,52 @@
                 currentChart = new Chart(ctx, config);
             }
 
-            // Inisialisasi chart
-            createChart('week');
+            // Inisialisasi chart dengan data dari backend
+            createChart('week', chartDataFromBackend.week);
 
             // Event listener untuk filter periode
             document.getElementById('filterPeriode').addEventListener('change', function() {
-                createChart(this.value);
+                const period = this.value;
+                const kelasId = document.getElementById('filterKelas').value;
+                const jurusanId = document.getElementById('filterJurusan').value;
+                
+                // Fetch data dari server
+                fetch(`/admin/chart-data?period=${period}&kelas_id=${kelasId}&jurusan_id=${jurusanId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        createChart(period, data);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching chart data:', error);
+                        // Fallback ke data default
+                        createChart(period);
+                    });
             });
 
             // Event listener untuk filter kelas
             document.getElementById('filterKelas').addEventListener('change', function() {
-                console.log('Filter Kelas:', this.value);
-                // Implementasi filter kelas (bisa dikembangkan dengan AJAX)
+                const period = document.getElementById('filterPeriode').value;
+                const kelasId = this.value;
+                const jurusanId = document.getElementById('filterJurusan').value;
+                
+                fetch(`/admin/chart-data?period=${period}&kelas_id=${kelasId}&jurusan_id=${jurusanId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        createChart(period, data);
+                    });
             });
 
             // Event listener untuk filter jurusan
             document.getElementById('filterJurusan').addEventListener('change', function() {
-                console.log('Filter Jurusan:', this.value);
-                // Implementasi filter jurusan (bisa dikembangkan dengan AJAX)
+                const period = document.getElementById('filterPeriode').value;
+                const kelasId = document.getElementById('filterKelas').value;
+                const jurusanId = this.value;
+                
+                fetch(`/admin/chart-data?period=${period}&kelas_id=${kelasId}&jurusan_id=${jurusanId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        createChart(period, data);
+                    });
             });
 
             // Event listener untuk reset filter
@@ -350,7 +360,7 @@
                 document.getElementById('filterPeriode').value = 'week';
                 document.getElementById('filterKelas').value = 'all';
                 document.getElementById('filterJurusan').value = 'all';
-                createChart('week');
+                createChart('week', chartDataFromBackend.week);
             });
         });
     </script>

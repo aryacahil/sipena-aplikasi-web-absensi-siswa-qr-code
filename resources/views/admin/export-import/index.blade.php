@@ -2,13 +2,6 @@
 @section('title', 'Ekspor & Impor')
 
 @section('content')
-@if(session('success'))
-<meta name="success-message" content="{{ session('success') }}">
-@endif
-@if(session('error'))
-<meta name="error-message" content="{{ session('error') }}">
-@endif
-
 <div class="bg-primary pt-10 pb-21"></div>
 <div class="container-fluid mt-n22 px-6">
     <div class="row">
@@ -148,25 +141,28 @@
         </div>
     </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-@if(session('success'))
-    Swal.fire({
-        icon: 'success',
-        title: 'Berhasil!',
-        text: '{{ session("success") }}',
-        timer: 3000,
-        showConfirmButton: false
-    });
-@endif
-
-@if(session('error'))
-    Swal.fire({
-        icon: 'error',
-        title: 'Gagal!',
-        text: '{{ session("error") }}'
-    });
-@endif
-</script>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    @if(session('success'))
+        Swal.fire({
+            icon: 'success',
+            title: 'Berhasil!',
+            text: '{{ session("success") }}',
+            timer: 3000,
+            showConfirmButton: false
+        });
+    @endif
+
+    @if(session('error'))
+        Swal.fire({
+            icon: 'error',
+            title: 'Gagal!',
+            text: '{{ session("error") }}'
+        });
+    @endif
+});
+</script>
+@endpush

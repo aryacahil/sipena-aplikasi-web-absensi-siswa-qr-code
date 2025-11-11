@@ -6,6 +6,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\JurusanController;
 use App\Http\Controllers\Admin\KelasController;
+use App\Http\Controllers\Siswa\PresensiController;
 
 Route::get('/', function () {
     if (Auth::check()) {
@@ -167,7 +168,8 @@ Route::middleware(['auth', 'user-role:siswa'])->group(function() {
     Route::get('/siswa/home', [HomeController::class, 'siswaHome'])->name('siswa.home');
     
     // Presensi - Scan QR Code
-    // Route::get('siswa/presensi/scan/{code}', [App\Http\Controllers\Siswa\PresensiController::class, 'scan'])->name('siswa.presensi.scan');
+    Route::get('siswa/presensi/scan/{code}', [PresensiController::class, 'scan'])
+    ->name('siswa.presensi.scan');
     // Route::post('siswa/presensi/submit', [App\Http\Controllers\Siswa\PresensiController::class, 'submit'])->name('siswa.presensi.submit');
     
     // Presensi - History

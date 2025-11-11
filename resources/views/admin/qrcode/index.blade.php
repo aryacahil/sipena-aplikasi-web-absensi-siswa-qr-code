@@ -230,7 +230,7 @@
 </div>
 
 <div class="modal fade" id="createQRModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
+   <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">
@@ -355,7 +355,7 @@
             </form>
         </div>
     </div>
-</div>
+</div> 
 
 <div class="modal fade" id="showQRModal" tabindex="-1">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
@@ -375,6 +375,7 @@
         </div>
     </div>
 </div>
+
 @endsection
 
 @push('scripts')

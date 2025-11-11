@@ -29,8 +29,8 @@
                             </div>
                         </div>
                         <div>
-                            <h1 class="fw-bold">18</h1>
-                            <p class="mb-0"><span class="text-dark me-2">2</span>Completed</p>
+                            <h1 class="fw-bold">{{ $totalSiswa }}</h1>
+                            <p class="mb-0"><span class="text-dark me-2">{{ $siswaAktif }}</span>Aktif</p>
                         </div>
                     </div>
                 </div>
@@ -48,8 +48,8 @@
                             </div>
                         </div>
                         <div>
-                            <h1 class="fw-bold">132</h1>
-                            <p class="mb-0"><span class="text-dark me-2">28</span>Completed</p>
+                            <h1 class="fw-bold">{{ $totalGuru }}</h1>
+                            <p class="mb-0"><span class="text-dark me-2">{{ $guruAktif }}</span>Aktif</p>
                         </div>
                     </div>
                 </div>
@@ -67,8 +67,8 @@
                             </div>
                         </div>
                         <div>
-                            <h1 class="fw-bold">12</h1>
-                            <p class="mb-0"><span class="text-dark me-2">1</span>Completed</p>
+                            <h1 class="fw-bold">{{ $totalKelas }}</h1>
+                            <p class="mb-0"><span class="text-dark me-2">{{ $kelasAktif }}</span>Aktif</p>
                         </div>
                     </div>
                 </div>
@@ -86,8 +86,8 @@
                             </div>
                         </div>
                         <div>
-                            <h1 class="fw-bold">76</h1>
-                            <p class="mb-0"><span class="text-success me-2">5</span>Completed</p>
+                            <h1 class="fw-bold">{{ $totalAdmin }}</h1>
+                            <p class="mb-0"><span class="text-success me-2">{{ $adminAktif }}</span>Aktif</p>
                         </div>
                     </div>
                 </div>
@@ -129,34 +129,25 @@
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    @forelse($jurusanData as $index => $jurusan)
                                     <tr>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
+                                        <td>{{ $index + 1 }}</td>
+                                        <td>{{ $jurusan->nama_jurusan }}</td>
+                                        <td>{{ $jurusan->kode_jurusan }}</td>
+                                        <td>{{ $jurusan->jumlah_kelas }}</td>
+                                        <td>
+                                            @if($jurusan->kelas_list)
+                                                <span class="badge bg-primary">{{ $jurusan->kelas_list }}</span>
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
                                     </tr>
+                                    @empty
                                     <tr>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
+                                        <td colspan="5" class="text-center">Belum ada data jurusan</td>
                                     </tr>
-                                    <tr>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                    </tr>
-                                    <tr>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                        <td></td>
-                                    </tr>
+                                    @endforelse
                                 </tbody>
                             </table>
                         </div>
@@ -173,29 +164,30 @@
         document.addEventListener('DOMContentLoaded', function() {
             const ctx = document.getElementById('attendanceChart').getContext('2d');
             
+            // Data dinamis dari controller
             const attendanceData = {
-                labels: ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'],
+                labels: @json($chartLabels),
                 datasets: [{
                     label: 'Hadir',
-                    data: [85, 92, 88, 90, 87],
+                    data: @json($hadirData),
                     backgroundColor: 'rgba(25, 135, 84, 0.7)',
                     borderColor: 'rgba(25, 135, 84, 1)',
                     borderWidth: 2
                 }, {
                     label: 'Izin',
-                    data: [8, 5, 7, 6, 8],
+                    data: @json($izinData),
                     backgroundColor: 'rgba(255, 193, 7, 0.7)',
                     borderColor: 'rgba(255, 193, 7, 1)',
                     borderWidth: 2
                 }, {
                     label: 'Sakit',
-                    data: [5, 2, 3, 3, 4],
+                    data: @json($sakitData),
                     backgroundColor: 'rgba(13, 110, 253, 0.7)',
                     borderColor: 'rgba(13, 110, 253, 1)',
                     borderWidth: 2
                 }, {
                     label: 'Alpha',
-                    data: [2, 1, 2, 1, 1],
+                    data: @json($alphaData),
                     backgroundColor: 'rgba(220, 53, 69, 0.7)',
                     borderColor: 'rgba(220, 53, 69, 1)',
                     borderWidth: 2
