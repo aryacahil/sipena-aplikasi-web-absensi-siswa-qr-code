@@ -61,7 +61,15 @@ class QRCodeController extends Controller
         $session = PresensiSession::create($validated);
 
         // Generate dan simpan QR code
-        $this->generateAndSaveQRCode($session);
+        $generated = $this->generateAndSaveQRCode($session);
+        
+        if (!$generated) {
+            // Rollback jika gagal generate
+            $session->delete();
+            return redirect()
+                ->route('admin.qrcode.index')
+                ->with('error', 'Gagal generate QR Code');
+        }
 
         return redirect()
             ->route('admin.qrcode.show', $session->id)
@@ -74,8 +82,9 @@ class QRCodeController extends Controller
         
         $url = route('siswa.presensi.scan', ['code' => $qrcode->qr_code]);
         
-        // Generate QR Code SVG untuk ditampilkan (tidak pakai style karena butuh imagick)
+        // Generate QR Code SVG inline untuk ditampilkan
         $qrCodeSvg = QrCode::size(300)
+            ->errorCorrection('H')
             ->generate($url);
 
         $siswaIds = $qrcode->presensis()->pluck('siswa_id')->toArray();
@@ -138,42 +147,25 @@ class QRCodeController extends Controller
     public function download(PresensiSession $qrcode)
     {
         try {
-            // Ubah ke SVG
-            $qrPath = 'qrcodes/' . $qrcode->qr_code . '.svg';
-            $fullPath = storage_path('app/public/' . $qrPath);
+            $url = route('siswa.presensi.scan', ['code' => $qrcode->qr_code]);
+            
+            // Generate QR Code sebagai PNG
+            $qrCode = QrCode::format('png')
+                ->size(500)
+                ->errorCorrection('H')
+                ->generate($url);
+            
+            $filename = 'QR-' . $qrcode->kelas->kode_kelas . '-' . $qrcode->tanggal->format('Ymd') . '.png';
 
-            // Cek apakah file ada di storage
-            if (!Storage::disk('public')->exists($qrPath)) {
-                Log::warning('QR Code tidak ditemukan, generating ulang...', [
-                    'session_id' => $qrcode->id,
-                    'path' => $qrPath
-                ]);
-                
-                // Generate ulang QR code
-                $generated = $this->generateAndSaveQRCode($qrcode);
-                
-                if (!$generated) {
-                    throw new \Exception("Gagal generate QR Code");
-                }
-            }
-
-            // Double check setelah generate
-            if (!file_exists($fullPath)) {
-                throw new \Exception("File QR tidak ditemukan di path: {$fullPath}");
-            }
-
-            $filename = 'QR-' . $qrcode->kelas->kode_kelas . '-' . $qrcode->tanggal->format('Ymd') . '.svg';
-
-            return response()->download($fullPath, $filename, [
-                'Content-Type' => 'image/svg+xml',
-                'Cache-Control' => 'no-cache, no-store, must-revalidate',
-            ]);
+            return response($qrCode)
+                ->header('Content-Type', 'image/png')
+                ->header('Content-Disposition', 'attachment; filename="' . $filename . '"')
+                ->header('Cache-Control', 'no-cache, no-store, must-revalidate');
             
         } catch (\Exception $e) {
             Log::error('Gagal mengunduh QR Code', [
                 'session_id' => $qrcode->id,
                 'qr_code' => $qrcode->qr_code,
-                'expected_path' => $fullPath ?? 'unknown',
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -201,10 +193,15 @@ class QRCodeController extends Controller
     public function destroy(PresensiSession $qrcode)
     {
         try {
-            // Ubah ke SVG
-            $qrPath = 'qrcodes/' . $qrcode->qr_code . '.svg';
-            if (Storage::disk('public')->exists($qrPath)) {
-                Storage::disk('public')->delete($qrPath);
+            // Hapus file QR code jika ada (coba SVG dulu, lalu PNG)
+            $qrPathSvg = 'qrcodes/' . $qrcode->qr_code . '.svg';
+            $qrPathPng = 'qrcodes/' . $qrcode->qr_code . '.png';
+            
+            if (Storage::disk('public')->exists($qrPathSvg)) {
+                Storage::disk('public')->delete($qrPathSvg);
+            }
+            if (Storage::disk('public')->exists($qrPathPng)) {
+                Storage::disk('public')->delete($qrPathPng);
             }
 
             $qrcode->delete();
@@ -219,7 +216,7 @@ class QRCodeController extends Controller
         }
     }
 
-    public function generateAndSaveQRCode(PresensiSession $session)
+    protected function generateAndSaveQRCode(PresensiSession $session)
     {
         Log::info('GENERATE QR CODE DIPANGGIL', [
             'session_id' => $session->id,
@@ -236,7 +233,7 @@ class QRCodeController extends Controller
                 Log::info('Folder qrcodes dibuat');
             }
 
-            // Generate QR code dalam format SVG (tidak butuh imagick/gd)
+            // Generate QR code dalam format SVG untuk storage
             $qrCode = QrCode::format('svg')
                 ->size(500)
                 ->errorCorrection('H')

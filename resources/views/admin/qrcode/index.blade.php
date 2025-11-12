@@ -230,7 +230,7 @@
 </div>
 
 <div class="modal fade" id="createQRModal" tabindex="-1">
-   <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">
@@ -242,7 +242,7 @@
                 @csrf
                 <div class="modal-body">
                     <div class="row g-3">
-                        <div class="col-md-12">
+                        <div class="col-md-6">
                             <label class="form-label fw-semibold">
                                 Kelas <span class="text-danger">*</span>
                             </label>
@@ -257,7 +257,7 @@
                             </select>
                         </div>
 
-                        <div class="col-md-12">
+                        <div class="col-md-6">
                             <label class="form-label fw-semibold">
                                 Tanggal <span class="text-danger">*</span>
                             </label>
@@ -291,58 +291,78 @@
                                    required>
                         </div>
 
+                        <!-- MAP SECTION -->
                         <div class="col-12">
-                            <div class="alert alert-info mb-0">
+                            <div class="alert alert-info mb-3">
                                 <i class="bi bi-info-circle me-2"></i>
-                                <strong>Lokasi GPS Sekolah</strong><br>
-                                QR Code hanya dapat di-scan dalam radius yang ditentukan
+                                <strong>Pilih Lokasi Presensi</strong><br>
+                                Klik pada peta atau gunakan tombol di bawah untuk menentukan lokasi
                             </div>
-                        </div>
 
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">
-                                Latitude <span class="text-danger">*</span>
-                            </label>
-                            <input type="text" 
-                                   name="latitude" 
-                                   id="latitude"
-                                   class="form-control" 
-                                   placeholder="-7.6298"
-                                   required>
-                            <small class="text-muted">Contoh: -7.6298</small>
-                        </div>
+                            <div class="mb-3">
+                                <button type="button" class="btn btn-primary w-100 mb-2" id="getLocationBtn">
+                                    <i class="bi bi-geo-alt me-2"></i>Gunakan Lokasi Saat Ini
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary w-100" id="searchLocationBtn">
+                                    <i class="bi bi-search me-2"></i>Cari Alamat
+                                </button>
+                            </div>
 
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">
-                                Longitude <span class="text-danger">*</span>
-                            </label>
-                            <input type="text" 
-                                   name="longitude" 
-                                   id="longitude"
-                                   class="form-control" 
-                                   placeholder="111.5239"
-                                   required>
-                            <small class="text-muted">Contoh: 111.5239</small>
-                        </div>
+                            <!-- Search Box -->
+                            <div id="searchBox" style="display: none;" class="mb-3">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="searchAddressInput" placeholder="Cari alamat...">
+                                    <button class="btn btn-primary" type="button" id="searchAddressBtn">
+                                        <i class="bi bi-search"></i>
+                                    </button>
+                                </div>
+                            </div>
 
-                        <div class="col-12">
-                            <button type="button" class="btn btn-outline-primary w-100" id="getLocationBtn">
-                                <i class="bi bi-geo-alt me-2"></i>Gunakan Lokasi Saat Ini
-                            </button>
-                        </div>
+                            <!-- Map Container -->
+                            <div id="map" style="height: 400px; border-radius: 8px; border: 2px solid #dee2e6;"></div>
+                            
+                            <div class="row mt-3">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">
+                                        Latitude <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" 
+                                           name="latitude" 
+                                           id="latitude"
+                                           class="form-control" 
+                                           placeholder="-7.6298"
+                                           readonly
+                                           required>
+                                </div>
 
-                        <div class="col-md-12">
-                            <label class="form-label fw-semibold">
-                                Radius (meter) <span class="text-danger">*</span>
-                            </label>
-                            <input type="number" 
-                                   name="radius" 
-                                   class="form-control" 
-                                   value="200"
-                                   min="50"
-                                   max="1000"
-                                   required>
-                            <small class="text-muted">Jarak maksimal siswa dari lokasi sekolah (50-1000 meter)</small>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">
+                                        Longitude <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" 
+                                           name="longitude" 
+                                           id="longitude"
+                                           class="form-control" 
+                                           placeholder="111.5239"
+                                           readonly
+                                           required>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">
+                                        Radius (meter) <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="number" 
+                                           name="radius" 
+                                           id="radius"
+                                           class="form-control" 
+                                           value="200"
+                                           min="50"
+                                           max="1000"
+                                           required>
+                                    <small class="text-muted">50-1000 meter</small>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -355,7 +375,7 @@
             </form>
         </div>
     </div>
-</div> 
+</div>
 
 <div class="modal fade" id="showQRModal" tabindex="-1">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
@@ -377,6 +397,211 @@
 </div>
 
 @endsection
+
+<!-- Leaflet CSS & JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<style>
+#map {
+    z-index: 1;
+}
+.leaflet-container {
+    z-index: 1;
+}
+</style>
+
+<script>
+let map;
+let marker;
+let circle;
+
+document.addEventListener('DOMContentLoaded', function() {
+    const createQRModal = document.getElementById('createQRModal');
+    
+    createQRModal.addEventListener('shown.bs.modal', function() {
+        if (!map) {
+            initMap();
+        }
+    });
+    
+    // Search location button
+    document.getElementById('searchLocationBtn').addEventListener('click', function() {
+        const searchBox = document.getElementById('searchBox');
+        searchBox.style.display = searchBox.style.display === 'none' ? 'block' : 'none';
+    });
+    
+    // Search address
+    document.getElementById('searchAddressBtn').addEventListener('click', function() {
+        const address = document.getElementById('searchAddressInput').value;
+        if (address) {
+            searchAddress(address);
+        }
+    });
+    
+    // Enter key on search
+    document.getElementById('searchAddressInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('searchAddressBtn').click();
+        }
+    });
+    
+    // Get current location
+    document.getElementById('getLocationBtn').addEventListener('click', function() {
+        getCurrentLocation();
+    });
+    
+    // Radius change
+    document.getElementById('radius').addEventListener('change', function() {
+        if (circle) {
+            circle.setRadius(parseInt(this.value));
+        }
+    });
+});
+
+function initMap() {
+    // Default location (Indonesia center)
+    const defaultLat = -2.5489;
+    const defaultLng = 118.0149;
+    
+    map = L.map('map').setView([defaultLat, defaultLng], 5);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 19
+    }).addTo(map);
+    
+    // Click on map
+    map.on('click', function(e) {
+        setLocation(e.latlng.lat, e.latlng.lng);
+    });
+}
+
+function setLocation(lat, lng) {
+    document.getElementById('latitude').value = lat.toFixed(8);
+    document.getElementById('longitude').value = lng.toFixed(8);
+    
+    // Remove existing marker and circle
+    if (marker) {
+        map.removeLayer(marker);
+    }
+    if (circle) {
+        map.removeLayer(circle);
+    }
+    
+    // Add new marker
+    marker = L.marker([lat, lng]).addTo(map);
+    
+    // Add circle
+    const radius = parseInt(document.getElementById('radius').value) || 200;
+    circle = L.circle([lat, lng], {
+        color: 'red',
+        fillColor: '#f03',
+        fillOpacity: 0.2,
+        radius: radius
+    }).addTo(map);
+    
+    // Center map
+    map.setView([lat, lng], 16);
+}
+
+function getCurrentLocation() {
+    const btn = document.getElementById('getLocationBtn');
+    const originalHTML = btn.innerHTML;
+    
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Mengambil lokasi...';
+    
+    if (!navigator.geolocation) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error!',
+            text: 'Browser Anda tidak mendukung Geolocation'
+        });
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+        return;
+    }
+    
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            setLocation(position.coords.latitude, position.coords.longitude);
+            
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Lokasi Berhasil Diambil';
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-success');
+            
+            setTimeout(() => {
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-primary');
+                btn.innerHTML = originalHTML;
+            }, 2000);
+        },
+        (error) => {
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+            
+            let errorMessage = 'Gagal mengambil lokasi';
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMessage = 'Izin akses lokasi ditolak';
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMessage = 'Informasi lokasi tidak tersedia';
+                    break;
+                case error.TIMEOUT:
+                    errorMessage = 'Waktu permintaan lokasi habis';
+                    break;
+            }
+            
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal!',
+                text: errorMessage
+            });
+        }
+    );
+}
+
+function searchAddress(address) {
+    // Using Nominatim (OpenStreetMap) geocoding
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`;
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data && data.length > 0) {
+                const lat = parseFloat(data[0].lat);
+                const lng = parseFloat(data[0].lon);
+                setLocation(lat, lng);
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: 'Lokasi ditemukan',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Tidak Ditemukan',
+                    text: 'Alamat tidak ditemukan, coba kata kunci lain'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: 'Gagal mencari lokasi'
+            });
+        });
+}
+</script>
 
 @push('scripts')
 <link rel="stylesheet" href="{{ asset('css/admin/qrcode.css') }}">

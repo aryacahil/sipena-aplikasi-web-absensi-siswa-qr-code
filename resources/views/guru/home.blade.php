@@ -1,4 +1,4 @@
-@extends('layouts.guru') 
+@extends('layouts.guru')
 @section('title', 'Dashboard')
 
 @section('content')
@@ -10,7 +10,7 @@
                 <div>
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="mb-2 mb-lg-0">
-                            <h3 class="mb-0  text-white">Halo {{ ucfirst(Auth::user()->role) }}</h3>
+                            <h3 class="mb-0 text-white">Halo {{ ucfirst(Auth::user()->role) }}</h3>
                         </div>
                     </div>
                 </div>
@@ -18,7 +18,7 @@
 
             <!-- Kartu Statistik -->
             <div class="col-xl-3 col-lg-6 col-md-12 col-12 mt-6">
-                <div class="card ">
+                <div class="card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <div>
@@ -29,15 +29,15 @@
                             </div>
                         </div>
                         <div>
-                            <h1 class="fw-bold">{{ $totalSiswa }}</h1>
-                            <p class="mb-0"><span class="text-dark me-2">{{ $siswaAktif }}</span>Aktif</p>
+                            <h1 class="fw-bold">{{ $stats['total_siswa'] }}</h1>
+                            <p class="mb-0"><span class="text-dark me-2">{{ $stats['siswa_completed'] }}</span>Aktif</p>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="col-xl-3 col-lg-6 col-md-12 col-12 mt-6">
-                <div class="card ">
+                <div class="card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <div>
@@ -48,15 +48,15 @@
                             </div>
                         </div>
                         <div>
-                            <h1 class="fw-bold">{{ $totalGuru }}</h1>
-                            <p class="mb-0"><span class="text-dark me-2">{{ $guruAktif }}</span>Aktif</p>
+                            <h1 class="fw-bold">{{ $stats['total_guru'] }}</h1>
+                            <p class="mb-0"><span class="text-dark me-2">{{ $stats['guru_completed'] }}</span>Aktif</p>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="col-xl-3 col-lg-6 col-md-12 col-12 mt-6">
-                <div class="card ">
+                <div class="card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <div>
@@ -67,15 +67,15 @@
                             </div>
                         </div>
                         <div>
-                            <h1 class="fw-bold">{{ $totalKelas }}</h1>
-                            <p class="mb-0"><span class="text-dark me-2">{{ $kelasAktif }}</span>Aktif</p>
+                            <h1 class="fw-bold">{{ $stats['total_kelas'] }}</h1>
+                            <p class="mb-0"><span class="text-dark me-2">{{ $stats['kelas_completed'] }}</span>Aktif</p>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="col-xl-3 col-lg-6 col-md-12 col-12 mt-6">
-                <div class="card ">
+                <div class="card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <div>
@@ -86,8 +86,8 @@
                             </div>
                         </div>
                         <div>
-                            <h1 class="fw-bold">{{ $totalAdmin }}</h1>
-                            <p class="mb-0"><span class="text-success me-2">{{ $adminAktif }}</span>Aktif</p>
+                            <h1 class="fw-bold">{{ $stats['total_admin'] }}</h1>
+                            <p class="mb-0"><span class="text-success me-2">{{ $stats['admin_completed'] }}</span>Aktif</p>
                         </div>
                     </div>
                 </div>
@@ -108,7 +108,7 @@
             </div>
         </div>
 
-        <!-- Tambahan: Tabel Jurusan dan Kelas -->
+        <!-- Tabel Jurusan dan Kelas -->
         <div class="row mt-6">
             <div class="col-md-12 col-12">
                 <div class="card">
@@ -121,23 +121,25 @@
                             <table class="table table-bordered table-hover align-middle">
                                 <thead class="table-light">
                                     <tr>
-                                        <th scope="col">No</th>
-                                        <th scope="col">Nama Jurusan</th>
-                                        <th scope="col">Kode Jurusan</th>
-                                        <th scope="col">Jumlah Kelas</th>
-                                        <th scope="col">Kelas</th>
+                                        <th>No</th>
+                                        <th>Nama Jurusan</th>
+                                        <th>Kode Jurusan</th>
+                                        <th>Jumlah Kelas</th>
+                                        <th>Kelas</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @forelse($jurusanData as $index => $jurusan)
+                                    @forelse($jurusans as $index => $jurusan)
                                     <tr>
                                         <td>{{ $index + 1 }}</td>
                                         <td>{{ $jurusan->nama_jurusan }}</td>
                                         <td>{{ $jurusan->kode_jurusan }}</td>
-                                        <td>{{ $jurusan->jumlah_kelas }}</td>
+                                        <td>{{ $jurusan->kelas_count }}</td>
                                         <td>
-                                            @if($jurusan->kelas_list)
-                                                <span class="badge bg-primary">{{ $jurusan->kelas_list }}</span>
+                                            @if($jurusan->kelas->count() > 0)
+                                                @foreach($jurusan->kelas as $kelas)
+                                                    <span class="badge bg-primary">{{ $kelas->nama_kelas }}</span>
+                                                @endforeach
                                             @else
                                                 -
                                             @endif
@@ -158,89 +160,71 @@
 
     </div>
 
-    <!-- Chart.js Script -->
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const ctx = document.getElementById('attendanceChart').getContext('2d');
             
-            // Data dinamis dari controller
             const attendanceData = {
-                labels: @json($chartLabels),
-                datasets: [{
-                    label: 'Hadir',
-                    data: @json($hadirData),
-                    backgroundColor: 'rgba(25, 135, 84, 0.7)',
-                    borderColor: 'rgba(25, 135, 84, 1)',
-                    borderWidth: 2
-                }, {
-                    label: 'Izin',
-                    data: @json($izinData),
-                    backgroundColor: 'rgba(255, 193, 7, 0.7)',
-                    borderColor: 'rgba(255, 193, 7, 1)',
-                    borderWidth: 2
-                }, {
-                    label: 'Sakit',
-                    data: @json($sakitData),
-                    backgroundColor: 'rgba(13, 110, 253, 0.7)',
-                    borderColor: 'rgba(13, 110, 253, 1)',
-                    borderWidth: 2
-                }, {
-                    label: 'Alpha',
-                    data: @json($alphaData),
-                    backgroundColor: 'rgba(220, 53, 69, 0.7)',
-                    borderColor: 'rgba(220, 53, 69, 1)',
-                    borderWidth: 2
-                }]
+                labels: @json($chartData['labels']),
+                datasets: [
+                    {
+                        label: 'Hadir',
+                        data: @json($chartData['hadir']),
+                        backgroundColor: 'rgba(25,135,84,0.7)',
+                        borderColor: 'rgba(25,135,84,1)',
+                        borderWidth: 2
+                    },
+                    {
+                        label: 'Izin',
+                        data: @json($chartData['izin']),
+                        backgroundColor: 'rgba(255,193,7,0.7)',
+                        borderColor: 'rgba(255,193,7,1)',
+                        borderWidth: 2
+                    },
+                    {
+                        label: 'Sakit',
+                        data: @json($chartData['sakit']),
+                        backgroundColor: 'rgba(13,110,253,0.7)',
+                        borderColor: 'rgba(13,110,253,1)',
+                        borderWidth: 2
+                    },
+                    {
+                        label: 'Alpha',
+                        data: @json($chartData['alpha']),
+                        backgroundColor: 'rgba(220,53,69,0.7)',
+                        borderColor: 'rgba(220,53,69,1)',
+                        borderWidth: 2
+                    }
+                ]
             };
 
-            const config = {
+            new Chart(ctx, {
                 type: 'bar',
                 data: attendanceData,
                 options: {
                     responsive: true,
                     maintainAspectRatio: true,
                     plugins: {
-                        legend: {
-                            position: 'top',
-                        },
+                        legend: { position: 'top' },
                         title: {
                             display: true,
-                            text: 'Statistik Kehadiran Siswa (Minggu Ini)'
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    let label = context.dataset.label || '';
-                                    if (label) label += ': ';
-                                    label += context.parsed.y + ' siswa';
-                                    return label;
-                                }
-                            }
+                            text: 'Statistik Kehadiran Siswa (5 Hari Terakhir)'
                         }
                     },
                     scales: {
                         y: {
                             beginAtZero: true,
-                            ticks: {
-                                stepSize: 10
-                            },
-                            title: {
-                                display: true,
-                                text: 'Jumlah Siswa'
-                            }
+                            ticks: { stepSize: 10 },
+                            title: { display: true, text: 'Jumlah Siswa' }
                         },
                         x: {
-                            title: {
-                                display: true,
-                                text: 'Hari'
-                            }
+                            title: { display: true, text: 'Hari' }
                         }
                     }
                 }
-            };
-
-            new Chart(ctx, config);
+            });
         });
     </script>
 @endsection

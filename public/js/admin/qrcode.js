@@ -1,65 +1,87 @@
+// ==================== MAP VARIABLES ====================
+let map;
+let marker;
+let circle;
+
 document.addEventListener('DOMContentLoaded', function() {
     const csrfToken = document.querySelector('input[name="_token"]').value;
 
-    // ==================== GET CURRENT LOCATION ====================
+    // ==================== INITIALIZE MAP ON MODAL SHOW ====================
+    const createQRModal = document.getElementById('createQRModal');
+    
+    if (createQRModal) {
+        createQRModal.addEventListener('shown.bs.modal', function() {
+            if (!map) {
+                initMap();
+            }
+        });
+        
+        // Reset form on modal close
+        createQRModal.addEventListener('hidden.bs.modal', function() {
+            document.getElementById('createQRForm').reset();
+            document.getElementById('searchBox').style.display = 'none';
+            
+            // Remove marker and circle
+            if (marker && map) {
+                map.removeLayer(marker);
+                marker = null;
+            }
+            if (circle && map) {
+                map.removeLayer(circle);
+                circle = null;
+            }
+        });
+    }
+    
+    // ==================== MAP EVENT LISTENERS ====================
+    const searchLocationBtn = document.getElementById('searchLocationBtn');
+    if (searchLocationBtn) {
+        searchLocationBtn.addEventListener('click', function() {
+            const searchBox = document.getElementById('searchBox');
+            searchBox.style.display = searchBox.style.display === 'none' ? 'block' : 'none';
+        });
+    }
+    
+    const searchAddressBtn = document.getElementById('searchAddressBtn');
+    if (searchAddressBtn) {
+        searchAddressBtn.addEventListener('click', function() {
+            const address = document.getElementById('searchAddressInput').value;
+            if (address) {
+                searchAddress(address);
+            } else {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Peringatan!',
+                    text: 'Masukkan alamat yang ingin dicari',
+                    confirmButtonColor: '#0d6efd'
+                });
+            }
+        });
+    }
+    
+    const searchAddressInput = document.getElementById('searchAddressInput');
+    if (searchAddressInput) {
+        searchAddressInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('searchAddressBtn').click();
+            }
+        });
+    }
+    
     const getLocationBtn = document.getElementById('getLocationBtn');
     if (getLocationBtn) {
         getLocationBtn.addEventListener('click', function() {
-            if (!navigator.geolocation) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error!',
-                    text: 'Browser Anda tidak mendukung Geolocation',
-                    confirmButtonColor: '#dc3545'
-                });
-                return;
+            getCurrentLocation();
+        });
+    }
+    
+    const radiusInput = document.getElementById('radius');
+    if (radiusInput) {
+        radiusInput.addEventListener('change', function() {
+            if (circle) {
+                circle.setRadius(parseInt(this.value));
             }
-
-            // Show loading
-            this.disabled = true;
-            this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Mengambil lokasi...';
-
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    document.getElementById('latitude').value = position.coords.latitude.toFixed(8);
-                    document.getElementById('longitude').value = position.coords.longitude.toFixed(8);
-                    
-                    this.disabled = false;
-                    this.innerHTML = '<i class="bi bi-check-circle me-2"></i>Lokasi Berhasil Diambil';
-                    this.classList.remove('btn-outline-primary');
-                    this.classList.add('btn-success');
-
-                    setTimeout(() => {
-                        this.classList.remove('btn-success');
-                        this.classList.add('btn-outline-primary');
-                        this.innerHTML = '<i class="bi bi-geo-alt me-2"></i>Gunakan Lokasi Saat Ini';
-                    }, 2000);
-                },
-                (error) => {
-                    this.disabled = false;
-                    this.innerHTML = '<i class="bi bi-geo-alt me-2"></i>Gunakan Lokasi Saat Ini';
-                    
-                    let errorMessage = 'Gagal mengambil lokasi';
-                    switch(error.code) {
-                        case error.PERMISSION_DENIED:
-                            errorMessage = 'Izin akses lokasi ditolak';
-                            break;
-                        case error.POSITION_UNAVAILABLE:
-                            errorMessage = 'Informasi lokasi tidak tersedia';
-                            break;
-                        case error.TIMEOUT:
-                            errorMessage = 'Waktu permintaan lokasi habis';
-                            break;
-                    }
-
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Gagal!',
-                        text: errorMessage,
-                        confirmButtonColor: '#dc3545'
-                    });
-                }
-            );
         });
     }
 
@@ -70,7 +92,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const modal = new bootstrap.Modal(document.getElementById('showQRModal'));
             const content = document.getElementById('showQRContent');
             
-            // Show loading
             content.innerHTML = `
                 <div class="text-center py-5">
                     <div class="spinner-border text-primary" role="status"></div>
@@ -80,27 +101,51 @@ document.addEventListener('DOMContentLoaded', function() {
             
             modal.show();
             
-            // Fetch data
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
+            
             fetch(`/admin/qrcode/${sessionId}`, {
                 method: 'GET',
                 headers: {
                     'X-CSRF-TOKEN': csrfToken,
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
-                }
+                },
+                signal: controller.signal
             })
-            .then(response => response.json())
+            .then(response => {
+                clearTimeout(timeoutId);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     renderQRDetail(data, content, sessionId);
+                } else {
+                    throw new Error(data.message || 'Gagal memuat data');
                 }
             })
             .catch(error => {
+                clearTimeout(timeoutId);
                 console.error('Error:', error);
+                
+                let errorMessage = 'Gagal memuat data QR Code';
+                if (error.name === 'AbortError') {
+                    errorMessage = 'Request timeout - Server tidak merespon';
+                } else if (error.message) {
+                    errorMessage += ': ' + error.message;
+                }
+                
                 content.innerHTML = `
                     <div class="alert alert-danger">
                         <i class="bi bi-exclamation-triangle me-2"></i>
-                        Gagal memuat data QR Code
+                        ${errorMessage}
+                        <br><br>
+                        <button class="btn btn-primary btn-sm" onclick="location.reload()">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Refresh Halaman
+                        </button>
                     </div>
                 `;
             });
@@ -212,6 +257,19 @@ document.addEventListener('DOMContentLoaded', function() {
         createForm.addEventListener('submit', function(e) {
             const jamMulai = this.querySelector('input[name="jam_mulai"]').value;
             const jamSelesai = this.querySelector('input[name="jam_selesai"]').value;
+            const latitude = this.querySelector('input[name="latitude"]').value;
+            const longitude = this.querySelector('input[name="longitude"]').value;
+            
+            if (!latitude || !longitude) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Peringatan!',
+                    text: 'Silakan pilih lokasi di peta terlebih dahulu',
+                    confirmButtonColor: '#0d6efd'
+                });
+                return false;
+            }
             
             if (jamSelesai <= jamMulai) {
                 e.preventDefault();
@@ -224,238 +282,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 return false;
             }
         });
-    }
-
-    // ==================== MODAL RESET ====================
-    const createModal = document.getElementById('createQRModal');
-    if (createModal) {
-        createModal.addEventListener('hidden.bs.modal', function() {
-            const form = document.getElementById('createQRForm');
-            if (form) form.reset();
-            
-            // Reset get location button
-            const getLocBtn = document.getElementById('getLocationBtn');
-            if (getLocBtn) {
-                getLocBtn.classList.remove('btn-success');
-                getLocBtn.classList.add('btn-outline-primary');
-                getLocBtn.innerHTML = '<i class="bi bi-geo-alt me-2"></i>Gunakan Lokasi Saat Ini';
-            }
-        });
-    }
-
-    // ==================== RENDER QR DETAIL ====================
-    function renderQRDetail(data, container, sessionId) {
-        const session = data.session;
-        
-        // Status badge
-        let statusBadge = '';
-        if (session.status === 'active') {
-            if (session.is_active) {
-                statusBadge = '<span class="badge bg-success fs-6"><i class="bi bi-check-circle me-1"></i>Sedang Aktif</span>';
-            } else {
-                statusBadge = '<span class="badge bg-warning fs-6"><i class="bi bi-clock me-1"></i>Menunggu</span>';
-            }
-        } else {
-            statusBadge = '<span class="badge bg-secondary fs-6"><i class="bi bi-x-circle me-1"></i>Expired</span>';
-        }
-
-        // Generate siswa list
-        let siswaListHtml = '';
-        if (session.presensis && session.presensis.length > 0) {
-            siswaListHtml = session.presensis.map((presensi, index) => `
-                <div class="siswa-item d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center">
-                        <span class="me-3 text-muted fw-bold">${index + 1}</span>
-                        <div>
-                            <h6 class="mb-0">${presensi.siswa.name}</h6>
-                            <small class="text-muted">
-                                <i class="bi bi-clock me-1"></i>${presensi.waktu_presensi}
-                            </small>
-                        </div>
-                    </div>
-                    <span class="siswa-status hadir">
-                        <i class="bi bi-check-circle me-1"></i>${presensi.status}
-                    </span>
-                </div>
-            `).join('');
-        } else {
-            siswaListHtml = `
-                <div class="alert alert-info mb-0">
-                    <i class="bi bi-info-circle me-2"></i>
-                    Belum ada siswa yang melakukan presensi
-                </div>
-            `;
-        }
-
-        // Belum presensi list
-        let belumPresensiHtml = '';
-        if (session.siswa_belum_presensi && session.siswa_belum_presensi.length > 0) {
-            belumPresensiHtml = session.siswa_belum_presensi.map((siswa, index) => `
-                <div class="siswa-item d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center">
-                        <span class="me-3 text-muted fw-bold">${index + 1}</span>
-                        <div>
-                            <h6 class="mb-0">${siswa.name}</h6>
-                            <small class="text-muted">
-                                <i class="bi bi-envelope me-1"></i>${siswa.email}
-                            </small>
-                        </div>
-                    </div>
-                    <span class="siswa-status belum">
-                        <i class="bi bi-x-circle me-1"></i>Belum
-                    </span>
-                </div>
-            `).join('');
-        }
-
-        container.innerHTML = `
-            <div class="row g-4">
-                <!-- QR Code Display -->
-                <div class="col-lg-5">
-                    <div class="qr-code-container">
-                        <div class="qr-code-wrapper">
-                            ${data.qr_code_svg}
-                        </div>
-                        <div class="mt-3">
-                            <h5 class="text-white mb-2">${session.kelas.nama_kelas}</h5>
-                            <p class="text-white-50 mb-0">
-                                ${session.tanggal} | ${session.jam_mulai} - ${session.jam_selesai}
-                            </p>
-                        </div>
-                    </div>
-                    
-                    <!-- Action Buttons -->
-                    <div class="d-grid gap-2 mt-3">
-                        <a href="/admin/qrcode/${sessionId}/download" 
-                           class="btn btn-success btn-lg no-print">
-                            <i class="bi bi-download me-2"></i>Download QR Code
-                        </a>
-                        <button type="button" 
-                                class="btn btn-primary btn-lg no-print" 
-                                onclick="window.print()">
-                            <i class="bi bi-printer me-2"></i>Print QR Code
-                        </button>
-                        <a href="${session.scan_url}" 
-                           class="btn btn-outline-light btn-lg no-print"
-                           target="_blank">
-                            <i class="bi bi-link-45deg me-2"></i>Buka Link Scan
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Session Info -->
-                <div class="col-lg-7">
-                    <!-- Status & Stats -->
-                    <div class="session-info-card ${session.status}">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="mb-0">
-                                <i class="bi bi-info-circle me-2"></i>Informasi Sesi
-                            </h5>
-                            ${statusBadge}
-                        </div>
-                        
-                        <div class="row g-3 mb-3">
-                            <div class="col-6">
-                                <small class="text-muted d-block">Kelas</small>
-                                <strong>${session.kelas.nama_kelas}</strong>
-                            </div>
-                            <div class="col-6">
-                                <small class="text-muted d-block">Jurusan</small>
-                                <strong>${session.kelas.jurusan.nama_jurusan}</strong>
-                            </div>
-                            <div class="col-6">
-                                <small class="text-muted d-block">Tanggal</small>
-                                <strong>${session.tanggal}</strong>
-                            </div>
-                            <div class="col-6">
-                                <small class="text-muted d-block">Waktu</small>
-                                <strong>${session.jam_mulai} - ${session.jam_selesai}</strong>
-                            </div>
-                            <div class="col-6">
-                                <small class="text-muted d-block">Dibuat Oleh</small>
-                                <strong>${session.creator.name}</strong>
-                            </div>
-                            <div class="col-6">
-                                <small class="text-muted d-block">Radius</small>
-                                <strong>${session.radius} meter</strong>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Presensi Statistics -->
-                    <div class="row g-3 mt-3">
-                        <div class="col-6">
-                            <div class="presensi-stat-card hadir">
-                                <div class="stat-icon">
-                                    <i class="bi bi-check-circle-fill"></i>
-                                </div>
-                                <div class="stat-number">${session.stats.hadir}</div>
-                                <div class="stat-label">Hadir</div>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="presensi-stat-card alpha">
-                                <div class="stat-icon">
-                                    <i class="bi bi-x-circle-fill"></i>
-                                </div>
-                                <div class="stat-number">${session.stats.belum}</div>
-                                <div class="stat-label">Belum Presensi</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Quick Actions -->
-                    <div class="mt-4 no-print">
-                        <a href="/admin/presensi/session/${sessionId}/create" 
-                           class="btn btn-primary">
-                            <i class="bi bi-plus-circle me-2"></i>Tambah Presensi Manual
-                        </a>
-                        <a href="/admin/presensi?session_id=${sessionId}" 
-                           class="btn btn-outline-primary">
-                            <i class="bi bi-list-ul me-2"></i>Lihat Semua Presensi
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Siswa List -->
-                <div class="col-12">
-                    <ul class="nav nav-tabs" id="siswaTab" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" 
-                                    id="hadir-tab" 
-                                    data-bs-toggle="tab" 
-                                    data-bs-target="#hadir" 
-                                    type="button">
-                                <i class="bi bi-check-circle me-2"></i>
-                                Sudah Presensi (${session.stats.hadir})
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" 
-                                    id="belum-tab" 
-                                    data-bs-toggle="tab" 
-                                    data-bs-target="#belum" 
-                                    type="button">
-                                <i class="bi bi-x-circle me-2"></i>
-                                Belum Presensi (${session.stats.belum})
-                            </button>
-                        </li>
-                    </ul>
-                    <div class="tab-content border border-top-0 p-3" id="siswaTabContent">
-                        <div class="tab-pane fade show active" id="hadir" role="tabpanel">
-                            <div style="max-height: 400px; overflow-y: auto;">
-                                ${siswaListHtml}
-                            </div>
-                        </div>
-                        <div class="tab-pane fade" id="belum" role="tabpanel">
-                            <div style="max-height: 400px; overflow-y: auto;">
-                                ${belumPresensiHtml || '<div class="alert alert-success mb-0"><i class="bi bi-check-circle me-2"></i>Semua siswa sudah melakukan presensi</div>'}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
     }
 
     // ==================== NOTIFICATIONS ====================
@@ -486,3 +312,359 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 });
+
+// ==================== MAP FUNCTIONS ====================
+function initMap() {
+    // Default location (Magetan, Indonesia)
+    const defaultLat = -7.6298;
+    const defaultLng = 111.5239;
+    
+    map = L.map('map').setView([defaultLat, defaultLng], 13);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 19
+    }).addTo(map);
+    
+    // Click on map
+    map.on('click', function(e) {
+        setLocation(e.latlng.lat, e.latlng.lng);
+    });
+    
+    // Set initial location (optional)
+    // setLocation(defaultLat, defaultLng);
+}
+
+function setLocation(lat, lng) {
+    document.getElementById('latitude').value = lat.toFixed(8);
+    document.getElementById('longitude').value = lng.toFixed(8);
+    
+    // Remove existing marker and circle
+    if (marker) {
+        map.removeLayer(marker);
+    }
+    if (circle) {
+        map.removeLayer(circle);
+    }
+    
+    // Add new marker
+    marker = L.marker([lat, lng]).addTo(map);
+    
+    // Add circle
+    const radius = parseInt(document.getElementById('radius').value) || 200;
+    circle = L.circle([lat, lng], {
+        color: 'red',
+        fillColor: '#f03',
+        fillOpacity: 0.2,
+        radius: radius
+    }).addTo(map);
+    
+    // Center map
+    map.setView([lat, lng], 16);
+}
+
+function getCurrentLocation() {
+    const btn = document.getElementById('getLocationBtn');
+    const originalHTML = btn.innerHTML;
+    
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Mengambil lokasi...';
+    
+    if (!navigator.geolocation) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error!',
+            text: 'Browser Anda tidak mendukung Geolocation'
+        });
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+        return;
+    }
+    
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            setLocation(position.coords.latitude, position.coords.longitude);
+            
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Lokasi Berhasil Diambil';
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-success');
+            
+            setTimeout(() => {
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-primary');
+                btn.innerHTML = originalHTML;
+            }, 2000);
+        },
+        (error) => {
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+            
+            let errorMessage = 'Gagal mengambil lokasi';
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMessage = 'Izin akses lokasi ditolak. Pastikan Anda memberikan izin akses lokasi di browser.';
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMessage = 'Informasi lokasi tidak tersedia';
+                    break;
+                case error.TIMEOUT:
+                    errorMessage = 'Waktu permintaan lokasi habis';
+                    break;
+            }
+            
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal!',
+                text: errorMessage
+            });
+        }
+    );
+}
+
+function searchAddress(address) {
+    // Using Nominatim (OpenStreetMap) geocoding
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`;
+    
+    Swal.fire({
+        title: 'Mencari lokasi...',
+        text: 'Mohon tunggu',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+    });
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data && data.length > 0) {
+                const lat = parseFloat(data[0].lat);
+                const lng = parseFloat(data[0].lon);
+                setLocation(lat, lng);
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: 'Lokasi ditemukan: ' + data[0].display_name,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Tidak Ditemukan',
+                    text: 'Alamat tidak ditemukan, coba kata kunci lain'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: 'Gagal mencari lokasi. Pastikan Anda terhubung ke internet.'
+            });
+        });
+}
+
+// ==================== RENDER QR DETAIL ====================
+function renderQRDetail(data, container, sessionId) {
+    const session = data.session;
+    
+    // Status badge
+    let statusBadge = '';
+    if (session.status === 'active') {
+        if (session.is_active) {
+            statusBadge = '<span class="badge bg-success fs-6"><i class="bi bi-check-circle me-1"></i>Sedang Aktif</span>';
+        } else {
+            statusBadge = '<span class="badge bg-warning fs-6"><i class="bi bi-clock me-1"></i>Menunggu</span>';
+        }
+    } else {
+        statusBadge = '<span class="badge bg-secondary fs-6"><i class="bi bi-x-circle me-1"></i>Expired</span>';
+    }
+
+    // Generate siswa list
+    let siswaListHtml = '';
+    if (session.presensis && session.presensis.length > 0) {
+        siswaListHtml = session.presensis.map((presensi, index) => `
+            <div class="siswa-item d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <span class="me-3 text-muted fw-bold">${index + 1}</span>
+                    <div>
+                        <h6 class="mb-0">${presensi.siswa.name}</h6>
+                        <small class="text-muted">
+                            <i class="bi bi-clock me-1"></i>${presensi.waktu_presensi}
+                        </small>
+                    </div>
+                </div>
+                <span class="siswa-status hadir">
+                    <i class="bi bi-check-circle me-1"></i>${presensi.status}
+                </span>
+            </div>
+        `).join('');
+    } else {
+        siswaListHtml = `
+            <div class="alert alert-info mb-0">
+                <i class="bi bi-info-circle me-2"></i>
+                Belum ada siswa yang melakukan presensi
+            </div>
+        `;
+    }
+
+    // Belum presensi list
+    let belumPresensiHtml = '';
+    if (session.siswa_belum_presensi && session.siswa_belum_presensi.length > 0) {
+        belumPresensiHtml = session.siswa_belum_presensi.map((siswa, index) => `
+            <div class="siswa-item d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <span class="me-3 text-muted fw-bold">${index + 1}</span>
+                    <div>
+                        <h6 class="mb-0">${siswa.name}</h6>
+                        <small class="text-muted">
+                            <i class="bi bi-envelope me-1"></i>${siswa.email}
+                        </small>
+                    </div>
+                </div>
+                <span class="siswa-status belum">
+                    <i class="bi bi-x-circle me-1"></i>Belum
+                </span>
+            </div>
+        `).join('');
+    }
+
+    container.innerHTML = `
+        <div class="row g-4">
+            <!-- QR Code Display -->
+            <div class="col-lg-5">
+                <div class="qr-code-container">
+                    <div class="qr-code-wrapper">
+                        ${data.qr_code_svg}
+                    </div>
+                    <div class="mt-3">
+                        <h5 class="text-white mb-2">${session.kelas.nama_kelas}</h5>
+                        <p class="text-white-50 mb-0">
+                            ${session.tanggal} | ${session.jam_mulai} - ${session.jam_selesai}
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="d-grid gap-2 mt-3">
+                    <a href="/admin/qrcode/${sessionId}/download" 
+                       class="btn btn-success btn-lg no-print">
+                        <i class="bi bi-download me-2"></i>Download QR Code
+                    </a>
+                    <button type="button" 
+                            class="btn btn-primary btn-lg no-print" 
+                            onclick="window.print()">
+                        <i class="bi bi-printer me-2"></i>Print QR Code
+                    </button>
+                    <a href="${session.scan_url}" 
+                       class="btn btn-outline-light btn-lg no-print"
+                       target="_blank">
+                        <i class="bi bi-link-45deg me-2"></i>Buka Link Scan
+                    </a>
+                </div>
+            </div>
+
+            <!-- Session Info -->
+            <div class="col-lg-7">
+                <!-- Status & Stats -->
+                <div class="session-info-card ${session.status}">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">
+                            <i class="bi bi-info-circle me-2"></i>Informasi Sesi
+                        </h5>
+                        ${statusBadge}
+                    </div>
+                    
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <small class="text-muted d-block">Kelas</small>
+                            <strong>${session.kelas.nama_kelas}</strong>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted d-block">Jurusan</small>
+                            <strong>${session.kelas.jurusan.nama_jurusan}</strong>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted d-block">Tanggal</small>
+                            <strong>${session.tanggal}</strong>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted d-block">Waktu</small>
+                            <strong>${session.jam_mulai} - ${session.jam_selesai}</strong>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted d-block">Dibuat Oleh</small>
+                            <strong>${session.creator.name}</strong>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted d-block">Radius</small>
+                            <strong>${session.radius} meter</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Presensi Statistics -->
+                <div class="row g-3 mt-3">
+                    <div class="col-6">
+                        <div class="presensi-stat-card hadir">
+                            <div class="stat-icon">
+                                <i class="bi bi-check-circle-fill"></i>
+                            </div>
+                            <div class="stat-number">${session.stats.hadir}</div>
+                            <div class="stat-label">Hadir</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="presensi-stat-card alpha">
+                            <div class="stat-icon">
+                                <i class="bi bi-x-circle-fill"></i>
+                            </div>
+                            <div class="stat-number">${session.stats.belum}</div>
+                            <div class="stat-label">Belum Presensi</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Siswa List -->
+            <div class="col-12">
+                <ul class="nav nav-tabs" id="siswaTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" 
+                                id="hadir-tab" 
+                                data-bs-toggle="tab" 
+                                data-bs-target="#hadir" 
+                                type="button">
+                            <i class="bi bi-check-circle me-2"></i>
+                            Sudah Presensi (${session.stats.hadir})
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" 
+                                id="belum-tab" 
+                                data-bs-toggle="tab" 
+                                data-bs-target="#belum" 
+                                type="button">
+                            <i class="bi bi-x-circle me-2"></i>
+                            Belum Presensi (${session.stats.belum})
+                        </button>
+                    </li>
+                </ul>
+                <div class="tab-content border border-top-0 p-3" id="siswaTabContent">
+                    <div class="tab-pane fade show active" id="hadir" role="tabpanel">
+                        <div style="max-height: 400px; overflow-y: auto;">
+                            ${siswaListHtml}
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="belum" role="tabpanel">
+                        <div style="max-height: 400px; overflow-y: auto;">
+                            ${belumPresensiHtml || '<div class="alert alert-success mb-0"><i class="bi bi-check-circle me-2"></i>Semua siswa sudah melakukan presensi</div>'}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
