@@ -10,6 +10,7 @@
 @endif
 
 <input type="hidden" name="_token" value="{{ csrf_token() }}">
+<input type="hidden" id="baseRoute" value="{{ request()->is('admin/*') ? 'admin' : 'guru' }}">
 
 <div class="bg-primary pt-10 pb-21"></div>
 <div class="container-fluid mt-n22 px-6">
@@ -33,12 +34,13 @@
         <div class="col-md-12">
             <div class="card shadow-sm">
                 
+                <!-- Advanced Filter (Collapsed by default) -->
                 <div class="collapse" id="advancedFilter">
                     <div class="card-header bg-white border-bottom">
                         <h5 class="mb-3">
                             <i class="bi bi-funnel me-2"></i>Filter QR Code
                         </h5>
-                        <form action="{{ route('admin.qrcode.index') }}" method="GET">
+                        <form action="{{ request()->is('admin/*') ? route('admin.qrcode.index') : route('guru.qrcode.index') }}" method="GET">
                             <div class="row g-3">
                                 <div class="col-md-4">
                                     <label class="form-label fw-semibold small">Kelas</label>
@@ -76,23 +78,30 @@
                     </div>
                 </div>
 
+                <!-- Card Header with Quick Filters -->
                 <div class="card-header bg-white border-bottom">
                     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
                         <div>
                             <h4 class="mb-0">Daftar QR Code</h4>
+                            @if($sessions->total() > 0)
+                            <small class="text-muted">Total: {{ $sessions->total() }} sesi</small>
+                            @endif
                         </div>
                         
                         <div class="d-flex gap-2 flex-wrap">
                             <div class="btn-group" role="group">
-                                <a href="{{ route('admin.qrcode.index') }}" 
+                                @php
+                                    $indexRoute = request()->is('admin/*') ? 'admin.qrcode.index' : 'guru.qrcode.index';
+                                @endphp
+                                <a href="{{ route($indexRoute) }}" 
                                    class="btn btn-sm {{ !request('status') ? 'btn-primary' : 'btn-outline-primary' }}">
                                     Semua
                                 </a>
-                                <a href="{{ route('admin.qrcode.index', ['status' => 'active']) }}" 
+                                <a href="{{ route($indexRoute, ['status' => 'active']) }}" 
                                    class="btn btn-sm {{ request('status') == 'active' ? 'btn-success' : 'btn-outline-success' }}">
                                     Aktif
                                 </a>
-                                <a href="{{ route('admin.qrcode.index', ['status' => 'expired']) }}" 
+                                <a href="{{ route($indexRoute, ['status' => 'expired']) }}" 
                                    class="btn btn-sm {{ request('status') == 'expired' ? 'btn-secondary' : 'btn-outline-secondary' }}">
                                     Expired
                                 </a>
@@ -106,6 +115,7 @@
                     </div>
                 </div>
 
+                <!-- Table -->
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover table-nowrap mb-0">
@@ -115,6 +125,7 @@
                                     <th class="border-0">Kelas</th>
                                     <th class="border-0 text-center">Tanggal</th>
                                     <th class="border-0 text-center">Waktu</th>
+                                    <th class="border-0 text-center">Lokasi</th>
                                     <th class="border-0 text-center">Presensi</th>
                                     <th class="border-0 text-center">Status</th>
                                     <th class="border-0 text-center" style="width: 150px;">Aksi</th>
@@ -140,6 +151,16 @@
                                             {{ $session->jam_mulai->format('H:i') }} - 
                                             {{ $session->jam_selesai->format('H:i') }}
                                         </small>
+                                    </td>
+                                    <td class="text-center">
+                                        @if($session->latitude && $session->longitude)
+                                            <span class="badge bg-info-soft text-info" 
+                                                  title="Lat: {{ $session->latitude }}, Lng: {{ $session->longitude }}, Radius: {{ $session->radius }}m">
+                                                <i class="bi bi-geo-alt-fill me-1"></i>{{ $session->radius }}m
+                                            </span>
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
                                     </td>
                                     <td class="text-center">
                                         <span class="badge bg-info-soft text-info">
@@ -172,11 +193,19 @@
                                                     title="Detail">
                                                 <i class="bi bi-eye"></i>
                                             </button>
-                                            <a href="{{ route('admin.qrcode.download', $session->id) }}" 
+                                            
+                                            @php
+                                                $downloadRoute = request()->is('admin/*') ? 'admin.qrcode.download' : 'guru.qrcode.download';
+                                                $destroyRoute = request()->is('admin/*') ? 'admin.qrcode.destroy' : 'guru.qrcode.destroy';
+                                            @endphp
+                                            
+                                            <!-- Tombol Download - untuk semua QR -->
+                                            <a href="{{ route($downloadRoute, $session->id) }}" 
                                                class="btn btn-sm btn-success" 
-                                               title="Download">
+                                               title="Download QR Code">
                                                 <i class="bi bi-download"></i>
                                             </a>
+                                            
                                             <button type="button" 
                                                     class="btn btn-sm btn-warning btn-toggle-status" 
                                                     data-session-id="{{ $session->id }}"
@@ -184,7 +213,8 @@
                                                     title="Toggle Status">
                                                 <i class="bi bi-arrow-repeat"></i>
                                             </button>
-                                            <form action="{{ route('admin.qrcode.destroy', $session->id) }}" 
+                                            
+                                            <form action="{{ route($destroyRoute, $session->id) }}" 
                                                   method="POST" class="d-inline delete-form">
                                                 @csrf
                                                 @method('DELETE')
@@ -200,9 +230,12 @@
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="7" class="text-center py-5">
+                                    <td colspan="8" class="text-center py-5">
                                         <i class="bi bi-qr-code fs-1 text-muted"></i>
                                         <p class="text-muted mt-3 mb-0">Belum ada QR Code</p>
+                                        <button type="button" class="btn btn-sm btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#createQRModal">
+                                            <i class="bi bi-plus-circle me-1"></i>Buat QR Code Pertama
+                                        </button>
                                     </td>
                                 </tr>
                                 @endforelse
@@ -211,6 +244,7 @@
                     </div>
                 </div>
 
+                <!-- Pagination -->
                 @if($sessions->total() > 0)
                 <div class="card-footer bg-white border-top">
                     <div class="d-flex justify-content-between align-items-center">
@@ -229,6 +263,7 @@
     </div>
 </div>
 
+<!-- Modal Create QR Code -->
 <div class="modal fade" id="createQRModal" tabindex="-1">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
@@ -238,9 +273,14 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="{{ route('admin.qrcode.store') }}" method="POST" id="createQRForm">
+            <form action="{{ request()->is('admin/*') ? route('admin.qrcode.store') : route('guru.qrcode.store') }}" method="POST" id="createQRForm">
                 @csrf
                 <div class="modal-body">
+                    <div class="alert alert-warning mb-3">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>Perhatian!</strong> Jika kelas sudah memiliki QR Code aktif, QR Code lama akan otomatis terhapus.
+                    </div>
+                    
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">
@@ -377,6 +417,7 @@
     </div>
 </div>
 
+<!-- Modal Show QR Code -->
 <div class="modal fade" id="showQRModal" tabindex="-1">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
@@ -410,198 +451,6 @@
     z-index: 1;
 }
 </style>
-
-<script>
-let map;
-let marker;
-let circle;
-
-document.addEventListener('DOMContentLoaded', function() {
-    const createQRModal = document.getElementById('createQRModal');
-    
-    createQRModal.addEventListener('shown.bs.modal', function() {
-        if (!map) {
-            initMap();
-        }
-    });
-    
-    // Search location button
-    document.getElementById('searchLocationBtn').addEventListener('click', function() {
-        const searchBox = document.getElementById('searchBox');
-        searchBox.style.display = searchBox.style.display === 'none' ? 'block' : 'none';
-    });
-    
-    // Search address
-    document.getElementById('searchAddressBtn').addEventListener('click', function() {
-        const address = document.getElementById('searchAddressInput').value;
-        if (address) {
-            searchAddress(address);
-        }
-    });
-    
-    // Enter key on search
-    document.getElementById('searchAddressInput').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            document.getElementById('searchAddressBtn').click();
-        }
-    });
-    
-    // Get current location
-    document.getElementById('getLocationBtn').addEventListener('click', function() {
-        getCurrentLocation();
-    });
-    
-    // Radius change
-    document.getElementById('radius').addEventListener('change', function() {
-        if (circle) {
-            circle.setRadius(parseInt(this.value));
-        }
-    });
-});
-
-function initMap() {
-    // Default location (Indonesia center)
-    const defaultLat = -2.5489;
-    const defaultLng = 118.0149;
-    
-    map = L.map('map').setView([defaultLat, defaultLng], 5);
-    
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors',
-        maxZoom: 19
-    }).addTo(map);
-    
-    // Click on map
-    map.on('click', function(e) {
-        setLocation(e.latlng.lat, e.latlng.lng);
-    });
-}
-
-function setLocation(lat, lng) {
-    document.getElementById('latitude').value = lat.toFixed(8);
-    document.getElementById('longitude').value = lng.toFixed(8);
-    
-    // Remove existing marker and circle
-    if (marker) {
-        map.removeLayer(marker);
-    }
-    if (circle) {
-        map.removeLayer(circle);
-    }
-    
-    // Add new marker
-    marker = L.marker([lat, lng]).addTo(map);
-    
-    // Add circle
-    const radius = parseInt(document.getElementById('radius').value) || 200;
-    circle = L.circle([lat, lng], {
-        color: 'red',
-        fillColor: '#f03',
-        fillOpacity: 0.2,
-        radius: radius
-    }).addTo(map);
-    
-    // Center map
-    map.setView([lat, lng], 16);
-}
-
-function getCurrentLocation() {
-    const btn = document.getElementById('getLocationBtn');
-    const originalHTML = btn.innerHTML;
-    
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Mengambil lokasi...';
-    
-    if (!navigator.geolocation) {
-        Swal.fire({
-            icon: 'error',
-            title: 'Error!',
-            text: 'Browser Anda tidak mendukung Geolocation'
-        });
-        btn.disabled = false;
-        btn.innerHTML = originalHTML;
-        return;
-    }
-    
-    navigator.geolocation.getCurrentPosition(
-        (position) => {
-            setLocation(position.coords.latitude, position.coords.longitude);
-            
-            btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Lokasi Berhasil Diambil';
-            btn.classList.remove('btn-primary');
-            btn.classList.add('btn-success');
-            
-            setTimeout(() => {
-                btn.classList.remove('btn-success');
-                btn.classList.add('btn-primary');
-                btn.innerHTML = originalHTML;
-            }, 2000);
-        },
-        (error) => {
-            btn.disabled = false;
-            btn.innerHTML = originalHTML;
-            
-            let errorMessage = 'Gagal mengambil lokasi';
-            switch(error.code) {
-                case error.PERMISSION_DENIED:
-                    errorMessage = 'Izin akses lokasi ditolak';
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    errorMessage = 'Informasi lokasi tidak tersedia';
-                    break;
-                case error.TIMEOUT:
-                    errorMessage = 'Waktu permintaan lokasi habis';
-                    break;
-            }
-            
-            Swal.fire({
-                icon: 'error',
-                title: 'Gagal!',
-                text: errorMessage
-            });
-        }
-    );
-}
-
-function searchAddress(address) {
-    // Using Nominatim (OpenStreetMap) geocoding
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`;
-    
-    fetch(url)
-        .then(response => response.json())
-        .then(data => {
-            if (data && data.length > 0) {
-                const lat = parseFloat(data[0].lat);
-                const lng = parseFloat(data[0].lon);
-                setLocation(lat, lng);
-                
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Berhasil!',
-                    text: 'Lokasi ditemukan',
-                    timer: 1500,
-                    showConfirmButton: false
-                });
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Tidak Ditemukan',
-                    text: 'Alamat tidak ditemukan, coba kata kunci lain'
-                });
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Error!',
-                text: 'Gagal mencari lokasi'
-            });
-        });
-}
-</script>
 
 @push('scripts')
 <link rel="stylesheet" href="{{ asset('css/admin/qrcode.css') }}">

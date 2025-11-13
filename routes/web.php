@@ -39,7 +39,7 @@ Route::middleware(['auth'])->group(function() {
 
 Route::middleware(['auth', 'user-role:admin'])->group(function() {
     Route::get('/admin/home', [HomeController::class, 'adminHome'])->name('admin.home');
-    
+
     Route::post('admin/users/bulk-delete', [UserController::class, 'bulkDeleteByRole'])
         ->name('admin.users.bulk-delete');
     Route::resource('admin/users', UserController::class)->names([
@@ -81,13 +81,31 @@ Route::middleware(['auth', 'user-role:admin'])->group(function() {
         'destroy' => 'admin.kelas.destroy',
     ]);
 
-    Route::get('admin/qrcode', [App\Http\Controllers\Admin\QRCodeController::class, 'index'])->name('admin.qrcode.index');
-    Route::get('admin/qrcode/create', [App\Http\Controllers\Admin\QRCodeController::class, 'create'])->name('admin.qrcode.create');
-    Route::post('admin/qrcode', [App\Http\Controllers\Admin\QRCodeController::class, 'store'])->name('admin.qrcode.store');
-    Route::get('admin/qrcode/{qrcode}', [App\Http\Controllers\Admin\QRCodeController::class, 'show'])->name('admin.qrcode.show');
-    Route::get('admin/qrcode/{qrcode}/download', [App\Http\Controllers\Admin\QRCodeController::class, 'download'])->name('admin.qrcode.download');
-    Route::patch('admin/qrcode/{qrcode}/status', [App\Http\Controllers\Admin\QRCodeController::class, 'updateStatus'])->name('admin.qrcode.updateStatus');
-    Route::delete('admin/qrcode/{qrcode}', [App\Http\Controllers\Admin\QRCodeController::class, 'destroy'])->name('admin.qrcode.destroy');
+    // ====================================================
+    // QR CODE ROUTES (TANPA REGENERATE)
+    // ====================================================
+    Route::get('admin/qrcode', [App\Http\Controllers\Admin\QRCodeController::class, 'index'])
+        ->name('admin.qrcode.index');
+    
+    Route::get('admin/qrcode/create', [App\Http\Controllers\Admin\QRCodeController::class, 'create'])
+        ->name('admin.qrcode.create');
+    
+    Route::post('admin/qrcode', [App\Http\Controllers\Admin\QRCodeController::class, 'store'])
+        ->name('admin.qrcode.store');
+    
+    Route::get('admin/qrcode/{qrcode}', [App\Http\Controllers\Admin\QRCodeController::class, 'show'])
+        ->name('admin.qrcode.show');
+    
+    Route::get('admin/qrcode/{qrcode}/download', [App\Http\Controllers\Admin\QRCodeController::class, 'download'])
+        ->name('admin.qrcode.download');
+    
+    Route::patch('admin/qrcode/{qrcode}/status', [App\Http\Controllers\Admin\QRCodeController::class, 'updateStatus'])
+        ->name('admin.qrcode.updateStatus');
+    
+    Route::delete('admin/qrcode/{qrcode}', [App\Http\Controllers\Admin\QRCodeController::class, 'destroy'])
+        ->name('admin.qrcode.destroy');
+    
+    // NO regenerate route - use create new instead!
 
     Route::get('admin/presensi', [App\Http\Controllers\Admin\PresensiController::class, 'index'])
         ->name('admin.presensi.index');
@@ -132,13 +150,31 @@ Route::middleware(['auth', 'user-role:admin'])->group(function() {
 Route::middleware(['auth', 'user-role:guru'])->group(function() {
     Route::get('/guru/home', [HomeController::class, 'guruHome'])->name('guru.home');
 
-    Route::get('guru/qrcode', [App\Http\Controllers\Guru\QRCodeController::class, 'index'])->name('guru.qrcode.index');
-    Route::get('guru/qrcode/create', [App\Http\Controllers\Guru\QRCodeController::class, 'create'])->name('guru.qrcode.create');
-    Route::post('guru/qrcode', [App\Http\Controllers\Guru\QRCodeController::class, 'store'])->name('guru.qrcode.store');
-    Route::get('guru/qrcode/{qrcode}', [App\Http\Controllers\Guru\QRCodeController::class, 'show'])->name('guru.qrcode.show');
-    Route::get('guru/qrcode/{qrcode}/download', [App\Http\Controllers\Guru\QRCodeController::class, 'download'])->name('guru.qrcode.download');
-    Route::patch('guru/qrcode/{qrcode}/status', [App\Http\Controllers\Guru\QRCodeController::class, 'updateStatus'])->name('guru.qrcode.updateStatus');
-    Route::delete('guru/qrcode/{qrcode}', [App\Http\Controllers\Guru\QRCodeController::class, 'destroy'])->name('guru.qrcode.destroy');
+    // ====================================================
+    // QR CODE ROUTES GURU (TANPA REGENERATE)
+    // ====================================================
+    Route::get('guru/qrcode', [App\Http\Controllers\Guru\QRCodeController::class, 'index'])
+        ->name('guru.qrcode.index');
+    
+    Route::get('guru/qrcode/create', [App\Http\Controllers\Guru\QRCodeController::class, 'create'])
+        ->name('guru.qrcode.create');
+    
+    Route::post('guru/qrcode', [App\Http\Controllers\Guru\QRCodeController::class, 'store'])
+        ->name('guru.qrcode.store');
+    
+    Route::get('guru/qrcode/{qrcode}', [App\Http\Controllers\Guru\QRCodeController::class, 'show'])
+        ->name('guru.qrcode.show');
+    
+    Route::get('guru/qrcode/{qrcode}/download', [App\Http\Controllers\Guru\QRCodeController::class, 'download'])
+        ->name('guru.qrcode.download');
+    
+    Route::patch('guru/qrcode/{qrcode}/status', [App\Http\Controllers\Guru\QRCodeController::class, 'updateStatus'])
+        ->name('guru.qrcode.updateStatus');
+    
+    Route::delete('guru/qrcode/{qrcode}', [App\Http\Controllers\Guru\QRCodeController::class, 'destroy'])
+        ->name('guru.qrcode.destroy');
+    
+    // NO regenerate route - use create new instead!
 
     Route::get('guru/presensi', [App\Http\Controllers\Guru\PresensiController::class, 'index'])->name('guru.presensi.index');
     Route::get('guru/presensi/kelas/{kelas}', [App\Http\Controllers\Guru\PresensiController::class, 'showKelas'])->name('guru.presensi.kelas');
@@ -169,10 +205,5 @@ Route::middleware(['auth', 'user-role:siswa'])->group(function() {
     
     // Presensi - Scan QR Code
     Route::get('siswa/presensi/scan/{code}', [PresensiController::class, 'scan'])
-    ->name('siswa.presensi.scan');
-    // Route::post('siswa/presensi/submit', [App\Http\Controllers\Siswa\PresensiController::class, 'submit'])->name('siswa.presensi.submit');
-    
-    // Presensi - History
-    // Route::get('siswa/presensi', [App\Http\Controllers\Siswa\PresensiController::class, 'index'])->name('siswa.presensi.index');
-    // Route::get('siswa/presensi/{presensi}', [App\Http\Controllers\Siswa\PresensiController::class, 'show'])->name('siswa.presensi.show');
+        ->name('siswa.presensi.scan');
 });
