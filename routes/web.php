@@ -178,11 +178,76 @@ Route::middleware(['auth', 'user-role:guru'])->group(function() {
 Route::middleware(['auth', 'user-role:siswa'])->group(function() {
     Route::get('/siswa/home', [HomeController::class, 'siswaHome'])->name('siswa.home');
     
-    // Presensi - Scan QR Code
-    Route::get('siswa/presensi/index/{code}', [PresensiController::class, 'scan'])
+    // Halaman Scanner QR (tanpa parameter)
+    Route::get('siswa/presensi', [PresensiController::class, 'index'])
         ->name('siswa.presensi.index');
     
-    // Submit Presensi
+    // Submit Presensi setelah scan
     Route::post('siswa/presensi/submit', [PresensiController::class, 'submitPresensi'])
         ->name('siswa.presensi.submit');
 });
+
+// Route untuk validasi QR Code (diakses oleh scanner)
+Route::get('siswa/presensi/scan/{code}', function($code) {
+    return response()->json([
+        'code' => $code,
+        'timestamp' => now()->toIso8601String()
+    ]);
+})->name('siswa.presensi.scan');
+
+Route::get('/test-qr-format', function() {
+    $sessions = App\Models\PresensiSession::with('kelas')
+        ->latest()
+        ->take(5)
+        ->get();
+    
+    return response()->json([
+        'message' => 'Format QR Code yang ada di database',
+        'count' => $sessions->count(),
+        'sessions' => $sessions->map(function($session) {
+            return [
+                'id' => $session->id,
+                'kelas' => $session->kelas->nama_kelas ?? 'N/A',
+                'qr_code' => $session->qr_code,
+                'qr_code_length' => strlen($session->qr_code),
+                'status' => $session->status,
+                'full_url' => route('siswa.presensi.scan', $session->qr_code),
+                'created_at' => $session->created_at->format('Y-m-d H:i:s'),
+            ];
+        })
+    ]);
+})->middleware('auth');
+
+// TEST ROUTE - SIMULATE SCAN
+Route::post('/test-scan-qr', function(Illuminate\Http\Request $request) {
+    $qrCode = $request->qr_code;
+    
+    // Cari session
+    $session = App\Models\PresensiSession::where('qr_code', $qrCode)->first();
+    
+    $allSessions = App\Models\PresensiSession::select('id', 'qr_code', 'kelas_id', 'status')
+        ->get()
+        ->map(function($s) use ($qrCode) {
+            return [
+                'id' => $s->id,
+                'qr_code' => $s->qr_code,
+                'match' => $s->qr_code === $qrCode,
+                'qr_length' => strlen($s->qr_code),
+                'search_length' => strlen($qrCode),
+                'status' => $s->status,
+            ];
+        });
+    
+    return response()->json([
+        'searched_qr' => $qrCode,
+        'qr_length' => strlen($qrCode),
+        'found' => $session ? true : false,
+        'session' => $session ? [
+            'id' => $session->id,
+            'qr_code' => $session->qr_code,
+            'kelas_id' => $session->kelas_id,
+            'status' => $session->status,
+        ] : null,
+        'all_sessions' => $allSessions
+    ]);
+})->middleware('auth');

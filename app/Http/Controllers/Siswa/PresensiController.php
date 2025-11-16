@@ -13,34 +13,11 @@ use Carbon\Carbon;
 class PresensiController extends Controller
 {
     /**
-     * Halaman scan QR Code
+     * Halaman scanner QR Code (tanpa parameter)
      */
-    public function scan($code)
+    public function index()
     {
-        try {
-            // Cari session berdasarkan QR code
-            $session = PresensiSession::where('qr_code', $code)
-                ->with(['kelas.jurusan'])
-                ->firstOrFail();
-            
-            // Auto-update status jika expired
-            $session->updateStatusIfExpired();
-            
-            // Refresh data setelah update
-            $session->refresh();
-            
-            return view('siswa.presensi.scan', compact('session'));
-            
-        } catch (\Exception $e) {
-            Log::error('Error loading scan page', [
-                'code' => $code,
-                'error' => $e->getMessage()
-            ]);
-            
-            return view('siswa.presensi.scan-error', [
-                'message' => 'QR Code tidak valid atau sudah tidak aktif'
-            ]);
-        }
+        return view('siswa.presensi.index');
     }
     
     /**
@@ -49,17 +26,77 @@ class PresensiController extends Controller
     public function submitPresensi(Request $request)
     {
         try {
+            // LOG REQUEST DATA
+            Log::info('═══════════════════════════════════════════════════════');
+            Log::info('🎯 SUBMIT PRESENSI REQUEST');
+            Log::info('═══════════════════════════════════════════════════════');
+            Log::info('User ID: ' . Auth::id());
+            Log::info('User Name: ' . Auth::user()->name);
+            Log::info('Request Data:', $request->all());
+            Log::info('───────────────────────────────────────────────────────');
+            
             $validated = $request->validate([
-                'session_id' => 'required|exists:presensi_sessions,id',
+                'qr_code' => 'required|string',
                 'latitude' => 'required|numeric|between:-90,90',
                 'longitude' => 'required|numeric|between:-180,180',
             ]);
             
             $siswa = Auth::user();
-            $session = PresensiSession::findOrFail($validated['session_id']);
+            
+            // LOG SEARCH QR CODE
+            Log::info('🔍 SEARCHING FOR QR CODE');
+            Log::info('Received QR Code: "' . $validated['qr_code'] . '"');
+            Log::info('QR Code Length: ' . strlen($validated['qr_code']));
+            Log::info('QR Code Type: ' . gettype($validated['qr_code']));
+            
+            // Cari session berdasarkan QR code
+            $session = PresensiSession::where('qr_code', $validated['qr_code'])->first();
+            
+            // LOG RESULT
+            if ($session) {
+                Log::info('✅ SESSION FOUND!');
+                Log::info('Session ID: ' . $session->id);
+                Log::info('Session QR Code: "' . $session->qr_code . '"');
+                Log::info('Kelas ID: ' . $session->kelas_id);
+                Log::info('Kelas Name: ' . ($session->kelas ? $session->kelas->nama_kelas : 'N/A'));
+                Log::info('Status: ' . $session->status);
+            } else {
+                Log::warning('❌ SESSION NOT FOUND!');
+                Log::warning('Searched QR: "' . $validated['qr_code'] . '"');
+                
+                // Log all available sessions for comparison
+                $allSessions = PresensiSession::select('id', 'qr_code', 'kelas_id', 'status')
+                    ->get()
+                    ->map(function($s) use ($validated) {
+                        return [
+                            'id' => $s->id,
+                            'qr_code' => $s->qr_code,
+                            'match' => ($s->qr_code === $validated['qr_code']) ? 'YES' : 'NO',
+                            'qr_length' => strlen($s->qr_code),
+                            'status' => $s->status,
+                        ];
+                    })
+                    ->toArray();
+                
+                Log::warning('Available Sessions:', $allSessions);
+            }
+            
+            Log::info('───────────────────────────────────────────────────────');
+            
+            if (!$session) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'QR Code tidak valid atau tidak ditemukan'
+                ], 422);
+            }
+            
+            // Auto-update status jika expired
+            $session->updateStatusIfExpired();
+            $session->refresh();
             
             // Validasi 1: Cek apakah siswa punya kelas
             if (!$siswa->kelas_id) {
+                Log::warning('❌ Siswa belum punya kelas');
                 return response()->json([
                     'success' => false,
                     'message' => 'Anda belum terdaftar di kelas manapun. Hubungi admin untuk penempatan kelas.'
@@ -68,6 +105,10 @@ class PresensiController extends Controller
             
             // Validasi 2: Cek apakah siswa di kelas yang sama dengan session
             if ($siswa->kelas_id != $session->kelas_id) {
+                Log::warning('❌ Kelas tidak cocok');
+                Log::warning('Siswa Kelas ID: ' . $siswa->kelas_id);
+                Log::warning('Session Kelas ID: ' . $session->kelas_id);
+                
                 return response()->json([
                     'success' => false,
                     'message' => 'QR Code ini bukan untuk kelas Anda. Kelas Anda: ' . ($siswa->kelas ? $siswa->kelas->nama_kelas : 'Belum ada')
@@ -76,6 +117,9 @@ class PresensiController extends Controller
             
             // Validasi 3: Cek apakah session masih aktif
             if (!$session->isActive()) {
+                Log::warning('❌ Session tidak aktif');
+                Log::warning('Session Status: ' . $session->status);
+                
                 $statusText = $session->getStatusText();
                 
                 if ($statusText === 'waiting') {
@@ -99,6 +143,9 @@ class PresensiController extends Controller
                 ->first();
             
             if ($existingPresensi) {
+                Log::warning('❌ Sudah presensi hari ini');
+                Log::warning('Existing Presensi ID: ' . $existingPresensi->id);
+                
                 return response()->json([
                     'success' => false,
                     'message' => 'Anda sudah melakukan presensi hari ini pada jam ' . 
@@ -116,7 +163,17 @@ class PresensiController extends Controller
             
             $isValidLocation = $distance <= $session->radius;
             
+            Log::info('📍 LOCATION VALIDATION');
+            Log::info('Siswa Location: ' . $validated['latitude'] . ', ' . $validated['longitude']);
+            Log::info('Session Location: ' . $session->latitude . ', ' . $session->longitude);
+            Log::info('Distance: ' . round($distance, 2) . ' meters');
+            Log::info('Radius: ' . $session->radius . ' meters');
+            Log::info('Valid: ' . ($isValidLocation ? 'YES' : 'NO'));
+            Log::info('───────────────────────────────────────────────────────');
+            
             if (!$isValidLocation) {
+                Log::warning('❌ Lokasi tidak valid - di luar radius');
+                
                 return response()->json([
                     'success' => false,
                     'message' => sprintf(
@@ -141,13 +198,13 @@ class PresensiController extends Controller
                 'keterangan' => 'Presensi via QR Code'
             ]);
             
-            Log::info('Presensi berhasil', [
-                'siswa_id' => $siswa->id,
-                'siswa_name' => $siswa->name,
-                'kelas' => $session->kelas->nama_kelas,
-                'waktu' => $presensi->created_at,
-                'jarak' => round($distance, 2) . ' meter'
-            ]);
+            Log::info('✅ PRESENSI BERHASIL DISIMPAN!');
+            Log::info('Presensi ID: ' . $presensi->id);
+            Log::info('Siswa: ' . $siswa->name);
+            Log::info('Kelas: ' . $session->kelas->nama_kelas);
+            Log::info('Waktu: ' . $presensi->created_at->format('Y-m-d H:i:s'));
+            Log::info('Jarak: ' . round($distance, 2) . ' meter');
+            Log::info('═══════════════════════════════════════════════════════');
             
             return response()->json([
                 'success' => true,
@@ -162,6 +219,11 @@ class PresensiController extends Controller
             ]);
             
         } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('❌ VALIDATION ERROR');
+            Log::error('Errors:', $e->errors());
+            Log::error('Request:', $request->all());
+            Log::error('═══════════════════════════════════════════════════════');
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Data tidak valid',
@@ -169,11 +231,13 @@ class PresensiController extends Controller
             ], 422);
             
         } catch (\Exception $e) {
-            Log::error('Error submit presensi', [
-                'user_id' => Auth::id(),
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
+            Log::error('❌ EXCEPTION ERROR');
+            Log::error('Message: ' . $e->getMessage());
+            Log::error('File: ' . $e->getFile() . ':' . $e->getLine());
+            Log::error('User ID: ' . Auth::id());
+            Log::error('Request:', $request->all());
+            Log::error('Trace: ' . $e->getTraceAsString());
+            Log::error('═══════════════════════════════════════════════════════');
             
             return response()->json([
                 'success' => false,
