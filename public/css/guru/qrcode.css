@@ -88,6 +88,12 @@
    RESPONSIVE ADJUSTMENTS
    ================================== */
 @media (max-width: 768px) {
+    .card-header.full-width {
+        margin-left: calc(-1 * 3rem);
+        margin-right: calc(-1 * 3rem);
+        padding-left: 3rem;
+        padding-right: 3rem;
+    }
     .avatar {
         width: 28px;
         height: 28px;

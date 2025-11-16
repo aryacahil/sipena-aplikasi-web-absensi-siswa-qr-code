@@ -23,8 +23,7 @@
             </li>
             
             <li class="nav-item">
-                <a class="nav-link has-arrow " href="#"
-                    aria-controls="navPages">
+                <a class="nav-link has-arrow " href={{ route('siswa.presensi.index') }}>
                     <i data-feather="QR code scan" class="bi bi-qr-code-scan icon-xs me-2">
                     </i> Scan Absensi
                 </a>

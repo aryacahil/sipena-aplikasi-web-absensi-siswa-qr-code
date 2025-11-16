@@ -79,7 +79,7 @@
                 </div>
 
                 <!-- Card Header with Quick Filters -->
-                <div class="card-header bg-white border-bottom">
+                <div class="card-header bg-white border-bottom full-width">
                     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
                         <div>
                             <h4 class="mb-0">Daftar QR Code</h4>
@@ -122,12 +122,12 @@
                             <thead class="table-light">
                                 <tr>
                                     <th class="border-0 text-center" style="width: 60px;">No</th>
-                                    <th class="border-0">Kelas</th>
-                                    <th class="border-0 text-center">Tanggal</th>
-                                    <th class="border-0 text-center">Waktu</th>
-                                    <th class="border-0 text-center">Lokasi</th>
-                                    <th class="border-0 text-center">Presensi</th>
-                                    <th class="border-0 text-center">Status</th>
+                                    <th class="border-0 text-center" style="width: 180px;">Kelas</th>
+                                    <th class="border-0 text-center" style="width: 110px;">Tanggal</th>
+                                    <th class="border-0 text-center" style="width: 100px;">Waktu</th>
+                                    <th class="border-0 text-center" style="width: 90px;">Lokasi</th>
+                                    <th class="border-0 text-center" style="width: 90px;">Presensi</th>
+                                    <th class="border-0 text-center" style="width: 100px;">Status</th>
                                     <th class="border-0 text-center" style="width: 150px;">Aksi</th>
                                 </tr>
                             </thead>
@@ -139,7 +139,6 @@
                                     </td>
                                     <td>
                                         <h6 class="mb-0">{{ $session->kelas->nama_kelas }}</h6>
-                                        <small class="text-muted">{{ $session->kelas->jurusan->nama_jurusan }}</small>
                                     </td>
                                     <td class="text-center">
                                         <span class="badge bg-primary-soft text-primary">
@@ -148,7 +147,9 @@
                                     </td>
                                     <td class="text-center">
                                         <small class="text-muted">
-                                            {{ $session->jam_mulai->format('H:i') }} - 
+                                            {{ $session->jam_mulai->format('H:i') }}
+                                        </small>
+                                        <small class="text-muted">
                                             {{ $session->jam_selesai->format('H:i') }}
                                         </small>
                                     </td>
