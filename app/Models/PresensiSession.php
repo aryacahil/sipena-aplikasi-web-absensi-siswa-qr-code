@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 class PresensiSession extends Model
 {
@@ -21,18 +22,23 @@ class PresensiSession extends Model
         'longitude',
         'radius',
         'status',
+        'keterangan',
     ];
 
     protected $casts = [
         'tanggal' => 'date',
         'jam_mulai' => 'datetime:H:i',
         'jam_selesai' => 'datetime:H:i',
+        'latitude' => 'decimal:8',
+        'longitude' => 'decimal:8',
+        'radius' => 'integer',
     ];
 
+    // Auto-generate QR code
     protected static function boot()
     {
         parent::boot();
-        
+
         static::creating(function ($model) {
             if (empty($model->qr_code)) {
                 $model->qr_code = Str::random(32);
@@ -40,9 +46,10 @@ class PresensiSession extends Model
         });
     }
 
+    // Relationships
     public function kelas()
     {
-        return $this->belongsTo(Kelas::class);{{  }}
+        return $this->belongsTo(Kelas::class);
     }
 
     public function creator()
@@ -55,34 +62,88 @@ class PresensiSession extends Model
         return $this->hasMany(Presensi::class, 'session_id');
     }
 
+    /**
+     * Check if QR Code session is currently active
+     */
     public function isActive()
     {
-        if ($this->status !== 'active') {
+        if ($this->status === 'expired' || $this->status === 'inactive') {
             return false;
         }
 
-        $now = now();
-        $sessionDate = $this->tanggal->format('Y-m-d');
-        $today = $now->format('Y-m-d');
+        $now = Carbon::now();
+        $sessionDate = Carbon::parse($this->tanggal);
 
-        if ($sessionDate !== $today) {
+        // Check date
+        if (!$now->isSameDay($sessionDate)) {
             return false;
         }
 
-        $startTime = $this->tanggal->format('Y-m-d') . ' ' . $this->jam_mulai->format('H:i:s');
-        $endTime = $this->tanggal->format('Y-m-d') . ' ' . $this->jam_selesai->format('H:i:s');
+        // Combine date with time
+        $jamMulai = Carbon::parse($sessionDate->format('Y-m-d') . ' ' . $this->jam_mulai->format('H:i:s'));
+        $jamSelesai = Carbon::parse($sessionDate->format('Y-m-d') . ' ' . $this->jam_selesai->format('H:i:s'));
 
-        return $now->between($startTime, $endTime);
+        return $now->between($jamMulai, $jamSelesai);
     }
 
+    /**
+     * Get status text based on time
+     */
+    public function getStatusText()
+    {
+        if ($this->status === 'expired' || $this->status === 'inactive') {
+            return 'expired';
+        }
+
+        $now = Carbon::now();
+        $sessionDate = Carbon::parse($this->tanggal);
+
+        if ($now->isAfter($sessionDate->endOfDay())) {
+            return 'expired';
+        }
+
+        $jamMulai = Carbon::parse($sessionDate->format('Y-m-d') . ' ' . $this->jam_mulai->format('H:i:s'));
+        $jamSelesai = Carbon::parse($sessionDate->format('Y-m-d') . ' ' . $this->jam_selesai->format('H:i:s'));
+
+        if ($now->isAfter($jamSelesai)) {
+            return 'expired';
+        }
+
+        if ($now->between($jamMulai, $jamSelesai)) {
+            return 'active';
+        }
+
+        if ($now->isBefore($jamMulai)) {
+            return 'waiting';
+        }
+
+        return 'expired';
+    }
+
+    /**
+     * Auto-set expired if needed
+     */
+    public function updateStatusIfExpired()
+    {
+        if ($this->getStatusText() === 'expired' && $this->status === 'active') {
+            $this->update(['status' => 'expired']);
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Haversine distance in meters
+     */
     public static function calculateDistance($lat1, $lon1, $lat2, $lon2)
     {
         $earthRadius = 6371000;
 
         $latFrom = deg2rad($lat1);
         $lonFrom = deg2rad($lon1);
-        $latTo = deg2rad($lat2);
-        $lonTo = deg2rad($lon2);
+        $latTo   = deg2rad($lat2);
+        $lonTo   = deg2rad($lon2);
 
         $latDelta = $latTo - $latFrom;
         $lonDelta = $lonTo - $lonFrom;

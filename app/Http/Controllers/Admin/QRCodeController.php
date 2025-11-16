@@ -112,10 +112,21 @@ class QRCodeController extends Controller
             
             $url = route('siswa.presensi.scan', ['code' => $qrcode->qr_code]);
             
-            // Generate QR Code SVG inline untuk ditampilkan
-            $qrCodeSvg = QrCode::size(300)
+            // Generate QR Code SVG - PERBAIKAN: Pastikan return string
+            $qrCodeSvgObject = QrCode::format('svg')
+                ->size(300)
                 ->errorCorrection('H')
                 ->generate($url);
+            
+            // Convert object to string SVG
+            $qrCodeSvg = (string) $qrCodeSvgObject;
+            
+            Log::info('QR Code Generated', [
+                'session_id' => $qrcode->id,
+                'svg_type' => gettype($qrCodeSvg),
+                'svg_length' => strlen($qrCodeSvg),
+                'has_svg_tag' => strpos($qrCodeSvg, '<svg') !== false
+            ]);
 
             $siswaIds = $qrcode->presensis()->pluck('siswa_id')->toArray();
             $siswaBelumPresensi = $qrcode->kelas->siswa()
@@ -145,6 +156,7 @@ class QRCodeController extends Controller
                         'longitude' => $qrcode->longitude ?? 0,
                         'radius' => $qrcode->radius ?? 200,
                         'status' => $qrcode->status,
+                        'status_text' => $qrcode->getStatusText(), // Tambahkan ini
                         'is_active' => $qrcode->isActive(),
                         'creator' => [
                             'name' => $qrcode->creator->name,
@@ -167,7 +179,7 @@ class QRCodeController extends Controller
                         'stats' => $stats,
                         'scan_url' => $url,
                     ],
-                    'qr_code_svg' => $qrCodeSvg,
+                    'qr_code_svg' => $qrCodeSvg, // Sudah berupa string
                 ]);
             }
 

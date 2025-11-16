@@ -169,16 +169,18 @@
                                         </span>
                                     </td>
                                     <td class="text-center">
-                                        @if($session->status == 'active')
-                                            @if($session->isActive())
-                                                <span class="badge bg-success">
-                                                    <i class="bi bi-check-circle me-1"></i>Aktif
-                                                </span>
-                                            @else
-                                                <span class="badge bg-warning">
-                                                    <i class="bi bi-clock me-1"></i>Menunggu
-                                                </span>
-                                            @endif
+                                        @php
+                                            $statusText = $session->getStatusText();
+                                        @endphp
+                                        
+                                        @if($statusText === 'active')
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-check-circle me-1"></i>Sedang Aktif
+                                            </span>
+                                        @elseif($statusText === 'waiting')
+                                            <span class="badge bg-warning">
+                                                <i class="bi bi-clock me-1"></i>Menunggu
+                                            </span>
                                         @else
                                             <span class="badge bg-secondary">
                                                 <i class="bi bi-x-circle me-1"></i>Expired
@@ -186,7 +188,7 @@
                                         @endif
                                     </td>
                                     <td class="text-center">
-                                        <div class="d-flex justify-content-center gap-1">
+                                        <div class="btn-group" role="group">
                                             <button type="button"
                                                     class="btn btn-sm btn-info btn-show-qr" 
                                                     data-session-id="{{ $session->id }}"
@@ -199,7 +201,6 @@
                                                 $destroyRoute = request()->is('admin/*') ? 'admin.qrcode.destroy' : 'guru.qrcode.destroy';
                                             @endphp
                                             
-                                            <!-- Tombol Download - untuk semua QR -->
                                             <a href="{{ route($downloadRoute, $session->id) }}" 
                                                class="btn btn-sm btn-success" 
                                                title="Download QR Code">
@@ -215,7 +216,9 @@
                                             </button>
                                             
                                             <form action="{{ route($destroyRoute, $session->id) }}" 
-                                                  method="POST" class="d-inline delete-form">
+                                                  method="POST" 
+                                                  class="d-inline delete-form"
+                                                  style="margin: 0;">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="button" 
@@ -233,9 +236,6 @@
                                     <td colspan="8" class="text-center py-5">
                                         <i class="bi bi-qr-code fs-1 text-muted"></i>
                                         <p class="text-muted mt-3 mb-0">Belum ada QR Code</p>
-                                        <button type="button" class="btn btn-sm btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#createQRModal">
-                                            <i class="bi bi-plus-circle me-1"></i>Buat QR Code Pertama
-                                        </button>
                                     </td>
                                 </tr>
                                 @endforelse
@@ -265,7 +265,7 @@
 
 <!-- Modal Create QR Code -->
 <div class="modal fade" id="createQRModal" tabindex="-1">
-    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">
@@ -275,7 +275,7 @@
             </div>
             <form action="{{ request()->is('admin/*') ? route('admin.qrcode.store') : route('guru.qrcode.store') }}" method="POST" id="createQRForm">
                 @csrf
-                <div class="modal-body">
+                <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
                     <div class="alert alert-warning mb-3">
                         <i class="bi bi-exclamation-triangle me-2"></i>
                         <strong>Perhatian!</strong> Jika kelas sudah memiliki QR Code aktif, QR Code lama akan otomatis terhapus.
@@ -339,13 +339,17 @@
                                 Klik pada peta atau gunakan tombol di bawah untuk menentukan lokasi
                             </div>
 
-                            <div class="mb-3">
-                                <button type="button" class="btn btn-primary w-100 mb-2" id="getLocationBtn">
-                                    <i class="bi bi-geo-alt me-2"></i>Gunakan Lokasi Saat Ini
-                                </button>
-                                <button type="button" class="btn btn-outline-secondary w-100" id="searchLocationBtn">
-                                    <i class="bi bi-search me-2"></i>Cari Alamat
-                                </button>
+                            <div class="row g-2 mb-3">
+                                <div class="col-md-6">
+                                    <button type="button" class="btn btn-primary w-100" id="getLocationBtn">
+                                        <i class="bi bi-geo-alt me-2"></i>Gunakan Lokasi Saat Ini
+                                    </button>
+                                </div>
+                                <div class="col-md-6">
+                                    <button type="button" class="btn btn-outline-secondary w-100" id="searchLocationBtn">
+                                        <i class="bi bi-search me-2"></i>Cari Alamat
+                                    </button>
+                                </div>
                             </div>
 
                             <!-- Search Box -->
@@ -359,43 +363,43 @@
                             </div>
 
                             <!-- Map Container -->
-                            <div id="map" style="height: 400px; border-radius: 8px; border: 2px solid #dee2e6;"></div>
+                            <div id="map" style="height: 350px; border-radius: 8px; border: 2px solid #dee2e6;"></div>
                             
-                            <div class="row mt-3">
+                            <div class="row g-2 mt-3">
                                 <div class="col-md-4">
-                                    <label class="form-label fw-semibold">
+                                    <label class="form-label fw-semibold small">
                                         Latitude <span class="text-danger">*</span>
                                     </label>
                                     <input type="text" 
                                            name="latitude" 
                                            id="latitude"
-                                           class="form-control" 
+                                           class="form-control form-control-sm" 
                                            placeholder="-7.6298"
                                            readonly
                                            required>
                                 </div>
 
                                 <div class="col-md-4">
-                                    <label class="form-label fw-semibold">
+                                    <label class="form-label fw-semibold small">
                                         Longitude <span class="text-danger">*</span>
                                     </label>
                                     <input type="text" 
                                            name="longitude" 
                                            id="longitude"
-                                           class="form-control" 
+                                           class="form-control form-control-sm" 
                                            placeholder="111.5239"
                                            readonly
                                            required>
                                 </div>
 
                                 <div class="col-md-4">
-                                    <label class="form-label fw-semibold">
+                                    <label class="form-label fw-semibold small">
                                         Radius (meter) <span class="text-danger">*</span>
                                     </label>
                                     <input type="number" 
                                            name="radius" 
                                            id="radius"
-                                           class="form-control" 
+                                           class="form-control form-control-sm" 
                                            value="200"
                                            min="50"
                                            max="1000"
@@ -419,7 +423,7 @@
 
 <!-- Modal Show QR Code -->
 <div class="modal fade" id="showQRModal" tabindex="-1">
-    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">
@@ -427,7 +431,7 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body" id="showQRContent">
+            <div class="modal-body" id="showQRContent" style="max-height: 70vh; overflow-y: auto;">
                 <div class="text-center py-5">
                     <div class="spinner-border text-primary" role="status"></div>
                     <p class="text-muted mt-2">Memuat data...</p>
@@ -450,9 +454,15 @@
 .leaflet-container {
     z-index: 1;
 }
+.modal-body {
+    -webkit-overflow-scrolling: touch;
+}
 </style>
 
-@push('scripts')
+@push('styles')
 <link rel="stylesheet" href="{{ asset('css/admin/qrcode.css') }}">
+@endpush
+
+@push('scripts')
 <script src="{{ asset('js/admin/qrcode.js') }}"></script>
 @endpush
