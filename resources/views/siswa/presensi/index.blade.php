@@ -290,25 +290,40 @@
     }
     
     function onScanSuccess(decodedText) {
-        console.log('%c========= QR DETECTED =========', 'color: orange; font-size: 16px; font-weight: bold;');
-        console.log('Raw QR:', decodedText);
-        
-        stopScanning();
-        
-        let qrCode = decodedText;
-        try {
+    console.log('%c========= QR DETECTED =========', 'color: orange; font-size: 16px; font-weight: bold;');
+    console.log('Raw QR:', decodedText);
+    
+    stopScanning();
+    
+    let qrCode = decodedText.trim();  // Trim whitespace
+    
+    // Extract dari URL jika berbentuk URL
+    try {
+        if (decodedText.includes('http://') || decodedText.includes('https://')) {
             const url = new URL(decodedText);
-            qrCode = url.pathname.split('/').pop();
+            const pathParts = url.pathname.split('/');
+            qrCode = pathParts[pathParts.length - 1];
             console.log('Extracted from URL:', qrCode);
-        } catch (e) {
-            console.log('Not a URL, using as is');
+        } else if (decodedText.includes('/')) {
+            const parts = decodedText.split('/');
+            qrCode = parts[parts.length - 1];
+            console.log('Extracted from path:', qrCode);
         }
-        
-        console.log('%cFinal QR Code:', 'color: yellow; font-weight: bold;', qrCode);
-        
-        showLoading('Memvalidasi QR Code...');
-        validateQRCode(qrCode);
+    } catch (e) {
+        console.log('Not a URL, using as is');
     }
+    
+    console.log('%cFinal QR Code:', 'color: yellow; font-weight: bold;', qrCode);
+    
+    // Validasi format
+    if (!qrCode || qrCode.length < 10) {
+        showAlert('error', 'QR Code Tidak Valid', 'Format QR Code salah');
+        return;
+    }
+    
+    showLoading('Memvalidasi QR Code...');
+    validateQRCode(qrCode);
+}
     
     function onScanError(error) {
         // Silent

@@ -106,138 +106,116 @@ class QRCodeController extends Controller
     }
 
     public function show(PresensiSession $qrcode)
-    {
-        try {
-            $qrcode->load(['kelas.jurusan', 'creator', 'presensis.siswa']);
-            
-            $url = route('siswa.presensi.scan', ['code' => $qrcode->qr_code]);
-            
-            // Generate QR Code SVG - PERBAIKAN: Pastikan return string
-            $qrCodeSvgObject = QrCode::format('svg')
-                ->size(300)
-                ->errorCorrection('H')
-                ->generate($url);
-            
-            // Convert object to string SVG
-            $qrCodeSvg = (string) $qrCodeSvgObject;
-            
-            Log::info('QR Code Generated', [
-                'session_id' => $qrcode->id,
-                'svg_type' => gettype($qrCodeSvg),
-                'svg_length' => strlen($qrCodeSvg),
-                'has_svg_tag' => strpos($qrCodeSvg, '<svg') !== false
-            ]);
+{
+    try {
+        $qrcode->load(['kelas.jurusan', 'creator', 'presensis.siswa']);
+        
+        // UBAH - QR hanya berisi kode, bukan URL
+        $qrCodeContent = $qrcode->qr_code;
 
-            $siswaIds = $qrcode->presensis()->pluck('siswa_id')->toArray();
-            $siswaBelumPresensi = $qrcode->kelas->siswa()
-                ->whereNotIn('id', $siswaIds)
-                ->get();
+        // Generate QR Code SVG
+        $qrCodeSvgObject = QrCode::format('svg')
+            ->size(300)
+            ->errorCorrection('H')
+            ->generate($qrCodeContent);
 
-            $stats = [
-                'hadir' => $qrcode->presensis()->where('status', 'hadir')->count(),
-                'belum' => $siswaBelumPresensi->count(),
-            ];
+        $qrCodeSvg = (string) $qrCodeSvgObject;
 
-            if (request()->wantsJson() || request()->ajax()) {
-                return response()->json([
-                    'success' => true,
-                    'session' => [
-                        'id' => $qrcode->id,
-                        'kelas' => [
-                            'nama_kelas' => $qrcode->kelas->nama_kelas,
-                            'jurusan' => [
-                                'nama_jurusan' => $qrcode->kelas->jurusan->nama_jurusan,
-                            ],
-                        ],
-                        'tanggal' => $qrcode->tanggal->format('d M Y'),
-                        'jam_mulai' => $qrcode->jam_mulai->format('H:i'),
-                        'jam_selesai' => $qrcode->jam_selesai->format('H:i'),
-                        'latitude' => $qrcode->latitude ?? 0,
-                        'longitude' => $qrcode->longitude ?? 0,
-                        'radius' => $qrcode->radius ?? 200,
-                        'status' => $qrcode->status,
-                        'status_text' => $qrcode->getStatusText(), // Tambahkan ini
-                        'is_active' => $qrcode->isActive(),
-                        'creator' => [
-                            'name' => $qrcode->creator->name,
-                        ],
-                        'presensis' => $qrcode->presensis->map(function($presensi) {
-                            return [
-                                'siswa' => [
-                                    'name' => $presensi->siswa->name,
-                                ],
-                                'status' => $presensi->status,
-                                'waktu_presensi' => $presensi->created_at->format('H:i'),
-                            ];
-                        }),
-                        'siswa_belum_presensi' => $siswaBelumPresensi->map(function($siswa) {
-                            return [
-                                'name' => $siswa->name,
-                                'email' => $siswa->email,
-                            ];
-                        }),
-                        'stats' => $stats,
-                        'scan_url' => $url,
+        $siswaIds = $qrcode->presensis()->pluck('siswa_id')->toArray();
+        $siswaBelumPresensi = $qrcode->kelas->siswa()
+            ->whereNotIn('id', $siswaIds)
+            ->get();
+
+        $stats = [
+            'hadir' => $qrcode->presensis()->where('status', 'hadir')->count(),
+            'belum' => $siswaBelumPresensi->count(),
+        ];
+
+        // SELALU RETURN JSON
+        return response()->json([
+            'success' => true,
+            'session' => [
+                'id' => $qrcode->id,
+                'kelas' => [
+                    'nama_kelas' => $qrcode->kelas->nama_kelas,
+                    'kode_kelas' => $qrcode->kelas->kode_kelas,
+                    'jurusan' => [
+                        'nama_jurusan' => $qrcode->kelas->jurusan->nama_jurusan,
                     ],
-                    'qr_code_svg' => $qrCodeSvg, // Sudah berupa string
-                ]);
-            }
+                ],
+                'tanggal' => $qrcode->tanggal->format('d M Y'),
+                'jam_mulai' => $qrcode->jam_mulai->format('H:i'),
+                'jam_selesai' => $qrcode->jam_selesai->format('H:i'),
+                'latitude' => $qrcode->latitude ?? 0,
+                'longitude' => $qrcode->longitude ?? 0,
+                'radius' => $qrcode->radius ?? 200,
+                'status' => $qrcode->status,
+                'status_text' => $qrcode->getStatusText(),
+                'is_active' => $qrcode->isActive(),
+                'creator' => [
+                    'name' => $qrcode->creator->name,
+                ],
+                'presensis' => $qrcode->presensis->map(function($presensi) {
+                    return [
+                        'siswa' => ['name' => $presensi->siswa->name],
+                        'status' => $presensi->status,
+                        'waktu_presensi' => $presensi->created_at->format('H:i'),
+                    ];
+                }),
+                'siswa_belum_presensi' => $siswaBelumPresensi->map(function($siswa) {
+                    return [
+                        'name' => $siswa->name,
+                        'email' => $siswa->email,
+                    ];
+                }),
+                'stats' => $stats,
+                'scan_url' => route('siswa.presensi.index'),
+                'qr_code' => $qrCodeContent,
+            ],
+            'qr_code_svg' => $qrCodeSvg,
+        ]);
+        
+    } catch (\Exception $e) {
+        Log::error('Error showing QR Code', [
+            'session_id' => $qrcode->id,
+            'error' => $e->getMessage(),
+        ]);
 
-            return view('admin.qrcode.show', compact('qrcode', 'qrCodeSvg', 'siswaBelumPresensi', 'stats'));
-            
-        } catch (\Exception $e) {
-            Log::error('Error showing QR Code', [
-                'session_id' => $qrcode->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            if (request()->wantsJson() || request()->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Gagal memuat data QR Code: ' . $e->getMessage()
-                ], 500);
-            }
-            
-            return redirect()
-                ->route('admin.qrcode.index')
-                ->with('error', 'Gagal memuat QR Code: ' . $e->getMessage());
-        }
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal memuat QR Code: ' . $e->getMessage()
+        ], 500);
     }
+}
 
     public function download(PresensiSession $qrcode)
-    {
-        try {
-            $url = route('siswa.presensi.scan', ['code' => $qrcode->qr_code]);
-            
-            // Generate QR Code sebagai SVG (tidak perlu Imagick)
-            $qrCode = QrCode::format('svg')
-                ->size(500)
-                ->errorCorrection('H')
-                ->generate($url);
-            
-            $filename = 'QR-' . $qrcode->kelas->kode_kelas . '-' . $qrcode->tanggal->format('Ymd') . '.svg';
+{
+    try {
+        // UBAH - QR hanya berisi kode
+        $qrCodeContent = $qrcode->qr_code;
 
-            return response($qrCode)
-                ->header('Content-Type', 'image/svg+xml')
-                ->header('Content-Disposition', 'attachment; filename="' . $filename . '"')
-                ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
-                ->header('Pragma', 'no-cache')
-                ->header('Expires', '0');
-            
-        } catch (\Exception $e) {
-            Log::error('Gagal mengunduh QR Code', [
-                'session_id' => $qrcode->id,
-                'qr_code' => $qrcode->qr_code,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            return redirect()
-                ->back()
-                ->with('error', 'Gagal mengunduh QR Code: ' . $e->getMessage());
-        }
+        $qrCode = QrCode::format('svg')
+            ->size(500)
+            ->errorCorrection('H')
+            ->generate($qrCodeContent);
+
+        $filename = 'QR-' . $qrcode->kelas->kode_kelas . '-' . $qrcode->tanggal->format('Ymd') . '.svg';
+
+        return response($qrCode)
+            ->header('Content-Type', 'image/svg+xml')
+            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+        
+    } catch (\Exception $e) {
+        Log::error('Gagal mengunduh QR Code', [
+            'session_id' => $qrcode->id,
+            'error' => $e->getMessage()
+        ]);
+
+        return redirect()
+            ->back()
+            ->with('error', 'Gagal mengunduh QR Code: ' . $e->getMessage());
     }
+}
 
     public function updateStatus(Request $request, PresensiSession $qrcode)
     {
@@ -277,60 +255,49 @@ class QRCodeController extends Controller
     }
 
     protected function generateAndSaveQRCode(PresensiSession $session)
-    {
-        Log::info('GENERATE QR CODE DIPANGGIL', [
-            'session_id' => $session->id,
-            'qr_code' => $session->qr_code
+{
+    Log::info('GENERATE QR CODE DIPANGGIL', [
+        'session_id' => $session->id,
+        'qr_code' => $session->qr_code
+    ]);
+    
+    try {
+        // UBAH - hanya kode, bukan URL
+        $qrCodeContent = $session->qr_code;
+
+        $folder = 'qrcodes';
+        if (!Storage::disk('public')->exists($folder)) {
+            Storage::disk('public')->makeDirectory($folder);
+        }
+
+        // Generate QR code SVG
+        $qrCode = QrCode::format('svg')
+            ->size(500)
+            ->errorCorrection('H')
+            ->generate($qrCodeContent);
+
+        $qrPath = $folder . '/' . $session->qr_code . '.svg';
+        $saved = Storage::disk('public')->put($qrPath, $qrCode);
+
+        if (!$saved) {
+            throw new \Exception('Gagal menyimpan file QR code');
+        }
+
+        Log::info('QR Code saved successfully', [
+            'path' => $qrPath,
+            'qr_code_content' => $qrCodeContent
         ]);
         
-        try {
-            $url = route('siswa.presensi.scan', ['code' => $session->qr_code]);
-
-            // Pastikan folder ada
-            $folder = 'qrcodes';
-            if (!Storage::disk('public')->exists($folder)) {
-                Storage::disk('public')->makeDirectory($folder);
-                Log::info('Folder qrcodes dibuat');
-            }
-
-            // Generate QR code dalam format SVG (tidak perlu Imagick)
-            $qrCode = QrCode::format('svg')
-                ->size(500)
-                ->errorCorrection('H')
-                ->generate($url);
-
-            // Simpan sebagai SVG
-            $qrPath = $folder . '/' . $session->qr_code . '.svg';
-            $saved = Storage::disk('public')->put($qrPath, $qrCode);
-
-            if (!$saved) {
-                throw new \Exception('Gagal menyimpan file QR code');
-            }
-
-            // Verifikasi file benar-benar tersimpan
-            $fullPath = storage_path('app/public/' . $qrPath);
-            if (!file_exists($fullPath)) {
-                throw new \Exception('File QR berhasil disimpan di Storage tapi tidak ditemukan di filesystem');
-            }
-
-            Log::info('QR Code saved successfully', [
-                'path' => $qrPath,
-                'full_path' => $fullPath,
-                'file_size' => filesize($fullPath) . ' bytes'
-            ]);
-            
-            return true;
-            
-        } catch (\Exception $e) {
-            Log::error('Failed to generate QR code', [
-                'session_id' => $session->id,
-                'qr_code' => $session->qr_code,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            return false;
-        }
+        return true;
+        
+    } catch (\Exception $e) {
+        Log::error('Failed to generate QR code', [
+            'session_id' => $session->id,
+            'error' => $e->getMessage()
+        ]);
+        return false;
     }
+}
 
     protected function deleteQRCodeFile(PresensiSession $session)
     {

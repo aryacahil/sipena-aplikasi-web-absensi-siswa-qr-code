@@ -274,7 +274,6 @@ function searchAddress(address) {
             }
         })
         .catch(error => {
-            console.error('Error:', error);
             Swal.fire({
                 icon: 'error',
                 title: 'Error!',
@@ -350,9 +349,6 @@ function showQRCodeDetail(sessionId) {
         return response.json();
     })
     .then(data => {
-        console.log('QR Code Response:', data); // Debug log
-        console.log('SVG Content:', data.qr_code_svg); // Debug SVG
-        
         if (data.success) {
             renderQRDetail(data, content, sessionId);
         } else {
@@ -361,7 +357,6 @@ function showQRCodeDetail(sessionId) {
     })
     .catch(error => {
         clearTimeout(timeoutId);
-        console.error('Error:', error);
         
         let errorMessage = 'Gagal memuat data QR Code';
         if (error.name === 'AbortError') {
@@ -434,7 +429,6 @@ function toggleQRStatus(sessionId, currentStatus) {
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
                 Swal.fire({
                     icon: 'error',
                     title: 'Gagal!',
@@ -704,40 +698,31 @@ function renderQRDetail(data, container, sessionId) {
         </div>
     `;
     
-    // Insert SVG QR Code after DOM is ready - IMPROVED VERSION
+    // Insert SVG QR Code after DOM is ready
     setTimeout(() => {
         const qrDisplay = document.getElementById('qrCodeDisplay');
-        console.log('QR Display Element:', qrDisplay); // Debug
-        console.log('QR SVG Data Type:', typeof data.qr_code_svg); // Debug type
-        console.log('QR SVG Data:', data.qr_code_svg); // Debug
         
         if (qrDisplay) {
             if (data.qr_code_svg) {
-                // Cek apakah ini string SVG yang valid
                 if (typeof data.qr_code_svg === 'string' && data.qr_code_svg.includes('<svg')) {
                     qrDisplay.innerHTML = data.qr_code_svg;
-                    console.log('QR Code inserted successfully');
                     
-                    // Pastikan SVG ter-render dengan baik
+                    // Style SVG element
                     const svgElement = qrDisplay.querySelector('svg');
                     if (svgElement) {
                         svgElement.style.width = '100%';
                         svgElement.style.height = 'auto';
                         svgElement.style.maxWidth = '300px';
-                        console.log('SVG element styled');
                     }
                 } else {
-                    console.error('QR SVG data is not valid SVG string');
                     qrDisplay.innerHTML = `
                         <div class="alert alert-danger">
                             <i class="bi bi-exclamation-triangle"></i>
                             <p class="mb-0 mt-2">QR Code tidak valid</p>
-                            <small>Type: ${typeof data.qr_code_svg}</small>
                         </div>
                     `;
                 }
             } else {
-                console.error('QR SVG data is empty or undefined');
                 qrDisplay.innerHTML = `
                     <div class="alert alert-warning">
                         <i class="bi bi-exclamation-circle"></i>
@@ -745,8 +730,6 @@ function renderQRDetail(data, container, sessionId) {
                     </div>
                 `;
             }
-        } else {
-            console.error('QR Display element not found');
         }
     }, 300);
 }

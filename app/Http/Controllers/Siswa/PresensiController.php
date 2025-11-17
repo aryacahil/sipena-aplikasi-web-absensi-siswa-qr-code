@@ -7,7 +7,7 @@ use App\Models\PresensiSession;
 use App\Models\Presensi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Log;  // ← PENTING
 use Carbon\Carbon;
 
 class PresensiController extends Controller
@@ -97,9 +97,15 @@ class PresensiController extends Controller
 
             // Cek waktu presensi
             $now = Carbon::now();
-            $sessionDate = Carbon::parse($session->tanggal);
-            $jamMulai = Carbon::parse($session->tanggal->format('Y-m-d') . ' ' . $session->jam_mulai);
-            $jamSelesai = Carbon::parse($session->tanggal->format('Y-m-d') . ' ' . $session->jam_selesai);
+            $sessionDate = $session->tanggal;
+            
+            // PERBAIKAN: Format jam_mulai dan jam_selesai dengan benar
+            $jamMulai = Carbon::parse(
+                $sessionDate->format('Y-m-d') . ' ' . $session->jam_mulai->format('H:i:s')
+            );
+            $jamSelesai = Carbon::parse(
+                $sessionDate->format('Y-m-d') . ' ' . $session->jam_selesai->format('H:i:s')
+            );
 
             Log::info('Time validation', [
                 'now' => $now->toDateTimeString(),
@@ -323,30 +329,18 @@ class PresensiController extends Controller
 
     /**
      * Validasi jarak lokasi menggunakan Haversine formula
-     * 
-     * @param float $lat1 Latitude siswa
-     * @param float $lon1 Longitude siswa
-     * @param float $lat2 Latitude sekolah/session
-     * @param float $lon2 Longitude sekolah/session
-     * @param int $radiusInMeters Radius dalam meter
-     * @return bool True jika dalam radius, False jika di luar radius
      */
     private function validateLocation($lat1, $lon1, $lat2, $lon2, $radiusInMeters)
     {
-        // Jika tidak ada koordinat yang ditentukan, anggap valid
         if (!$lat2 || !$lon2) {
             Log::info('No target coordinates, location considered valid');
             return true;
         }
 
-        // Earth radius dalam meter
         $earthRadius = 6371000;
-
-        // Convert degrees to radians
         $dLat = deg2rad($lat2 - $lat1);
         $dLon = deg2rad($lon2 - $lon1);
 
-        // Haversine formula
         $a = sin($dLat / 2) * sin($dLat / 2) +
             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
             sin($dLon / 2) * sin($dLon / 2);
