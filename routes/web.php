@@ -178,20 +178,24 @@ Route::middleware(['auth', 'user-role:guru'])->group(function() {
 Route::middleware(['auth', 'user-role:siswa'])->group(function() {
     Route::get('/siswa/home', [HomeController::class, 'siswaHome'])->name('siswa.home');
     
-    // Halaman Scanner QR (tanpa parameter)
-    //Route::get('siswa/presensi', [PresensiController::class, 'index'])
-        //->name('siswa.presensi.index');
-    
-    // Submit Presensi setelah scan
-    //Route::post('siswa/presensi/submit', [PresensiController::class, 'submitPresensi'])
-        //->name('siswa.presensi.submit');
-//});
-
-// Route untuk validasi QR Code (diakses oleh scanner)
-//Route::get('siswa/presensi/scan/{code}', function($code) {
-    //return response()->json([
-        //'code' => $code,
-        //'timestamp' => now()->toIso8601String()
-    //]);
-//})->name('siswa.presensi.scan');
+    // Presensi Routes
+    Route::get('siswa/presensi', [\App\Http\Controllers\Siswa\PresensiController::class, 'index'])
+        ->name('siswa.presensi.index');
+    Route::post('siswa/presensi/validate', [\App\Http\Controllers\Siswa\PresensiController::class, 'validateQRCode'])
+        ->name('siswa.presensi.validate');
+    Route::post('siswa/presensi/submit', [\App\Http\Controllers\Siswa\PresensiController::class, 'submitPresensi'])
+        ->name('siswa.presensi.submit');
 });
+
+// Route untuk QR Code redirect (PUBLIC - tanpa auth)
+Route::get('siswa/presensi/scan/{code}', function($code) {
+    // Jika sudah login, redirect ke scanner dengan info
+    if (Auth::check() && Auth::user()->role == 'siswa') {
+        return redirect()->route('siswa.presensi.index')
+            ->with('qr_code', $code);
+    }
+    
+    // Jika belum login, redirect ke login dengan return URL
+    return redirect()->route('login')
+        ->with('info', 'Silakan login terlebih dahulu untuk melakukan presensi');
+})->name('siswa.presensi.scan');
