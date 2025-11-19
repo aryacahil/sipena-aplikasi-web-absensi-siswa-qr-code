@@ -10,7 +10,7 @@
 @endif
 
 <input type="hidden" name="_token" value="{{ csrf_token() }}">
-<input type="hidden" id="baseRoute" value="{{ request()->is('admin/*') ? 'admin' : 'guru' }}">
+<input type="hidden" id="baseRoute" value="admin">
 
 <div class="bg-primary pt-10 pb-21"></div>
 <div class="container-fluid mt-n22 px-6">
@@ -19,17 +19,21 @@
             <div class="d-flex justify-content-between align-items-center">
                 <div class="mb-2 mb-lg-0">
                     <h3 class="mb-0 text-white">Generate QR Code Presensi</h3>
-                    <p class="text-white-50 mb-0">Buat dan kelola QR Code untuk absensi siswa</p>
+                    <p class="text-white-50 mb-0">Kelola QR Code untuk absensi siswa</p>
                 </div>
                 <div>
-                    <button type="button" class="btn btn-white" data-bs-toggle="modal" data-bs-target="#createQRModal">
-                        <i class="bi bi-plus-circle me-2"></i>Buat QR Code
+                    <a href="{{ route('admin.presensi.index') }}" class="btn btn-white me-2">
+                        <i class="bi bi-clipboard-check me-2"></i>Lihat Presensi
+                    </a>
+                    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createQRModal">
+                        <i class="bi bi-plus-circle me-2"></i>Generate QR Code
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Filter & List -->
     <div class="row mt-6">
         <div class="col-md-12">
             <div class="card shadow-sm">
@@ -40,7 +44,7 @@
                         <h5 class="mb-3">
                             <i class="bi bi-funnel me-2"></i>Filter QR Code
                         </h5>
-                        <form action="{{ request()->is('admin/*') ? route('admin.qrcode.index') : route('guru.qrcode.index') }}" method="GET">
+                        <form action="{{ route('admin.qrcode.index') }}" method="GET">
                             <div class="row g-3">
                                 <div class="col-md-4">
                                     <label class="form-label fw-semibold small">Kelas</label>
@@ -83,25 +87,19 @@
                     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
                         <div>
                             <h4 class="mb-0">Daftar QR Code</h4>
-                            {{-- @if($sessions->total() > 0)
-                            <small class="text-muted">Total: {{ $sessions->total() }} sesi</small>
-                            @endif --}}
                         </div>
                         
                         <div class="d-flex gap-2 flex-wrap">
                             <div class="btn-group" role="group">
-                                @php
-                                    $indexRoute = request()->is('admin/*') ? 'admin.qrcode.index' : 'guru.qrcode.index';
-                                @endphp
-                                <a href="{{ route($indexRoute) }}" 
+                                <a href="{{ route('admin.qrcode.index') }}" 
                                    class="btn btn-sm {{ !request('status') ? 'btn-primary' : 'btn-outline-primary' }}">
                                     Semua
                                 </a>
-                                <a href="{{ route($indexRoute, ['status' => 'active']) }}" 
+                                <a href="{{ route('admin.qrcode.index', ['status' => 'active']) }}" 
                                    class="btn btn-sm {{ request('status') == 'active' ? 'btn-success' : 'btn-outline-success' }}">
                                     Aktif
                                 </a>
-                                <a href="{{ route($indexRoute, ['status' => 'expired']) }}" 
+                                <a href="{{ route('admin.qrcode.index', ['status' => 'expired']) }}" 
                                    class="btn btn-sm {{ request('status') == 'expired' ? 'btn-secondary' : 'btn-outline-secondary' }}">
                                     Expired
                                 </a>
@@ -115,68 +113,55 @@
                     </div>
                 </div>
 
-                <!-- Table -->
+                <!-- Table Content -->
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover table-nowrap mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th class="border-0 text-center" style="width: 60px;">No</th>
-                                    <th class="border-0 text-center">Kelas</th>
-                                    <th class="border-0 text-center">Tanggal</th>
-                                    <th class="border-0 text-center">Waktu</th>
-                                    <th class="border-0 text-center">Lokasi</th>
-                                    {{-- <th class="border-0 text-center" style="width: 90px;">Presensi</th> --}}
-                                    <th class="border-0 text-center">Status</th>
-                                    <th class="border-0 text-center" style="width: 150px;">Aksi</th>
+                                    <th class="border-0 text-center align-middle" style="width: 60px;">No</th>
+                                    <th class="border-0 align-middle">Kelas</th>
+                                    <th class="border-0 text-center align-middle" style="width: 120px;">Tanggal</th>
+                                    <th class="border-0 text-center align-middle" style="width: 150px;">Waktu</th>
+                                    <th class="border-0 text-center align-middle" style="width: 100px;">Presensi</th>
+                                    <th class="border-0 text-center align-middle" style="width: 100px;">Status</th>
+                                    <th class="border-0 text-center align-middle" style="width: 200px;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @forelse($sessions as $index => $session)
                                 <tr>
-                                    <td class="text-center">
+                                    <td class="align-middle text-center">
                                         <span class="text-muted fw-semibold">{{ $sessions->firstItem() + $index }}</span>
                                     </td>
-                                    <td class="text-center">
-                                        <h6 class="mb-0">{{ $session->kelas->nama_kelas }}</h6>
+                                    <td class="align-middle">
+                                        <div>
+                                            <h6 class="mb-0">{{ $session->kelas->nama_kelas }}</h6>
+                                        </div>
                                     </td>
-                                    <td class="text-center">
+                                    <td class="align-middle text-center">
                                         <span class="badge bg-primary-soft text-primary">
                                             {{ $session->tanggal->format('d M Y') }}
                                         </span>
                                     </td>
-                                    <td class="text-center">
-                                        <small class="text-muted" style="white-space: nowrap;">
-                                            {{ $session->jam_mulai->format('H:i') }} -
-                                            {{ $session->jam_selesai->format('H:i') }}
+                                    <td class="align-middle text-center" style="white-space: nowrap;">
+                                        <small class="text-muted">
+                                            <i class="bi bi-clock me-1"></i>
+                                            {{ $session->jam_mulai->format('H:i') }} - {{ $session->jam_selesai->format('H:i') }}
                                         </small>
                                     </td>
-                                    <td class="text-center">
-                                        @if($session->latitude && $session->longitude)
-                                            <span class="badge bg-info-soft text-info" 
-                                                  title="Lat: {{ $session->latitude }}, Lng: {{ $session->longitude }}, Radius: {{ $session->radius }}m">
-                                                <i class="bi bi-geo-alt-fill me-1"></i>{{ $session->radius }}m
-                                            </span>
-                                        @else
-                                            <span class="text-muted">-</span>
-                                        @endif
-                                    </td>
-                                    {{-- <td class="text-center">
-                                        <span class="badge bg-info-soft text-info">
+                                    <td class="align-middle text-center">
+                                        <span class="badge bg-success-soft text-success">
                                             <i class="bi bi-people-fill me-1"></i>
-                                            {{ $session->presensis_count }} Siswa
+                                            {{ $session->presensis_count }}
                                         </span>
-                                    </td> --}}
-                                    <td class="text-center">
-                                        @php
-                                            $statusText = $session->getStatusText();
-                                        @endphp
-                                        
-                                        @if($statusText === 'active')
+                                    </td>
+                                    <td class="align-middle text-center">
+                                        @if($session->status === 'active' && $session->isActive())
                                             <span class="badge bg-success">
-                                                <i class="bi bi-check-circle me-1"></i>Sedang Aktif
+                                                <i class="bi bi-check-circle me-1"></i>Aktif
                                             </span>
-                                        @elseif($statusText === 'waiting')
+                                        @elseif($session->getStatusText() === 'waiting')
                                             <span class="badge bg-warning">
                                                 <i class="bi bi-clock me-1"></i>Menunggu
                                             </span>
@@ -186,38 +171,32 @@
                                             </span>
                                         @endif
                                     </td>
-                                    <td class="text-center">
-                                        <div class="btn-group" role="group">
-                                            <button type="button"
-                                                    class="btn btn-sm btn-info btn-show-qr" 
+                                    <td class="align-middle text-center">
+                                        <div class="d-flex justify-content-center gap-1">
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-warning btn-show-qr" 
                                                     data-session-id="{{ $session->id }}"
-                                                    title="Detail">
+                                                    title="Lihat Detail">
                                                 <i class="bi bi-eye"></i>
                                             </button>
                                             
-                                            @php
-                                                $downloadRoute = request()->is('admin/*') ? 'admin.qrcode.download' : 'guru.qrcode.download';
-                                                $destroyRoute = request()->is('admin/*') ? 'admin.qrcode.destroy' : 'guru.qrcode.destroy';
-                                            @endphp
-                                            
-                                            <a href="{{ route($downloadRoute, $session->id) }}" 
-                                               class="btn btn-sm btn-success" 
+                                            <a href="{{ route('admin.qrcode.download', $session->id) }}" 
+                                               class="btn btn-sm btn-info" 
                                                title="Download QR Code">
                                                 <i class="bi bi-download"></i>
                                             </a>
                                             
                                             <button type="button" 
-                                                    class="btn btn-sm btn-warning btn-toggle-status" 
+                                                    class="btn btn-sm {{ $session->status === 'active' ? 'btn-secondary' : 'btn-success' }} btn-toggle-status" 
                                                     data-session-id="{{ $session->id }}"
                                                     data-current-status="{{ $session->status }}"
-                                                    title="Toggle Status">
-                                                <i class="bi bi-arrow-repeat"></i>
+                                                    title="{{ $session->status === 'active' ? 'Nonaktifkan' : 'Aktifkan' }}">
+                                                <i class="bi bi-{{ $session->status === 'active' ? 'x-circle' : 'check-circle' }}"></i>
                                             </button>
                                             
-                                            <form action="{{ route($destroyRoute, $session->id) }}" 
+                                            <form action="{{ route('admin.qrcode.destroy', $session->id) }}" 
                                                   method="POST" 
-                                                  class="d-inline delete-form"
-                                                  style="margin: 0;">
+                                                  class="d-inline delete-form">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="button" 
@@ -232,9 +211,17 @@
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="8" class="text-center py-5">
-                                        <i class="bi bi-qr-code fs-1 text-muted"></i>
-                                        <p class="text-muted mt-3 mb-0">Belum ada QR Code</p>
+                                    <td colspan="7" class="text-center py-5">
+                                        <div class="py-4">
+                                            <i class="bi bi-inbox fs-1 text-muted"></i>
+                                            <p class="text-muted mt-3 mb-0">
+                                                @if(request()->hasAny(['kelas_id', 'tanggal', 'status']))
+                                                    Tidak ada QR Code yang sesuai dengan filter
+                                                @else
+                                                    Belum ada QR Code yang dibuat
+                                                @endif
+                                            </p>
+                                        </div>
                                     </td>
                                 </tr>
                                 @endforelse
@@ -248,9 +235,7 @@
                 <div class="card-footer bg-white border-top">
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="text-muted small">
-                            Menampilkan <strong>{{ $sessions->firstItem() }}</strong> sampai 
-                            <strong>{{ $sessions->lastItem() }}</strong> dari 
-                            <strong>{{ $sessions->total() }}</strong> data
+                            Menampilkan <strong>{{ $sessions->firstItem() }}</strong> sampai <strong>{{ $sessions->lastItem() }}</strong> dari <strong>{{ $sessions->total() }}</strong> data
                         </div>
                         {{ $sessions->links() }}
                     </div>
@@ -268,151 +253,91 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">
-                    <i class="bi bi-qr-code me-2"></i>Buat QR Code Baru
+                    <i class="bi bi-qr-code me-2"></i>Generate QR Code Baru
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="{{ request()->is('admin/*') ? route('admin.qrcode.store') : route('guru.qrcode.store') }}" method="POST" id="createQRForm">
+            <form action="{{ route('admin.qrcode.store') }}" method="POST" id="createQRForm">
                 @csrf
-                <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
-                    <div class="alert alert-warning mb-3">
-                        <i class="bi bi-exclamation-triangle me-2"></i>
-                        <strong>Perhatian!</strong> Jika kelas sudah memiliki QR Code aktif, QR Code lama akan otomatis terhapus.
-                    </div>
-                    
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">
-                                Kelas <span class="text-danger">*</span>
-                            </label>
-                            <select name="kelas_id" class="form-select" required>
-                                <option value="">Pilih Kelas</option>
-                                @foreach($kelas as $k)
-                                    <option value="{{ $k->id }}">
-                                        {{ $k->nama_kelas }} - {{ $k->jurusan->nama_jurusan }} 
-                                        ({{ $k->siswa_count ?? 0 }} siswa)
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">
-                                Tanggal <span class="text-danger">*</span>
-                            </label>
-                            <input type="date" 
-                                   name="tanggal" 
-                                   class="form-control" 
-                                   value="{{ date('Y-m-d') }}"
-                                   min="{{ date('Y-m-d') }}"
-                                   required>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">
-                                Jam Mulai <span class="text-danger">*</span>
-                            </label>
-                            <input type="time" 
-                                   name="jam_mulai" 
-                                   class="form-control" 
-                                   value="07:00"
-                                   required>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">
-                                Jam Selesai <span class="text-danger">*</span>
-                            </label>
-                            <input type="time" 
-                                   name="jam_selesai" 
-                                   class="form-control" 
-                                   value="08:00"
-                                   required>
-                        </div>
-
-                        <!-- MAP SECTION -->
-                        <div class="col-12">
-                            <div class="alert alert-info mb-3">
-                                <i class="bi bi-info-circle me-2"></i>
-                                <strong>Pilih Lokasi Presensi</strong><br>
-                                Klik pada peta atau gunakan tombol di bawah untuk menentukan lokasi
-                            </div>
-
-                            <div class="row g-2 mb-3">
-                                <div class="col-md-6">
-                                    <button type="button" class="btn btn-primary w-100" id="getLocationBtn">
-                                        <i class="bi bi-geo-alt me-2"></i>Gunakan Lokasi Saat Ini
-                                    </button>
+                <div class="modal-body">
+                    <div class="row g-4">
+                        <!-- Left Column: Form -->
+                        <div class="col-lg-6">
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold">Kelas <span class="text-danger">*</span></label>
+                                    <select class="form-select" name="kelas_id" required>
+                                        <option value="">Pilih Kelas</option>
+                                        @foreach($kelas as $k)
+                                            <option value="{{ $k->id }}">
+                                                {{ $k->nama_kelas }} - {{ $k->jurusan->nama_jurusan }} ({{ $k->siswa_count }} siswa)
+                                            </option>
+                                        @endforeach
+                                    </select>
                                 </div>
-                                <div class="col-md-6">
-                                    <button type="button" class="btn btn-outline-secondary w-100" id="searchLocationBtn">
-                                        <i class="bi bi-search me-2"></i>Cari Alamat
-                                    </button>
+                                
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold">Tanggal <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" name="tanggal" required value="{{ date('Y-m-d') }}">
+                                </div>
+                                
+                                <div class="col-6">
+                                    <label class="form-label fw-semibold">Jam Mulai <span class="text-danger">*</span></label>
+                                    <input type="time" class="form-control" name="jam_mulai" required>
+                                </div>
+                                
+                                <div class="col-6">
+                                    <label class="form-label fw-semibold">Jam Selesai <span class="text-danger">*</span></label>
+                                    <input type="time" class="form-control" name="jam_selesai" required>
+                                </div>
+                                
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold">Radius Lokasi (meter) <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" name="radius" id="radius" value="200" min="50" max="1000" required>
+                                    <small class="text-muted">Jarak maksimal siswa dari lokasi (50-1000 meter)</small>
+                                </div>
+                                
+                                <div class="col-12">
+                                    <input type="hidden" name="latitude" id="latitude">
+                                    <input type="hidden" name="longitude" id="longitude">
                                 </div>
                             </div>
-
-                            <!-- Search Box -->
-                            <div id="searchBox" style="display: none;" class="mb-3">
+                        </div>
+                        
+                        <!-- Right Column: Map -->
+                        <div class="col-lg-6">
+                            <label class="form-label fw-semibold">Lokasi Presensi <span class="text-danger">*</span></label>
+                            <div class="mb-2">
+                                <button type="button" class="btn btn-sm btn-primary me-2" id="getLocationBtn">
+                                    <i class="bi bi-geo-alt-fill me-1"></i>Lokasi Saya
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="searchLocationBtn">
+                                    <i class="bi bi-search me-1"></i>Cari Alamat
+                                </button>
+                            </div>
+                            
+                            <div id="searchBox" class="mb-2" style="display: none;">
                                 <div class="input-group">
-                                    <input type="text" class="form-control" id="searchAddressInput" placeholder="Cari alamat...">
+                                    <input type="text" class="form-control" id="searchAddressInput" placeholder="Contoh: SMKN 1 Bendo, Kab. Magetan">
                                     <button class="btn btn-primary" type="button" id="searchAddressBtn">
                                         <i class="bi bi-search"></i>
                                     </button>
                                 </div>
                             </div>
-
-                            <!-- Map Container -->
-                            <div id="map" style="height: 350px; border-radius: 8px; border: 2px solid #dee2e6;"></div>
                             
-                            <div class="row g-2 mt-3">
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold small">
-                                        Latitude <span class="text-danger">*</span>
-                                    </label>
-                                    <input type="text" 
-                                           name="latitude" 
-                                           id="latitude"
-                                           class="form-control form-control-sm" 
-                                           placeholder="-7.6298"
-                                           readonly
-                                           required>
-                                </div>
-
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold small">
-                                        Longitude <span class="text-danger">*</span>
-                                    </label>
-                                    <input type="text" 
-                                           name="longitude" 
-                                           id="longitude"
-                                           class="form-control form-control-sm" 
-                                           placeholder="111.5239"
-                                           readonly
-                                           required>
-                                </div>
-
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold small">
-                                        Radius (meter) <span class="text-danger">*</span>
-                                    </label>
-                                    <input type="number" 
-                                           name="radius" 
-                                           id="radius"
-                                           class="form-control form-control-sm" 
-                                           value="200"
-                                           min="50"
-                                           max="1000"
-                                           required>
-                                    <small class="text-muted">50-1000 meter</small>
-                                </div>
-                            </div>
+                            <div id="map" style="height: 400px; border-radius: 8px;"></div>
+                            <small class="text-muted mt-2 d-block">
+                                <i class="bi bi-info-circle me-1"></i>Klik pada peta untuk memilih lokasi presensi
+                            </small>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-check-circle me-2"></i>Generate QR Code
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-1"></i>Batal
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-qr-code me-1"></i>Generate QR Code
                     </button>
                 </div>
             </form>
@@ -422,15 +347,15 @@
 
 <!-- Modal Show QR Code -->
 <div class="modal fade" id="showQRModal" tabindex="-1">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">
-                    <i class="bi bi-qr-code me-2"></i>Detail QR Code Presensi
+                    <i class="bi bi-qr-code me-2"></i>Detail QR Code
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body" id="showQRContent" style="max-height: 70vh; overflow-y: auto;">
+            <div class="modal-body" id="showQRContent">
                 <div class="text-center py-5">
                     <div class="spinner-border text-primary" role="status"></div>
                     <p class="text-muted mt-2">Memuat data...</p>
@@ -442,23 +367,12 @@
 
 @endsection
 
-<!-- Leaflet CSS & JS -->
+@push('styles')
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-<style>
-#map {
-    z-index: 1;
-}
-.leaflet-container {
-    z-index: 1;
-}
-.modal-body {
-    -webkit-overflow-scrolling: touch;
-}
-</style>
+<link rel="stylesheet" href="{{ asset('css/admin/qrcode.css') }}"> 
+@endpush
 
 @push('scripts')
-<link rel="stylesheet" href="{{ asset('css/admin/qrcode.css') }}">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="{{ asset('js/admin/qrcode.js') }}"></script>
 @endpush

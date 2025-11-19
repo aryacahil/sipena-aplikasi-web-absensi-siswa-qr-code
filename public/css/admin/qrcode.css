@@ -1,68 +1,85 @@
-/* ==================================
-   QR CODE STYLES
-   (Konsisten dengan Kelas Management)
-   ================================== */
-
-/* Clean Modern Styling */
-body {
-    background-color: #f8f9fa;
+/* ==================== GENERAL STYLES ==================== */
+.hover-lift {
+    transition: transform 0.2s, box-shadow 0.2s;
 }
 
-/* Card Component - Rounded Corners (sama dengan Kelas) */
-.card {
+.hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+/* ==================== LEAFLET MAP FIX ==================== */
+/* Fix for Leaflet map in Bootstrap modal */
+#map {
+    width: 100% !important;
+    height: 400px !important;
     border-radius: 8px;
-    overflow: hidden;
+    z-index: 1;
+    position: relative;
 }
 
-.card-header {
-    background-color: #fff;
-    border-bottom: 1px solid #e9ecef;
+.modal-body #map {
+    position: relative;
+    display: block;
 }
 
-.card-body {
-    padding: 0;
+.leaflet-container {
+    font-family: inherit;
+    width: 100% !important;
+    height: 100% !important;
 }
 
-.card-footer {
-    background-color: #fff;
-    border-top: 1px solid #e9ecef;
+/* Ensure map tiles render correctly */
+.leaflet-tile-container {
+    width: 100%;
+    height: 100%;
 }
 
-/* Table Styling (sama dengan Kelas) */
-.table thead th {
-    font-weight: 600;
-    font-size: 0.875rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    border-bottom: 2px solid #dee2e6;
+.leaflet-tile {
+    max-width: none !important;
 }
 
-.table tbody tr {
-    transition: all 0.2s ease;
+/* ==================== SEARCH BOX ==================== */
+#searchBox {
+    margin-bottom: 10px;
 }
 
-.table tbody tr:hover {
-    background-color: rgba(0, 123, 255, 0.02);
+/* ==================== QR CODE DISPLAY ==================== */
+.qr-code-container {
+    display: inline-block;
+    min-height: 350px;
+    min-width: 350px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.table tbody td {
-    vertical-align: middle;
+#qrCodeDisplay {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-/* Badge Styling (sama dengan Kelas) */
+#qrCodeDisplay svg {
+    width: 100%;
+    height: auto;
+    max-width: 300px;
+}
+
+/* ==================== BADGES & CARDS ==================== */
 .badge {
-    padding: 0.35rem 0.65rem;
     font-weight: 500;
-    font-size: 0.75rem;
+    padding: 0.35em 0.65em;
 }
 
-/* Soft Background Colors */
 .bg-primary-soft {
     background-color: rgba(13, 110, 253, 0.1);
-}
-
-.bg-info-soft {
-    background-color: rgba(13, 202, 240, 0.1);
 }
 
 .bg-success-soft {
@@ -73,179 +90,100 @@ body {
     background-color: rgba(108, 117, 125, 0.1);
 }
 
-.bg-warning-soft {
-    background-color: rgba(255, 193, 7, 0.1);
-}
-
-/* Text Colors */
-.text-success {
-    color: #198754 !important;
-}
-
-.text-secondary {
-    color: #6c757d !important;
-}
-
-.text-info {
-    color: #0dcaf0 !important;
-}
-
-.text-primary {
-    color: #0d6efd !important;
-}
-
-/* Button Styling (sama dengan Kelas) */
-.btn {
-    font-weight: 500;
-}
-
-.btn-sm {
-    font-size: 0.813rem;
-}
-
-/* Button Group - Fix Alignment */
-.btn-group {
+/* ==================== AVATAR ==================== */
+.avatar {
+    width: 32px;
+    height: 32px;
     display: inline-flex;
-    vertical-align: middle;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
 }
 
-.btn-group .btn {
-    border-radius: 0;
-    margin: 0 !important;
+.avatar-sm {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
 }
 
-.btn-group .btn:first-child {
-    border-top-left-radius: 0.25rem;
-    border-bottom-left-radius: 0.25rem;
+/* ==================== TABLE STYLES ==================== */
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.02);
 }
 
-.btn-group .btn:last-child,
-.btn-group form:last-child .btn {
-    border-top-right-radius: 0.25rem;
-    border-bottom-right-radius: 0.25rem;
+.sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
-.btn-group form {
-    display: inline;
-    margin: 0 !important;
-}
-
-/* Modal Styling (sama dengan Kelas) */
-.modal-header {
-    background-color: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
-}
-
-/* Form Styling (sama dengan Kelas) */
-.form-label {
-    font-weight: 500;
-    font-size: 0.875rem;
-    margin-bottom: 0.5rem;
-}
-
-.form-control:focus,
-.form-select:focus {
-    border-color: #86b7fe;
-    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
-}
-
-/* Pagination (sama dengan Kelas) */
-.pagination {
-    margin-bottom: 0;
-}
-
-.page-link {
-    padding: 0.375rem 0.75rem;
-    color: #0d6efd;
-}
-
-.page-item.active .page-link {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
-}
-
-/* Loading spinner (sama dengan Kelas) */
-.spinner-border {
-    width: 2rem;
-    height: 2rem;
-    border-width: 0.25rem;
-}
-
-/* Gap utilities (sama dengan Kelas) */
-.gap-1 {
-    gap: 0.25rem;
-}
-
-.gap-2 {
-    gap: 0.5rem;
-}
-
-.gap-3 {
-    gap: 1rem;
-}
-
-/* ==================================
-   ADDITIONAL QR CODE SPECIFIC STYLES
-   ================================== */
-
-/* QR Code Container Styles */
-.qr-code-container {
-    position: relative;
-    border: 2px solid #e9ecef;
-    border-radius: 8px;
-}
-
-.qr-code-container svg {
-    max-width: 100%;
-    height: auto;
-}
-
-/* Map Container */
-#map {
-    height: 350px;
-    border-radius: 8px;
-    border: 2px solid #dee2e6;
-    z-index: 1;
-}
-
-.leaflet-container {
-    z-index: 1;
-    border-radius: 8px;
+/* ==================== MODAL ADJUSTMENTS ==================== */
+.modal-xl {
+    max-width: 1200px;
 }
 
 .modal-body {
-    -webkit-overflow-scrolling: touch;
+    max-height: 80vh;
+    overflow-y: auto;
 }
 
-/* Card Gradient Alternative */
-.bg-gradient-primary {
-    background: linear-gradient(180deg, #0d6efd 0%, #0a58ca 100%);
-}
-
-/* ==================================
-   RESPONSIVE ADJUSTMENTS
-   ================================== */
+/* ==================== RESPONSIVE ==================== */
 @media (max-width: 768px) {
-    .avatar {
-        width: 28px;
-        height: 28px;
-        font-size: 12px;
+    #map {
+        height: 300px !important;
     }
     
-    .avatar-sm {
-        width: 24px;
-        height: 24px;
-        font-size: 10px;
+    .qr-code-container {
+        min-height: 250px;
+        min-width: 250px;
     }
     
-    .btn-group {
-        display: flex;
-        width: 100%;
+    #qrCodeDisplay svg {
+        max-width: 200px;
     }
-    
-    .btn-group .btn {
-        flex: 1;
-        font-size: 0.75rem;
-        padding: 0.25rem 0.5rem;
-    }
+}
+
+/* ==================== LOADING SPINNER ==================== */
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.15em;
+}
+
+/* ==================== ALERT STYLES ==================== */
+.alert {
+    border-radius: 8px;
+}
+
+.alert-info {
+    background-color: rgba(13, 202, 240, 0.1);
+    border-color: rgba(13, 202, 240, 0.2);
+    color: #055160;
+}
+
+.alert-success {
+    background-color: rgba(25, 135, 84, 0.1);
+    border-color: rgba(25, 135, 84, 0.2);
+    color: #0a3622;
+}
+
+.alert-danger {
+    background-color: rgba(220, 53, 69, 0.1);
+    border-color: rgba(220, 53, 69, 0.2);
+    color: #58151c;
+}
+
+/* ==================== BUTTON STYLES ==================== */
+.btn-group .btn {
+    border-radius: 0;
+}
+
+.btn-group .btn:first-child {
+    border-top-left-radius: 0.375rem;
+    border-bottom-left-radius: 0.375rem;
+}
+
+.btn-group .btn:last-child {
+    border-top-right-radius: 0.375rem;
+    border-bottom-right-radius: 0.375rem;
 }

@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.guru')
 @section('title', 'Generate QR Code')
 
 @section('content')
@@ -10,7 +10,7 @@
 @endif
 
 <input type="hidden" name="_token" value="{{ csrf_token() }}">
-<input type="hidden" id="baseRoute" value="admin">
+<input type="hidden" id="baseRoute" value="{{ request()->is('admin/*') ? 'admin' : 'guru' }}">
 
 <div class="bg-primary pt-10 pb-21"></div>
 <div class="container-fluid mt-n22 px-6">
@@ -22,7 +22,7 @@
                     <p class="text-white-50 mb-0">Kelola QR Code untuk absensi siswa</p>
                 </div>
                 <div>
-                    <a href="{{ route('admin.presensi.index') }}" class="btn btn-white me-2">
+                    <a href="{{ route('guru.presensi.index') }}" class="btn btn-white me-2">
                         <i class="bi bi-clipboard-check me-2"></i>Lihat Presensi
                     </a>
                     <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createQRModal">
@@ -33,123 +33,82 @@
         </div>
     </div>
 
-    <!-- Statistics Cards -->
-    <div class="row mt-6">
-        <div class="col-xl-3 col-lg-6 col-md-6 col-12">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-muted mb-2">Total QR Code</h6>
-                            <h2 class="mb-0 fw-bold text-primary">{{ $sessions->total() }}</h2>
-                        </div>
-                        <div class="icon-shape icon-md bg-primary-soft text-primary rounded-circle">
-                            <i class="bi bi-qr-code fs-4"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-lg-6 col-md-6 col-12 mt-6 mt-lg-0">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-muted mb-2">QR Aktif</h6>
-                            <h2 class="mb-0 fw-bold text-success">{{ $sessions->where('status', 'active')->count() }}</h2>
-                        </div>
-                        <div class="icon-shape icon-md bg-success-soft text-success rounded-circle">
-                            <i class="bi bi-check-circle-fill fs-4"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-lg-6 col-md-6 col-12 mt-6 mt-xl-0">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-muted mb-2">QR Expired</h6>
-                            <h2 class="mb-0 fw-bold text-secondary">{{ $sessions->where('status', 'expired')->count() }}</h2>
-                        </div>
-                        <div class="icon-shape icon-md bg-secondary-soft text-secondary rounded-circle">
-                            <i class="bi bi-x-circle-fill fs-4"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-lg-6 col-md-6 col-12 mt-6 mt-xl-0">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-muted mb-2">Total Presensi</h6>
-                            <h2 class="mb-0 fw-bold text-info">{{ $sessions->sum('presensis_count') }}</h2>
-                        </div>
-                        <div class="icon-shape icon-md bg-info-soft text-info rounded-circle">
-                            <i class="bi bi-people-fill fs-4"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Filter & List -->
     <div class="row mt-6">
         <div class="col-md-12">
             <div class="card shadow-sm">
                 
-                <!-- Filters -->
-                <div class="card-header bg-white border-bottom">
-                    <form action="{{ route('admin.qrcode.index') }}" method="GET">
-                        <div class="row g-3 align-items-end">
-                            <div class="col-md-3">
-                                <label class="form-label fw-semibold small">Filter Kelas</label>
-                                <select name="kelas_id" class="form-select">
-                                    <option value="">Semua Kelas</option>
-                                    @foreach($kelas as $k)
-                                        <option value="{{ $k->id }}" {{ request('kelas_id') == $k->id ? 'selected' : '' }}>
-                                            {{ $k->nama_kelas }} ({{ $k->siswa_count }} siswa)
-                                        </option>
-                                    @endforeach
-                                </select>
+                <!-- Advanced Filter (Collapsed by default) -->
+                <div class="collapse" id="advancedFilter">
+                    <div class="card-header bg-white border-bottom">
+                        <h5 class="mb-3">
+                            <i class="bi bi-funnel me-2"></i>Filter QR Code
+                        </h5>
+                        <form action="{{ route('guru.qrcode.index') }}" method="GET">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small">Kelas</label>
+                                    <select name="kelas_id" class="form-select">
+                                        <option value="">Semua Kelas</option>
+                                        @foreach($kelas as $k)
+                                            <option value="{{ $k->id }}" {{ request('kelas_id') == $k->id ? 'selected' : '' }}>
+                                                {{ $k->nama_kelas }} - {{ $k->jurusan->nama_jurusan }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-3">
+                                    <label class="form-label fw-semibold small">Tanggal</label>
+                                    <input type="date" name="tanggal" class="form-control" value="{{ request('tanggal') }}">
+                                </div>
+                                
+                                <div class="col-md-3">
+                                    <label class="form-label fw-semibold small">Status</label>
+                                    <select name="status" class="form-select">
+                                        <option value="">Semua Status</option>
+                                        <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Aktif</option>
+                                        <option value="expired" {{ request('status') == 'expired' ? 'selected' : '' }}>Expired</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="bi bi-search me-2"></i>Cari
+                                    </button>
+                                </div>
                             </div>
-                            
-                            <div class="col-md-3">
-                                <label class="form-label fw-semibold small">Filter Tanggal</label>
-                                <input type="date" name="tanggal" class="form-control" value="{{ request('tanggal') }}">
-                            </div>
-                            
-                            <div class="col-md-3">
-                                <label class="form-label fw-semibold small">Filter Status</label>
-                                <select name="status" class="form-select">
-                                    <option value="">Semua Status</option>
-                                    <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Aktif</option>
-                                    <option value="expired" {{ request('status') == 'expired' ? 'selected' : '' }}>Expired</option>
-                                </select>
-                            </div>
-                            
-                            <div class="col-md-3">
-                                <button type="submit" class="btn btn-primary w-100">
-                                    <i class="bi bi-search me-2"></i>Cari
-                                </button>
-                            </div>
-                        </div>
-                    </form>
+                        </form>
+                    </div>
                 </div>
 
-                <!-- Table Header -->
+                <!-- Card Header with Quick Filters -->
                 <div class="card-header bg-white border-bottom">
-                    <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
                         <div>
                             <h4 class="mb-0">Daftar QR Code</h4>
-                            <p class="text-muted small mb-0">Klik untuk melihat detail</p>
+                        </div>
+                        
+                        <div class="d-flex gap-2 flex-wrap">
+                            <div class="btn-group" role="group">
+                                <a href="{{ route('guru.qrcode.index') }}" 
+                                   class="btn btn-sm {{ !request('status') ? 'btn-primary' : 'btn-outline-primary' }}">
+                                    Semua
+                                </a>
+                                <a href="{{ route('guru.qrcode.index', ['status' => 'active']) }}" 
+                                   class="btn btn-sm {{ request('status') == 'active' ? 'btn-success' : 'btn-outline-success' }}">
+                                    Aktif
+                                </a>
+                                <a href="{{ route('guru.qrcode.index', ['status' => 'expired']) }}" 
+                                   class="btn btn-sm {{ request('status') == 'expired' ? 'btn-secondary' : 'btn-outline-secondary' }}">
+                                    Expired
+                                </a>
+                            </div>
+
+                            <button class="btn btn-sm btn-outline-secondary" type="button" 
+                                    data-bs-toggle="collapse" data-bs-target="#advancedFilter">
+                                <i class="bi bi-funnel me-1"></i>Filter
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -178,10 +137,6 @@
                                     <td class="align-middle">
                                         <div>
                                             <h6 class="mb-0">{{ $session->kelas->nama_kelas }}</h6>
-                                            <small class="text-muted">
-                                                <i class="bi bi-mortarboard me-1"></i>
-                                                {{ $session->kelas->jurusan->nama_jurusan }}
-                                            </small>
                                         </div>
                                     </td>
                                     <td class="align-middle text-center">
@@ -189,7 +144,7 @@
                                             {{ $session->tanggal->format('d M Y') }}
                                         </span>
                                     </td>
-                                    <td class="align-middle text-center">
+                                    <td class="align-middle text-center" style="white-space: nowrap;">
                                         <small class="text-muted">
                                             <i class="bi bi-clock me-1"></i>
                                             {{ $session->jam_mulai->format('H:i') }} - {{ $session->jam_selesai->format('H:i') }}
@@ -225,6 +180,12 @@
                                                 <i class="bi bi-eye"></i>
                                             </button>
                                             
+                                            <a href="{{ route('guru.qrcode.download', $session->id) }}" 
+                                               class="btn btn-sm btn-info" 
+                                               title="Download QR Code">
+                                                <i class="bi bi-download"></i>
+                                            </a>
+                                            
                                             <button type="button" 
                                                     class="btn btn-sm {{ $session->status === 'active' ? 'btn-secondary' : 'btn-success' }} btn-toggle-status" 
                                                     data-session-id="{{ $session->id }}"
@@ -233,7 +194,7 @@
                                                 <i class="bi bi-{{ $session->status === 'active' ? 'x-circle' : 'check-circle' }}"></i>
                                             </button>
                                             
-                                            <form action="{{ route('admin.qrcode.destroy', $session->id) }}" 
+                                            <form action="{{ route('guru.qrcode.destroy', $session->id) }}" 
                                                   method="POST" 
                                                   class="d-inline delete-form">
                                                 @csrf
@@ -296,7 +257,7 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="{{ route('admin.qrcode.store') }}" method="POST" id="createQRForm">
+            <form action="{{ route('guru.qrcode.store') }}" method="POST" id="createQRForm">
                 @csrf
                 <div class="modal-body">
                     <div class="row g-4">
@@ -424,5 +385,6 @@
 
 @push('scripts')
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="{{ asset('js/admin/qrcode.js') }}"></script>
+<script src="{{ asset('css/guru/qrcode.css') }}"></script>
+<script src="{{ asset('js/guru/qrcode.js') }}"></script>
 @endpush
