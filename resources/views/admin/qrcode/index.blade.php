@@ -83,9 +83,9 @@
                     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
                         <div>
                             <h4 class="mb-0">Daftar QR Code</h4>
-                            @if($sessions->total() > 0)
+                            {{-- @if($sessions->total() > 0)
                             <small class="text-muted">Total: {{ $sessions->total() }} sesi</small>
-                            @endif
+                            @endif --}}
                         </div>
                         
                         <div class="d-flex gap-2 flex-wrap">
@@ -122,12 +122,12 @@
                             <thead class="table-light">
                                 <tr>
                                     <th class="border-0 text-center" style="width: 60px;">No</th>
-                                    <th class="border-0 text-center" style="width: 180px;">Kelas</th>
-                                    <th class="border-0 text-center" style="width: 110px;">Tanggal</th>
-                                    <th class="border-0 text-center" style="width: 100px;">Waktu</th>
-                                    <th class="border-0 text-center" style="width: 90px;">Lokasi</th>
-                                    <th class="border-0 text-center" style="width: 90px;">Presensi</th>
-                                    <th class="border-0 text-center" style="width: 100px;">Status</th>
+                                    <th class="border-0 text-center">Kelas</th>
+                                    <th class="border-0 text-center">Tanggal</th>
+                                    <th class="border-0 text-center">Waktu</th>
+                                    <th class="border-0 text-center">Lokasi</th>
+                                    {{-- <th class="border-0 text-center" style="width: 90px;">Presensi</th> --}}
+                                    <th class="border-0 text-center">Status</th>
                                     <th class="border-0 text-center" style="width: 150px;">Aksi</th>
                                 </tr>
                             </thead>
@@ -137,7 +137,7 @@
                                     <td class="text-center">
                                         <span class="text-muted fw-semibold">{{ $sessions->firstItem() + $index }}</span>
                                     </td>
-                                    <td>
+                                    <td class="text-center">
                                         <h6 class="mb-0">{{ $session->kelas->nama_kelas }}</h6>
                                     </td>
                                     <td class="text-center">
@@ -146,10 +146,8 @@
                                         </span>
                                     </td>
                                     <td class="text-center">
-                                        <small class="text-muted">
-                                            {{ $session->jam_mulai->format('H:i') }}
-                                        </small>
-                                        <small class="text-muted">
+                                        <small class="text-muted" style="white-space: nowrap;">
+                                            {{ $session->jam_mulai->format('H:i') }} -
                                             {{ $session->jam_selesai->format('H:i') }}
                                         </small>
                                     </td>
@@ -163,12 +161,12 @@
                                             <span class="text-muted">-</span>
                                         @endif
                                     </td>
-                                    <td class="text-center">
+                                    {{-- <td class="text-center">
                                         <span class="badge bg-info-soft text-info">
                                             <i class="bi bi-people-fill me-1"></i>
                                             {{ $session->presensis_count }} Siswa
                                         </span>
-                                    </td>
+                                    </td> --}}
                                     <td class="text-center">
                                         @php
                                             $statusText = $session->getStatusText();
@@ -460,10 +458,7 @@
 }
 </style>
 
-@push('styles')
-<link rel="stylesheet" href="{{ asset('css/admin/qrcode.css') }}">
-@endpush
-
 @push('scripts')
+<link rel="stylesheet" href="{{ asset('css/admin/qrcode.css') }}">
 <script src="{{ asset('js/admin/qrcode.js') }}"></script>
 @endpush

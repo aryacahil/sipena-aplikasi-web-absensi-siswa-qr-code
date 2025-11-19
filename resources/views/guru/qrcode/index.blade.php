@@ -1,5 +1,5 @@
 @extends('layouts.admin')
-@section('title', 'Manajemen QR Code')
+@section('title', 'Generate QR Code')
 
 @section('content')
 @if(session('success'))

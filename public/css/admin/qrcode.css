@@ -1,21 +1,68 @@
 /* ==================================
    QR CODE STYLES
+   (Konsisten dengan Kelas Management)
    ================================== */
 
-/* Avatar Styles for Siswa List */
-.avatar {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    font-size: 14px;
+/* Clean Modern Styling */
+body {
+    background-color: #f8f9fa;
 }
 
-.avatar-sm {
-    width: 28px;
-    height: 28px;
-    font-size: 12px;
+/* Card Component - Rounded Corners (sama dengan Kelas) */
+.card {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.card-header {
+    background-color: #fff;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.card-body {
+    padding: 0;
+}
+
+.card-footer {
+    background-color: #fff;
+    border-top: 1px solid #e9ecef;
+}
+
+/* Table Styling (sama dengan Kelas) */
+.table thead th {
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.table tbody tr {
+    transition: all 0.2s ease;
+}
+
+.table tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.02);
+}
+
+.table tbody td {
+    vertical-align: middle;
+}
+
+/* Badge Styling (sama dengan Kelas) */
+.badge {
+    padding: 0.35rem 0.65rem;
+    font-weight: 500;
+    font-size: 0.75rem;
+}
+
+/* Soft Background Colors */
+.bg-primary-soft {
+    background-color: rgba(13, 110, 253, 0.1);
+}
+
+.bg-info-soft {
+    background-color: rgba(13, 202, 240, 0.1);
 }
 
 .bg-success-soft {
@@ -26,6 +73,11 @@
     background-color: rgba(108, 117, 125, 0.1);
 }
 
+.bg-warning-soft {
+    background-color: rgba(255, 193, 7, 0.1);
+}
+
+/* Text Colors */
 .text-success {
     color: #198754 !important;
 }
@@ -34,11 +86,21 @@
     color: #6c757d !important;
 }
 
-/* Sticky Table Header */
-.sticky-top {
-    position: sticky;
-    top: 0;
-    z-index: 10;
+.text-info {
+    color: #0dcaf0 !important;
+}
+
+.text-primary {
+    color: #0d6efd !important;
+}
+
+/* Button Styling (sama dengan Kelas) */
+.btn {
+    font-weight: 500;
+}
+
+.btn-sm {
+    font-size: 0.813rem;
 }
 
 /* Button Group - Fix Alignment */
@@ -68,15 +130,91 @@
     margin: 0 !important;
 }
 
+/* Modal Styling (sama dengan Kelas) */
+.modal-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+/* Form Styling (sama dengan Kelas) */
+.form-label {
+    font-weight: 500;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+}
+
+/* Pagination (sama dengan Kelas) */
+.pagination {
+    margin-bottom: 0;
+}
+
+.page-link {
+    padding: 0.375rem 0.75rem;
+    color: #0d6efd;
+}
+
+.page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+/* Loading spinner (sama dengan Kelas) */
+.spinner-border {
+    width: 2rem;
+    height: 2rem;
+    border-width: 0.25rem;
+}
+
+/* Gap utilities (sama dengan Kelas) */
+.gap-1 {
+    gap: 0.25rem;
+}
+
+.gap-2 {
+    gap: 0.5rem;
+}
+
+.gap-3 {
+    gap: 1rem;
+}
+
+/* ==================================
+   ADDITIONAL QR CODE SPECIFIC STYLES
+   ================================== */
+
 /* QR Code Container Styles */
 .qr-code-container {
     position: relative;
     border: 2px solid #e9ecef;
+    border-radius: 8px;
 }
 
 .qr-code-container svg {
     max-width: 100%;
     height: auto;
+}
+
+/* Map Container */
+#map {
+    height: 350px;
+    border-radius: 8px;
+    border: 2px solid #dee2e6;
+    z-index: 1;
+}
+
+.leaflet-container {
+    z-index: 1;
+    border-radius: 8px;
+}
+
+.modal-body {
+    -webkit-overflow-scrolling: touch;
 }
 
 /* Card Gradient Alternative */

@@ -41,11 +41,12 @@ return new class extends Migration
         Schema::create('presensis', function (Blueprint $table) {
             $table->id();
             
+            // ⚠️ PERUBAHAN PENTING: GANTI onDelete('cascade') JADI onDelete('set null')
             // SESSION ID - NULLABLE (untuk QR Code scan)
             $table->foreignId('session_id')
                   ->nullable()
                   ->constrained('presensi_sessions')
-                  ->onDelete('cascade')
+                  ->onDelete('set null') // ✅ UBAH DARI cascade JADI set null
                   ->comment('NULL jika presensi manual tanpa QR');
             
             // KELAS ID - WAJIB (untuk presensi manual)
