@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Get Base Route (admin or guru)
     const baseRouteInput = document.getElementById('baseRoute');
-    baseRoute = baseRouteInput ? baseRouteInput.value : 'admin';
+    baseRoute = baseRouteInput ? baseRouteInput.value : 'guru';
 
     // Initialize all event listeners
     initializeModalEvents();
@@ -28,37 +28,17 @@ function initializeModalEvents() {
     const createQRModal = document.getElementById('createQRModal');
     
     if (createQRModal) {
-        // Initialize map when modal is fully shown (after animation complete)
+        // Initialize map when modal shown
         createQRModal.addEventListener('shown.bs.modal', function() {
             if (!map) {
-                // Initialize map after modal is fully visible
-                setTimeout(() => {
-                    initMap();
-                }, 100);
-            } else {
-                // If map already exists, force refresh with multiple attempts
-                map.invalidateSize(true);
-                
-                setTimeout(() => {
-                    map.invalidateSize(true);
-                    
-                    // Re-center map if marker exists
-                    if (marker && circle) {
-                        map.fitBounds(circle.getBounds(), {
-                            padding: [50, 50],
-                            maxZoom: 16
-                        });
-                    } else {
-                        // Reset to default view if no marker
-                        map.setView([-7.6298, 111.5239], 13);
-                    }
-                }, 200);
-                
-                // Final refresh to ensure everything renders correctly
-                setTimeout(() => {
-                    map.invalidateSize(true);
-                }, 400);
+                initMap();
             }
+            // PENTING: Invalidate size setelah modal terbuka
+            setTimeout(function() {
+                if (map) {
+                    map.invalidateSize();
+                }
+            }, 200);
         });
         
         // Reset form when modal closed
@@ -157,7 +137,24 @@ function initMap() {
     const defaultLat = -7.6298;
     const defaultLng = 111.5239;
     
-    map = L.map('map').setView([defaultLat, defaultLng], 13);
+    // Pastikan container map ada
+    const mapContainer = document.getElementById('map');
+    if (!mapContainer) {
+        console.error('Map container not found');
+        return;
+    }
+    
+    // Destroy existing map if any
+    if (map) {
+        map.remove();
+        map = null;
+    }
+    
+    map = L.map('map', {
+        center: [defaultLat, defaultLng],
+        zoom: 13,
+        scrollWheelZoom: true
+    });
     
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors',
@@ -169,8 +166,8 @@ function initMap() {
         setLocation(e.latlng.lat, e.latlng.lng);
     });
     
-    // Force map to render properly
-    setTimeout(() => {
+    // PENTING: Invalidate size setelah map dibuat
+    setTimeout(function() {
         map.invalidateSize();
     }, 100);
 }
@@ -296,6 +293,7 @@ function searchAddress(address) {
             }
         })
         .catch(error => {
+            console.error('Error:', error);
             Swal.fire({
                 icon: 'error',
                 title: 'Error!',
@@ -379,6 +377,7 @@ function showQRCodeDetail(sessionId) {
     })
     .catch(error => {
         clearTimeout(timeoutId);
+        console.error('Error:', error);
         
         let errorMessage = 'Gagal memuat data QR Code';
         if (error.name === 'AbortError') {
@@ -451,6 +450,7 @@ function toggleQRStatus(sessionId, currentStatus) {
                 }
             })
             .catch(error => {
+                console.error('Error:', error);
                 Swal.fire({
                     icon: 'error',
                     title: 'Gagal!',
@@ -489,35 +489,108 @@ function deleteQRCode(form, qrName) {
 function renderQRDetail(data, container, sessionId) {
     const session = data.session;
     
-    // Status badge - berdasarkan status_text dari backend
+    // Status badge
     let statusBadge = '';
-    if (session.status_text === 'active') {
-        statusBadge = '<span class="badge bg-success fs-6"><i class="bi bi-check-circle me-1"></i>Sedang Aktif</span>';
-    } else if (session.status_text === 'waiting') {
-        statusBadge = '<span class="badge bg-warning fs-6"><i class="bi bi-clock me-1"></i>Menunggu</span>';
+    if (session.status === 'active') {
+        if (session.is_active) {
+            statusBadge = '<span class="badge bg-success fs-6"><i class="bi bi-check-circle me-1"></i>Sedang Aktif</span>';
+        } else {
+            statusBadge = '<span class="badge bg-warning fs-6"><i class="bi bi-clock me-1"></i>Menunggu</span>';
+        }
     } else {
         statusBadge = '<span class="badge bg-secondary fs-6"><i class="bi bi-x-circle me-1"></i>Expired</span>';
+    }
+
+    // Generate siswa list (hadir)
+    let siswaListHtml = '';
+    if (session.presensis && session.presensis.length > 0) {
+        siswaListHtml = session.presensis.map((presensi, index) => `
+            <div class="siswa-item d-flex justify-content-between align-items-center py-2 px-3 border-bottom">
+                <div class="d-flex align-items-center">
+                    <span class="me-3 text-muted fw-bold">${index + 1}</span>
+                    <div>
+                        <h6 class="mb-0">${presensi.siswa.name}</h6>
+                        <small class="text-muted">
+                            <i class="bi bi-clock me-1"></i>${presensi.waktu_presensi}
+                        </small>
+                    </div>
+                </div>
+                <span class="badge bg-success">
+                    <i class="bi bi-check-circle me-1"></i>${presensi.status}
+                </span>
+            </div>
+        `).join('');
+    } else {
+        siswaListHtml = `
+            <div class="alert alert-info mb-0">
+                <i class="bi bi-info-circle me-2"></i>
+                Belum ada siswa yang melakukan presensi
+            </div>
+        `;
+    }
+
+    // Belum presensi list
+    let belumPresensiHtml = '';
+    if (session.siswa_belum_presensi && session.siswa_belum_presensi.length > 0) {
+        belumPresensiHtml = session.siswa_belum_presensi.map((siswa, index) => `
+            <div class="siswa-item d-flex justify-content-between align-items-center py-2 px-3 border-bottom">
+                <div class="d-flex align-items-center">
+                    <span class="me-3 text-muted fw-bold">${index + 1}</span>
+                    <div>
+                        <h6 class="mb-0">${siswa.name}</h6>
+                        <small class="text-muted">
+                            <i class="bi bi-envelope me-1"></i>${siswa.email}
+                        </small>
+                    </div>
+                </div>
+                <span class="badge bg-secondary">
+                    <i class="bi bi-x-circle me-1"></i>Belum
+                </span>
+            </div>
+        `).join('');
+    } else {
+        belumPresensiHtml = `
+            <div class="alert alert-success mb-0">
+                <i class="bi bi-check-circle me-2"></i>
+                Semua siswa sudah melakukan presensi
+            </div>
+        `;
     }
 
     container.innerHTML = `
         <div class="row g-4">
             <!-- QR Code Display -->
             <div class="col-lg-5">
-                <div class="card border-0 shadow-sm">
+                <div class="card bg-gradient-primary text-white">
                     <div class="card-body text-center p-4">
-                        <div class="bg-light p-4 rounded-3 qr-code-container" style="display: inline-block; min-height: 350px; min-width: 350px; display: flex; align-items: center; justify-content: center;">
-                            <div id="qrCodeDisplay" style="width: 100%; height: 100%;">
-                                <div class="spinner-border text-primary" role="status"></div>
-                            </div>
+                        <div class="bg-white p-3 rounded mb-3" style="display: inline-block;">
+                            ${data.qr_code_svg}
                         </div>
+                        <h5 class="text-white mb-2">${session.kelas.nama_kelas}</h5>
+                        <p class="text-white-50 mb-0">
+                            ${session.kelas.jurusan.nama_jurusan}
+                        </p>
+                        <p class="text-white-50 mb-0">
+                            ${session.tanggal} | ${session.jam_mulai} - ${session.jam_selesai}
+                        </p>
                     </div>
                 </div>
                 
-                <!-- Action Button -->
-                <div class="mt-3">
+                <!-- Action Buttons -->
+                <div class="d-grid gap-2 mt-3">
                     <a href="/${baseRoute}/qrcode/${sessionId}/download" 
-                       class="btn btn-success btn-lg w-100">
+                       class="btn btn-success btn-lg">
                         <i class="bi bi-download me-2"></i>Download QR Code
+                    </a>
+                    <button type="button" 
+                            class="btn btn-primary btn-lg" 
+                            onclick="window.print()">
+                        <i class="bi bi-printer me-2"></i>Print QR Code
+                    </button>
+                    <a href="${session.scan_url}" 
+                       class="btn btn-outline-primary btn-lg"
+                       target="_blank">
+                        <i class="bi bi-link-45deg me-2"></i>Buka Link Scan
                     </a>
                 </div>
             </div>
@@ -564,26 +637,22 @@ function renderQRDetail(data, container, sessionId) {
                 </div>
 
                 <!-- Statistics -->
-                <div class="row g-2 mb-3">
+                <div class="row g-3">
                     <div class="col-6">
-                        <div class="card bg-success text-white h-100">
-                            <div class="card-body text-center p-3 d-flex flex-column justify-content-center">
-                                <div class="d-flex align-items-center justify-content-center mb-2">
-                                    <i class="bi bi-check-circle-fill fs-3 me-2"></i>
-                                    <h1 class="mb-0 fw-bold">${session.stats.hadir}</h1>
-                                </div>
-                                <p class="mb-0 fw-semibold">Hadir</p>
+                        <div class="card bg-success text-white">
+                            <div class="card-body text-center">
+                                <i class="bi bi-check-circle-fill fs-1 mb-2"></i>
+                                <h2 class="mb-0">${session.stats.hadir}</h2>
+                                <p class="mb-0">Hadir</p>
                             </div>
                         </div>
                     </div>
                     <div class="col-6">
-                        <div class="card bg-secondary text-white h-100">
-                            <div class="card-body text-center p-3 d-flex flex-column justify-content-center">
-                                <div class="d-flex align-items-center justify-content-center mb-2">
-                                    <i class="bi bi-x-circle-fill fs-3 me-2"></i>
-                                    <h1 class="mb-0 fw-bold">${session.stats.belum}</h1>
-                                </div>
-                                <p class="mb-0 fw-semibold">Belum Presensi</p>
+                        <div class="card bg-secondary text-white">
+                            <div class="card-body text-center">
+                                <i class="bi bi-x-circle-fill fs-1 mb-2"></i>
+                                <h2 class="mb-0">${session.stats.belum}</h2>
+                                <p class="mb-0">Belum Presensi</p>
                             </div>
                         </div>
                     </div>
@@ -620,97 +689,13 @@ function renderQRDetail(data, container, sessionId) {
                     <div class="card-body p-0">
                         <div class="tab-content" id="siswaTabContent">
                             <div class="tab-pane fade show active" id="hadir" role="tabpanel">
-                                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                                    <table class="table table-hover mb-0">
-                                        <thead class="table-light sticky-top">
-                                            <tr>
-                                                <th style="width: 50px;" class="text-center">No</th>
-                                                <th>Nama Siswa</th>
-                                                <th class="text-center" style="width: 150px;">Waktu</th>
-                                                <th class="text-center" style="width: 120px;">Status</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            ${session.presensis && session.presensis.length > 0 ? 
-                                                session.presensis.map((presensi, index) => `
-                                                    <tr>
-                                                        <td class="text-center text-muted fw-semibold">${index + 1}</td>
-                                                        <td>
-                                                            <div class="d-flex align-items-center">
-                                                                <div class="avatar avatar-sm bg-success-soft text-success rounded-circle me-2">
-                                                                    <i class="bi bi-person-check-fill"></i>
-                                                                </div>
-                                                                <span class="fw-semibold">${presensi.siswa.name}</span>
-                                                            </div>
-                                                        </td>
-                                                        <td class="text-center">
-                                                            <small class="text-muted">
-                                                                <i class="bi bi-clock me-1"></i>${presensi.waktu_presensi}
-                                                            </small>
-                                                        </td>
-                                                        <td class="text-center">
-                                                            <span class="badge bg-success">
-                                                                <i class="bi bi-check-circle me-1"></i>${presensi.status}
-                                                            </span>
-                                                        </td>
-                                                    </tr>
-                                                `).join('')
-                                                : `<tr><td colspan="4" class="text-center py-4">
-                                                    <div class="alert alert-info mb-0">
-                                                        <i class="bi bi-info-circle me-2"></i>
-                                                        Belum ada siswa yang melakukan presensi
-                                                    </div>
-                                                </td></tr>`
-                                            }
-                                        </tbody>
-                                    </table>
+                                <div style="max-height: 400px; overflow-y: auto;">
+                                    ${siswaListHtml}
                                 </div>
                             </div>
                             <div class="tab-pane fade" id="belum" role="tabpanel">
-                                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                                    <table class="table table-hover mb-0">
-                                        <thead class="table-light sticky-top">
-                                            <tr>
-                                                <th style="width: 50px;" class="text-center">No</th>
-                                                <th>Nama Siswa</th>
-                                                <th>Email</th>
-                                                <th class="text-center" style="width: 120px;">Status</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            ${session.siswa_belum_presensi && session.siswa_belum_presensi.length > 0 ? 
-                                                session.siswa_belum_presensi.map((siswa, index) => `
-                                                    <tr>
-                                                        <td class="text-center text-muted fw-semibold">${index + 1}</td>
-                                                        <td>
-                                                            <div class="d-flex align-items-center">
-                                                                <div class="avatar avatar-sm bg-secondary-soft text-secondary rounded-circle me-2">
-                                                                    <i class="bi bi-person-x-fill"></i>
-                                                                </div>
-                                                                <span class="fw-semibold">${siswa.name}</span>
-                                                            </div>
-                                                        </td>
-                                                        <td>
-                                                            <small class="text-muted">
-                                                                <i class="bi bi-envelope me-1"></i>${siswa.email}
-                                                            </small>
-                                                        </td>
-                                                        <td class="text-center">
-                                                            <span class="badge bg-secondary">
-                                                                <i class="bi bi-x-circle me-1"></i>Belum
-                                                            </span>
-                                                        </td>
-                                                    </tr>
-                                                `).join('')
-                                                : `<tr><td colspan="4" class="text-center py-4">
-                                                    <div class="alert alert-success mb-0">
-                                                        <i class="bi bi-check-circle me-2"></i>
-                                                        Semua siswa sudah melakukan presensi
-                                                    </div>
-                                                </td></tr>`
-                                            }
-                                        </tbody>
-                                    </table>
+                                <div style="max-height: 400px; overflow-y: auto;">
+                                    ${belumPresensiHtml}
                                 </div>
                             </div>
                         </div>
@@ -719,41 +704,6 @@ function renderQRDetail(data, container, sessionId) {
             </div>
         </div>
     `;
-    
-    // Insert SVG QR Code after DOM is ready
-    setTimeout(() => {
-        const qrDisplay = document.getElementById('qrCodeDisplay');
-        
-        if (qrDisplay) {
-            if (data.qr_code_svg) {
-                if (typeof data.qr_code_svg === 'string' && data.qr_code_svg.includes('<svg')) {
-                    qrDisplay.innerHTML = data.qr_code_svg;
-                    
-                    // Style SVG element
-                    const svgElement = qrDisplay.querySelector('svg');
-                    if (svgElement) {
-                        svgElement.style.width = '100%';
-                        svgElement.style.height = 'auto';
-                        svgElement.style.maxWidth = '300px';
-                    }
-                } else {
-                    qrDisplay.innerHTML = `
-                        <div class="alert alert-danger">
-                            <i class="bi bi-exclamation-triangle"></i>
-                            <p class="mb-0 mt-2">QR Code tidak valid</p>
-                        </div>
-                    `;
-                }
-            } else {
-                qrDisplay.innerHTML = `
-                    <div class="alert alert-warning">
-                        <i class="bi bi-exclamation-circle"></i>
-                        <p class="mb-0 mt-2">QR Code tidak tersedia</p>
-                    </div>
-                `;
-            }
-        }
-    }, 300);
 }
 
 // ==================== FORM VALIDATION ====================

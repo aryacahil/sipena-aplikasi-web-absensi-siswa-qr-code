@@ -13,8 +13,8 @@ class SiswaTemplateExport implements FromArray, WithHeadings, WithStyles
     {
         // Contoh data
         return [
-            ['Ahmad Fauzi', 'ahmad@example.com', '12345678', '1', '081234567890', 'active'],
-            ['Siti Nurhaliza', 'siti@example.com', '12345678', '2', '081234567891', 'active'],
+            ['Ahmad Fauzi', 'ahmad@example.com', '12345678', 'X DKV 1', '081234567890', 'active'],
+            ['Siti Nurhaliza', 'siti@example.com', '12345678', 'X DKV 2', '081234567891', 'active'],
         ];
     }
 
@@ -24,7 +24,7 @@ class SiswaTemplateExport implements FromArray, WithHeadings, WithStyles
             'nama_lengkap',
             'email',
             'password',
-            'kelas_id',
+            'nama_kelas',
             'no_telp_orang_tua',
             'status',
         ];

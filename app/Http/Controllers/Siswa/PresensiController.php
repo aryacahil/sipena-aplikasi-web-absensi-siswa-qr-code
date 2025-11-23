@@ -7,7 +7,7 @@ use App\Models\PresensiSession;
 use App\Models\Presensi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;  // ← PENTING
+use Illuminate\Support\Facades\Log;  
 use Carbon\Carbon;
 
 class PresensiController extends Controller

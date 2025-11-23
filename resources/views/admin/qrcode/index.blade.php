@@ -22,11 +22,8 @@
                     <p class="text-white-50 mb-0">Kelola QR Code untuk absensi siswa</p>
                 </div>
                 <div>
-                    <a href="{{ route('admin.presensi.index') }}" class="btn btn-white me-2">
-                        <i class="bi bi-clipboard-check me-2"></i>Lihat Presensi
-                    </a>
-                    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createQRModal">
-                        <i class="bi bi-plus-circle me-2"></i>Generate QR Code
+                    <button type="button" class="btn btn-white" data-bs-toggle="modal" data-bs-target="#createQRModal">
+                        <i class="bi bi-qr-code me-2"></i>Generate QR Code
                     </button>
                 </div>
             </div>
@@ -36,7 +33,7 @@
     <!-- Filter & List -->
     <div class="row mt-6">
         <div class="col-md-12">
-            <div class="card shadow-sm">
+            <div class="card shadow-sm rounded-3">
                 
                 <!-- Advanced Filter (Collapsed by default) -->
                 <div class="collapse" id="advancedFilter">
@@ -83,7 +80,7 @@
                 </div>
 
                 <!-- Card Header with Quick Filters -->
-                <div class="card-header bg-white border-bottom">
+                <div class="card-header bg-white border-bottom rounded-top">
                     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
                         <div>
                             <h4 class="mb-0">Daftar QR Code</h4>
@@ -247,97 +244,153 @@
     </div>
 </div>
 
-<!-- Modal Create QR Code -->
+<!-- Modal Create QR Code - Fixed Version -->
 <div class="modal fade" id="createQRModal" tabindex="-1">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">
-                    <i class="bi bi-qr-code me-2"></i>Generate QR Code Baru
+                    <i class="bi bi-qr-code me-2"></i>Buat QR Code Baru
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="{{ route('admin.qrcode.store') }}" method="POST" id="createQRForm">
+            <form action="{{ request()->is('admin/*') ? route('admin.qrcode.store') : route('guru.qrcode.store') }}" method="POST" id="createQRForm">
                 @csrf
-                <div class="modal-body">
-                    <div class="row g-4">
-                        <!-- Left Column: Form -->
-                        <div class="col-lg-6">
-                            <div class="row g-3">
-                                <div class="col-12">
-                                    <label class="form-label fw-semibold">Kelas <span class="text-danger">*</span></label>
-                                    <select class="form-select" name="kelas_id" required>
-                                        <option value="">Pilih Kelas</option>
-                                        @foreach($kelas as $k)
-                                            <option value="{{ $k->id }}">
-                                                {{ $k->nama_kelas }} - {{ $k->jurusan->nama_jurusan }} ({{ $k->siswa_count }} siswa)
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                
-                                <div class="col-12">
-                                    <label class="form-label fw-semibold">Tanggal <span class="text-danger">*</span></label>
-                                    <input type="date" class="form-control" name="tanggal" required value="{{ date('Y-m-d') }}">
-                                </div>
-                                
-                                <div class="col-6">
-                                    <label class="form-label fw-semibold">Jam Mulai <span class="text-danger">*</span></label>
-                                    <input type="time" class="form-control" name="jam_mulai" required>
-                                </div>
-                                
-                                <div class="col-6">
-                                    <label class="form-label fw-semibold">Jam Selesai <span class="text-danger">*</span></label>
-                                    <input type="time" class="form-control" name="jam_selesai" required>
-                                </div>
-                                
-                                <div class="col-12">
-                                    <label class="form-label fw-semibold">Radius Lokasi (meter) <span class="text-danger">*</span></label>
-                                    <input type="number" class="form-control" name="radius" id="radius" value="200" min="50" max="1000" required>
-                                    <small class="text-muted">Jarak maksimal siswa dari lokasi (50-1000 meter)</small>
-                                </div>
-                                
-                                <div class="col-12">
-                                    <input type="hidden" name="latitude" id="latitude">
-                                    <input type="hidden" name="longitude" id="longitude">
-                                </div>
-                            </div>
+                <div class="modal-body" style="max-height: 75vh; overflow-y: auto;">
+                    <div class="alert alert-warning mb-3">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>Perhatian!</strong> Jika kelas sudah memiliki QR Code aktif, QR Code lama akan otomatis terhapus.
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                Kelas <span class="text-danger">*</span>
+                            </label>
+                            <select name="kelas_id" class="form-select" required>
+                                <option value="">Pilih Kelas</option>
+                                @foreach($kelas as $k)
+                                    <option value="{{ $k->id }}">
+                                        {{ $k->nama_kelas }} - {{ $k->jurusan->nama_jurusan }} 
+                                        ({{ $k->siswa_count ?? 0 }} siswa)
+                                    </option>
+                                @endforeach
+                            </select>
                         </div>
-                        
-                        <!-- Right Column: Map -->
-                        <div class="col-lg-6">
-                            <label class="form-label fw-semibold">Lokasi Presensi <span class="text-danger">*</span></label>
-                            <div class="mb-2">
-                                <button type="button" class="btn btn-sm btn-primary me-2" id="getLocationBtn">
-                                    <i class="bi bi-geo-alt-fill me-1"></i>Lokasi Saya
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                Tanggal <span class="text-danger">*</span>
+                            </label>
+                            <input type="date" 
+                                   name="tanggal" 
+                                   class="form-control" 
+                                   value="{{ date('Y-m-d') }}"
+                                   min="{{ date('Y-m-d') }}"
+                                   required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                Jam Mulai <span class="text-danger">*</span>
+                            </label>
+                            <input type="time" 
+                                   name="jam_mulai" 
+                                   class="form-control" 
+                                   value="07:00"
+                                   required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                Jam Selesai <span class="text-danger">*</span>
+                            </label>
+                            <input type="time" 
+                                   name="jam_selesai" 
+                                   class="form-control" 
+                                   value="08:00"
+                                   required>
+                        </div>
+
+                        <!-- MAP SECTION -->
+                        <div class="col-12">
+                            <div class="alert alert-info mb-3">
+                                <i class="bi bi-info-circle me-2"></i>
+                                <strong>Pilih Lokasi Presensi</strong><br>
+                                Klik pada peta atau gunakan tombol di bawah untuk menentukan lokasi
+                            </div>
+
+                            <div class="mb-3">
+                                <button type="button" class="btn btn-primary w-100 mb-2" id="getLocationBtn">
+                                    <i class="bi bi-geo-alt me-2"></i>Gunakan Lokasi Saat Ini
                                 </button>
-                                <button type="button" class="btn btn-sm btn-outline-secondary" id="searchLocationBtn">
-                                    <i class="bi bi-search me-1"></i>Cari Alamat
+                                <button type="button" class="btn btn-outline-secondary w-100" id="searchLocationBtn">
+                                    <i class="bi bi-search me-2"></i>Cari Alamat
                                 </button>
                             </div>
-                            
-                            <div id="searchBox" class="mb-2" style="display: none;">
+
+                            <!-- Search Box -->
+                            <div id="searchBox" style="display: none;" class="mb-3">
                                 <div class="input-group">
-                                    <input type="text" class="form-control" id="searchAddressInput" placeholder="Contoh: SMKN 1 Bendo, Kab. Magetan">
+                                    <input type="text" class="form-control" id="searchAddressInput" placeholder="Cari alamat...">
                                     <button class="btn btn-primary" type="button" id="searchAddressBtn">
                                         <i class="bi bi-search"></i>
                                     </button>
                                 </div>
                             </div>
+
+                            <!-- Map Container -->
+                            <div id="map" style="height: 400px; border-radius: 8px; border: 2px solid #dee2e6;"></div>
                             
-                            <div id="map" style="height: 400px; border-radius: 8px;"></div>
-                            <small class="text-muted mt-2 d-block">
-                                <i class="bi bi-info-circle me-1"></i>Klik pada peta untuk memilih lokasi presensi
-                            </small>
+                            <div class="row mt-3">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">
+                                        Latitude <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" 
+                                           name="latitude" 
+                                           id="latitude"
+                                           class="form-control" 
+                                           placeholder="-7.6298"
+                                           readonly
+                                           required>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">
+                                        Longitude <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" 
+                                           name="longitude" 
+                                           id="longitude"
+                                           class="form-control" 
+                                           placeholder="111.5239"
+                                           readonly
+                                           required>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">
+                                        Radius (meter) <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="number" 
+                                           name="radius" 
+                                           id="radius"
+                                           class="form-control" 
+                                           value="200"
+                                           min="50"
+                                           max="1000"
+                                           required>
+                                    <small class="text-muted">50-1000 meter</small>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="bi bi-x-circle me-1"></i>Batal
-                    </button>
-                    <button type="submit" class="btn btn-success">
-                        <i class="bi bi-qr-code me-1"></i>Generate QR Code
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-2"></i>Generate QR Code
                     </button>
                 </div>
             </form>
@@ -367,12 +420,12 @@
 
 @endsection
 
-@push('styles')
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="{{ asset('css/admin/qrcode.css') }}"> 
-@endpush
-
+<!-- Leaflet CSS & JS -->
 @push('scripts')
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+@endpush
+@push('scripts')
+<link rel="stylesheet" href="{{ asset('css/admin/qrcode.css') }}">
 <script src="{{ asset('js/admin/qrcode.js') }}"></script>
 @endpush

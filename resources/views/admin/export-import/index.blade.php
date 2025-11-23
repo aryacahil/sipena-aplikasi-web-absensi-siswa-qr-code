@@ -4,6 +4,7 @@
 @section('content')
 <div class="bg-primary pt-10 pb-21"></div>
 <div class="container-fluid mt-n22 px-6">
+    <!-- Header -->
     <div class="row">
         <div class="col-lg-12">
             <div class="mb-4">
@@ -15,12 +16,13 @@
 
     <!-- Export Section -->
     <div class="row mt-6">
-        <div class="col-lg-6">
-            <div class="card shadow-sm">
+        <!-- Export Data Siswa -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100">
                 <div class="card-header bg-white">
-                    <h4 class="mb-0">
+                    <h5 class="mb-0">
                         <i class="bi bi-download me-2 text-success"></i>Export Data Siswa
-                    </h4>
+                    </h5>
                 </div>
                 <div class="card-body">
                     <form action="{{ route('admin.export.siswa') }}" method="POST">
@@ -30,7 +32,9 @@
                             <select name="kelas_id" class="form-select">
                                 <option value="">Semua Kelas</option>
                                 @foreach($kelas as $k)
-                                    <option value="{{ $k->id }}">{{ $k->nama_kelas }} - {{ $k->jurusan->nama_jurusan }}</option>
+                                    <option value="{{ $k->id }}">
+                                        {{ $k->nama_kelas }} - {{ $k->jurusan->nama_jurusan }}
+                                    </option>
                                 @endforeach
                             </select>
                         </div>
@@ -50,12 +54,13 @@
             </div>
         </div>
 
-        <div class="col-lg-6">
-            <div class="card shadow-sm">
+        <!-- Export Data Absensi -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100">
                 <div class="card-header bg-white">
-                    <h4 class="mb-0">
+                    <h5 class="mb-0">
                         <i class="bi bi-download me-2 text-info"></i>Export Data Absensi
-                    </h4>
+                    </h5>
                 </div>
                 <div class="card-body">
                     <form action="{{ route('admin.export.presensi') }}" method="POST">
@@ -99,16 +104,17 @@
     </div>
 
     <!-- Import Section -->
-    <div class="row mt-4">
+    <div class="row">
         <div class="col-lg-12">
             <div class="card shadow-sm">
                 <div class="card-header bg-white">
-                    <h4 class="mb-0">
+                    <h5 class="mb-0">
                         <i class="bi bi-upload me-2 text-primary"></i>Import Data Siswa
-                    </h4>
+                    </h5>
                 </div>
                 <div class="card-body">
-                    <div class="alert alert-info">
+                    <!-- Panduan -->
+                    <div class="alert alert-info mb-4">
                         <i class="bi bi-info-circle me-2"></i>
                         <strong>Panduan Import:</strong>
                         <ol class="mb-0 mt-2">
@@ -119,20 +125,26 @@
                     </div>
 
                     <div class="row">
-                        <div class="col-md-6">
-                            <a href="{{ route('admin.download.template') }}" class="btn btn-outline-primary w-100 mb-3">
+                        <!-- Download Template -->
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <a href="{{ route('admin.download.template') }}" class="btn btn-outline-primary w-100">
                                 <i class="bi bi-download me-2"></i>Download Template
                             </a>
                         </div>
+
+                        <!-- Upload Import -->
                         <div class="col-md-6">
                             <form action="{{ route('admin.import.siswa') }}" method="POST" enctype="multipart/form-data">
                                 @csrf
-                                <div class="mb-3">
+                                <div class="input-group">
                                     <input type="file" name="file" class="form-control" accept=".xlsx,.xls,.csv" required>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-upload me-1"></i>Import
+                                    </button>
                                 </div>
-                                <button type="submit" class="btn btn-primary w-100">
-                                    <i class="bi bi-upload me-2"></i>Upload & Import
-                                </button>
+                                <small class="text-muted d-block mt-1">
+                                    Format: .xlsx, .xls, .csv
+                                </small>
                             </form>
                         </div>
                     </div>

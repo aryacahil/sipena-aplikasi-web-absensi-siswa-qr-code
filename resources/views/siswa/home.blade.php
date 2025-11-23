@@ -56,45 +56,8 @@
                 </div>
             </div>
 
-            <!-- Quick Actions -->
+            <!-- Today's Attendance Status -->
             <div class="col-xl-8 col-lg-6 col-md-12 col-12">
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-white">
-                        <h5 class="mb-0">
-                            <i class="bi bi-lightning-fill text-warning me-2"></i>
-                            Aksi Cepat
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <!-- Scan QR Code -->
-                            <div class="col-md-6">
-                                <a href="{{ route('siswa.presensi.index') }}" 
-                                   class="btn btn-primary btn-lg w-100 d-flex align-items-center justify-content-center">
-                                    <i class="bi bi-qr-code-scan me-2 fs-4"></i>
-                                    <div class="text-start">
-                                        <div class="fw-bold">Scan QR Code</div>
-                                        <small>Presensi Sekarang</small>
-                                    </div>
-                                </a>
-                            </div>
-
-                            <!-- View History -->
-                            <div class="col-md-6">
-                                <a href="#" 
-                                   class="btn btn-outline-primary btn-lg w-100 d-flex align-items-center justify-content-center">
-                                    <i class="bi bi-clock-history me-2 fs-4"></i>
-                                    <div class="text-start">
-                                        <div class="fw-bold">Riwayat</div>
-                                        <small>Lihat Presensi</small>
-                                    </div>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Today's Attendance Status -->
                 <div class="card shadow-sm">
                     <div class="card-header bg-white">
                         <h5 class="mb-0">
