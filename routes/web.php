@@ -125,6 +125,16 @@ Route::middleware(['auth', 'user-role:admin'])->group(function() {
         ->name('admin.download.template');
     Route::post('admin/import/siswa', [App\Http\Controllers\Admin\ExportImportController::class, 'importSiswa'])
         ->name('admin.import.siswa');
+
+    // WHATSAPP SETTINGS ROUTES (FIXED - Using WhatsAppController)
+    Route::get('admin/settings/whatsapp', [App\Http\Controllers\Admin\WhatsAppController::class, 'index'])
+        ->name('admin.settings.whatsapp');
+    Route::put('admin/settings/whatsapp', [App\Http\Controllers\Admin\WhatsAppController::class, 'update'])
+        ->name('admin.settings.whatsapp.update');
+    Route::post('admin/settings/whatsapp/test-connection', [App\Http\Controllers\Admin\WhatsAppController::class, 'testConnection'])
+        ->name('admin.settings.whatsapp.test-connection');
+    Route::post('admin/settings/whatsapp/test-message', [App\Http\Controllers\Admin\WhatsAppController::class, 'testMessage'])
+        ->name('admin.settings.whatsapp.test-message');
 });
 
 // ==================== GURU ROUTES ====================

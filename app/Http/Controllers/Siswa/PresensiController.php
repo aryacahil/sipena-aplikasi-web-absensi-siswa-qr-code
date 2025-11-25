@@ -5,13 +5,21 @@ namespace App\Http\Controllers\Siswa;
 use App\Http\Controllers\Controller;
 use App\Models\PresensiSession;
 use App\Models\Presensi;
+use App\Services\FonnteService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;  
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class PresensiController extends Controller
 {
+    protected $fonnteService;
+
+    public function __construct(FonnteService $fonnteService)
+    {
+        $this->fonnteService = $fonnteService;
+    }
+
     /**
      * Halaman Scanner QR Code
      */
@@ -19,13 +27,11 @@ class PresensiController extends Controller
     {
         $siswa = Auth::user();
         
-        // Cek apakah siswa sudah memiliki kelas
         if (!$siswa->kelas_id) {
             return redirect()->route('siswa.home')
                 ->with('error', 'Anda belum terdaftar di kelas manapun. Silakan hubungi admin.');
         }
 
-        // Cek apakah sudah presensi hari ini
         $todayPresensi = Presensi::where('siswa_id', $siswa->id)
             ->whereDate('tanggal_presensi', now())
             ->first();
@@ -63,7 +69,6 @@ class PresensiController extends Controller
 
             Log::info('Searching for session with QR code', ['qr_code' => $qrCode]);
 
-            // Cari session berdasarkan QR code
             $session = PresensiSession::where('qr_code', $qrCode)
                 ->with('kelas.jurusan')
                 ->first();
@@ -83,7 +88,6 @@ class PresensiController extends Controller
                 'tanggal' => $session->tanggal->format('Y-m-d')
             ]);
 
-            // Cek apakah session masih aktif
             if ($session->status !== 'active') {
                 Log::warning('Session not active', [
                     'session_id' => $session->id,
@@ -95,11 +99,10 @@ class PresensiController extends Controller
                 ], 400);
             }
 
-            // Cek waktu presensi
+            // Validasi waktu
             $now = Carbon::now();
             $sessionDate = $session->tanggal;
             
-            // PERBAIKAN: Format jam_mulai dan jam_selesai dengan benar
             $jamMulai = Carbon::parse(
                 $sessionDate->format('Y-m-d') . ' ' . $session->jam_mulai->format('H:i:s')
             );
@@ -147,7 +150,6 @@ class PresensiController extends Controller
                 ], 400);
             }
 
-            // Return data session yang valid
             $responseData = [
                 'session_id' => $session->id,
                 'kelas' => $session->kelas->nama_kelas,
@@ -182,7 +184,7 @@ class PresensiController extends Controller
     }
 
     /**
-     * Submit Presensi setelah scan QR
+     * Submit Presensi dengan Validasi Ketat
      */
     public function submitPresensi(Request $request)
     {
@@ -196,11 +198,12 @@ class PresensiController extends Controller
                 'session_id' => 'required|exists:presensi_sessions,id',
                 'latitude' => 'required|numeric|between:-90,90',
                 'longitude' => 'required|numeric|between:-180,180',
+                'distance' => 'nullable|numeric',
+                'gps_accuracy' => 'nullable|numeric',
             ]);
 
             $siswa = Auth::user();
 
-            // Cek apakah siswa memiliki kelas
             if (!$siswa->kelas_id) {
                 Log::warning('Student has no class', ['siswa_id' => $siswa->id]);
                 return response()->json([
@@ -209,7 +212,6 @@ class PresensiController extends Controller
                 ], 400);
             }
 
-            // Ambil session
             $session = PresensiSession::findOrFail($validated['session_id']);
 
             Log::info('Session retrieved', [
@@ -218,7 +220,6 @@ class PresensiController extends Controller
                 'siswa_kelas_id' => $siswa->kelas_id
             ]);
 
-            // Cek apakah siswa di kelas yang sama dengan session
             if ($siswa->kelas_id !== $session->kelas_id) {
                 Log::warning('Class mismatch', [
                     'siswa_kelas_id' => $siswa->kelas_id,
@@ -230,7 +231,6 @@ class PresensiController extends Controller
                 ], 403);
             }
 
-            // Cek apakah sudah presensi hari ini
             $existingPresensi = Presensi::where('siswa_id', $siswa->id)
                 ->where('kelas_id', $session->kelas_id)
                 ->whereDate('tanggal_presensi', $session->tanggal)
@@ -251,8 +251,8 @@ class PresensiController extends Controller
                 ], 400);
             }
 
-            // Validasi lokasi menggunakan Haversine formula
-            $isValidLocation = $this->validateLocation(
+            // Validasi radius (SERVER-SIDE)
+            $distance = $this->validateLocation(
                 $validated['latitude'],
                 $validated['longitude'],
                 $session->latitude,
@@ -260,16 +260,44 @@ class PresensiController extends Controller
                 $session->radius
             );
 
-            Log::info('Location validation result', [
+            Log::info('Server-side distance validation', [
                 'siswa_lat' => $validated['latitude'],
                 'siswa_lng' => $validated['longitude'],
                 'session_lat' => $session->latitude,
                 'session_lng' => $session->longitude,
                 'radius' => $session->radius,
-                'is_valid' => $isValidLocation
+                'calculated_distance' => $distance,
+                'is_within_radius' => $distance <= $session->radius
             ]);
 
-            // Buat presensi baru
+            // TOLAK jika di luar radius
+            if ($distance > $session->radius) {
+                Log::warning('Location outside radius - REJECTED', [
+                    'siswa_id' => $siswa->id,
+                    'distance' => $distance,
+                    'allowed_radius' => $session->radius,
+                    'difference' => $distance - $session->radius
+                ]);
+                
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Lokasi Anda di luar radius yang diizinkan',
+                    'data' => [
+                        'distance' => $distance,
+                        'allowed_radius' => $session->radius,
+                        'difference' => $distance - $session->radius
+                    ]
+                ], 403);
+            }
+
+            $isValidLocation = true; // Pasti valid karena sudah dicek di atas
+
+            // Buat presensi
+            $keterangan = "Jarak: {$distance}m";
+            if (isset($validated['gps_accuracy'])) {
+                $keterangan .= " | GPS Accuracy: {$validated['gps_accuracy']}m";
+            }
+            
             $presensi = Presensi::create([
                 'session_id' => $session->id,
                 'kelas_id' => $session->kelas_id,
@@ -281,25 +309,28 @@ class PresensiController extends Controller
                 'longitude' => $validated['longitude'],
                 'metode' => 'qr',
                 'is_valid_location' => $isValidLocation,
-                'keterangan' => !$isValidLocation ? 'Lokasi di luar radius yang ditentukan' : null,
+                'keterangan' => $keterangan,
             ]);
 
             Log::info('Presensi created successfully', [
                 'presensi_id' => $presensi->id,
                 'siswa_id' => $siswa->id,
+                'distance' => $distance,
                 'is_valid_location' => $isValidLocation
             ]);
 
+            // ==================== KIRIM NOTIFIKASI WA ====================
+            $this->sendWhatsAppNotification($presensi);
+
             return response()->json([
                 'success' => true,
-                'message' => $isValidLocation 
-                    ? 'Presensi berhasil dicatat!' 
-                    : 'Presensi berhasil, namun lokasi Anda di luar radius yang ditentukan',
+                'message' => 'Presensi berhasil dicatat!',
                 'data' => [
                     'presensi_id' => $presensi->id,
                     'status' => $presensi->status,
                     'waktu' => $presensi->created_at->format('H:i:s'),
                     'tanggal' => $presensi->tanggal_presensi->format('d M Y'),
+                    'distance' => $distance,
                     'is_valid_location' => $isValidLocation
                 ]
             ]);
@@ -328,16 +359,56 @@ class PresensiController extends Controller
     }
 
     /**
+     * Kirim notifikasi WhatsApp ke orang tua
+     */
+    protected function sendWhatsAppNotification($presensi)
+    {
+        try {
+            // Cek apakah fitur notifikasi aktif
+            if (!$this->fonnteService->isEnabled()) {
+                Log::info('WhatsApp notification disabled', [
+                    'presensi_id' => $presensi->id
+                ]);
+                return;
+            }
+
+            // Kirim notifikasi menggunakan method yang benar
+            $result = $this->fonnteService->sendPresensiNotification($presensi);
+
+            if ($result['success']) {
+                Log::info('WhatsApp notification sent successfully', [
+                    'presensi_id' => $presensi->id,
+                    'siswa_id' => $presensi->siswa_id
+                ]);
+            } else if (!isset($result['skipped'])) {
+                // Log failed notification (but don't show error to student)
+                Log::warning('Failed to send WhatsApp notification', [
+                    'presensi_id' => $presensi->id,
+                    'reason' => $result['message']
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            // Jangan sampai gagal notifikasi mengganggu proses presensi
+            Log::error('Error sending WhatsApp notification', [
+                'presensi_id' => $presensi->id,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
      * Validasi jarak lokasi menggunakan Haversine formula
+     * Return distance in meters
      */
     private function validateLocation($lat1, $lon1, $lat2, $lon2, $radiusInMeters)
     {
         if (!$lat2 || !$lon2) {
-            Log::info('No target coordinates, location considered valid');
-            return true;
+            Log::info('No target coordinates provided');
+            return 0;
         }
 
-        $earthRadius = 6371000;
+        $earthRadius = 6371000; // Earth radius in meters
         $dLat = deg2rad($lat2 - $lat1);
         $dLon = deg2rad($lon2 - $lon1);
 
@@ -354,6 +425,6 @@ class PresensiController extends Controller
             'is_within_radius' => $distance <= $radiusInMeters
         ]);
 
-        return $distance <= $radiusInMeters;
+        return round($distance, 2); // Return actual distance
     }
 }

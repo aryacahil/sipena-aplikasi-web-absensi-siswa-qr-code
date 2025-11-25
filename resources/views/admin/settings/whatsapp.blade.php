@@ -1,0 +1,562 @@
+@extends('layouts.admin')
+
+@section('title', 'Pengaturan WhatsApp Notification')
+
+@section('content')
+<div class="bg-primary pt-10 pb-21"></div>
+<div class="container-fluid mt-n22 px-6">
+    <div class="row">
+        <div class="col-lg-12 col-md-12 col-12">
+            <div class="mb-4">
+                <h3 class="mb-0 text-white">Pengaturan Notifikasi WhatsApp</h3>
+                <p class="text-white-50 mb-0">Konfigurasi Fonnte API untuk notifikasi otomatis ke orang tua</p>
+            </div>
+        </div>
+    </div>
+
+    @if(session('success'))
+    <div class="row mt-6">
+        <div class="col-12">
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle me-2"></i>
+                {{ session('success') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    @if(session('error'))
+    <div class="row mt-6">
+        <div class="col-12">
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                {{ session('error') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    <div class="row mt-6">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-whatsapp text-success me-2"></i>
+                        Konfigurasi Fonnte API
+                    </h4>
+                </div>
+                <form action="{{ route('admin.settings.whatsapp.update') }}" method="POST">
+                    @csrf
+                    @method('PUT')
+                    
+                    <div class="card-body">
+                        <!-- Status Toggle -->
+                        <div class="mb-4 p-3 border rounded bg-light">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" 
+                                       type="checkbox" 
+                                       id="fonnte_enabled" 
+                                       name="fonnte_enabled"
+                                       {{ $settings['fonnte_enabled'] ? 'checked' : '' }}>
+                                <label class="form-check-label" for="fonnte_enabled">
+                                    <strong>Aktifkan Notifikasi WhatsApp</strong>
+                                    <br>
+                                    <small class="text-muted">
+                                        Kirim notifikasi otomatis ke orang tua saat siswa melakukan presensi
+                                    </small>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- API Key -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">
+                                API Key Fonnte
+                                <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-key"></i>
+                                </span>
+                                <input type="text" 
+                                       class="form-control" 
+                                       name="fonnte_api_key"
+                                       id="fonnte_api_key"
+                                       value="{{ $settings['fonnte_api_key'] }}"
+                                       placeholder="Masukkan API Key dari Fonnte"
+                                       required>
+                            </div>
+                            <small class="text-muted">
+                                Dapatkan API Key dari dashboard Fonnte Anda di 
+                                <a href="https://fonnte.com" target="_blank">fonnte.com</a>
+                            </small>
+                        </div>
+
+                        <!-- Nomor Pengirim -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">
+                                Nomor WhatsApp Pengirim
+                                <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-phone"></i>
+                                </span>
+                                <input type="text" 
+                                       class="form-control" 
+                                       name="fonnte_sender_number"
+                                       id="fonnte_sender_number"
+                                       value="{{ $settings['fonnte_sender_number'] }}"
+                                       placeholder="contoh: 628123456789"
+                                       required>
+                            </div>
+                            <small class="text-muted">
+                                Nomor WhatsApp yang terhubung di Fonnte (format: 628xxx atau 08xxx)
+                            </small>
+                        </div>
+
+                        <!-- Device ID (Optional) -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">
+                                Device ID
+                                <span class="badge bg-secondary ms-2">Opsional</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="bi bi-phone-fill"></i>
+                                </span>
+                                <input type="text" 
+                                       class="form-control" 
+                                       name="fonnte_device_id"
+                                       id="fonnte_device_id"
+                                       value="{{ $settings['fonnte_device_id'] }}"
+                                       placeholder="contoh: device123">
+                            </div>
+                            <small class="text-muted">
+                                Jika Anda punya multiple device, masukkan Device ID spesifik
+                            </small>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- Message Template -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">
+                                Template Pesan
+                                <span class="text-danger">*</span>
+                            </label>
+                            <textarea class="form-control font-monospace" 
+                                      name="fonnte_message_template"
+                                      id="fonnte_message_template"
+                                      rows="12"
+                                      required>{{ $settings['fonnte_message_template'] }}</textarea>
+                            
+                            <div class="alert alert-info mt-2 mb-0">
+                                <strong>
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Variabel yang tersedia:
+                                </strong>
+                                <div class="row mt-2">
+                                    <div class="col-md-6">
+                                        <ul class="mb-0 small">
+                                            <li><code>{student_name}</code> - Nama siswa</li>
+                                            <li><code>{class_name}</code> - Nama kelas</li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <ul class="mb-0 small">
+                                            <li><code>{status}</code> - Status presensi</li>
+                                            <li><code>{time}</code> - Waktu presensi</li>
+                                            <li><code>{date}</code> - Tanggal presensi</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Preview Message -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Preview Pesan</label>
+                            <div class="card bg-success-soft">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-start">
+                                        <i class="bi bi-whatsapp text-success fs-3 me-3"></i>
+                                        <div class="flex-grow-1">
+                                            <div class="mb-2">
+                                                <small class="text-muted">Dari: <strong id="previewSender">Loading...</strong></small>
+                                            </div>
+                                            <pre class="mb-0 small" id="messagePreview" style="white-space: pre-wrap; word-wrap: break-word;"></pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-footer bg-white d-flex justify-content-between">
+                        <div>
+                            <button type="button" class="btn btn-outline-primary" id="btnTestConnection">
+                                <i class="bi bi-cloud-check me-2"></i>Test Koneksi
+                            </button>
+                            <button type="button" class="btn btn-outline-success" id="btnTestMessage">
+                                <i class="bi bi-send me-2"></i>Kirim Test Pesan
+                            </button>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-2"></i>Simpan Pengaturan
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Sidebar Info -->
+        <div class="col-lg-4">
+            <!-- Cara Setup -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-book me-2"></i>
+                        Cara Setup Fonnte
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <ol class="mb-0 ps-3">
+                        <li class="mb-3">
+                            Buka <a href="https://fonnte.com" target="_blank">fonnte.com</a> dan daftar akun
+                        </li>
+                        <li class="mb-3">
+                            Hubungkan nomor WhatsApp Anda dengan scan QR Code
+                        </li>
+                        <li class="mb-3">
+                            Salin API Key dari dashboard Fonnte
+                        </li>
+                        <li class="mb-3">
+                            Salin nomor WhatsApp yang terhubung
+                        </li>
+                        <li class="mb-3">
+                            Paste API Key dan nomor di form
+                        </li>
+                        <li class="mb-3">
+                            Sesuaikan template pesan
+                        </li>
+                        <li class="mb-0">
+                            Klik "Test Koneksi" untuk validasi
+                        </li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- Status Connection -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-activity me-2"></i>
+                        Status Koneksi
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="connectionStatus" class="text-center py-3">
+                        <i class="bi bi-question-circle text-muted" style="font-size: 3rem;"></i>
+                        <p class="text-muted mt-3 mb-0">
+                            Klik "Test Koneksi" untuk mengecek status
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Test Message -->
+<div class="modal fade" id="testMessageModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-send me-2"></i>
+                    Kirim Test Pesan
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">
+                        Nomor WhatsApp Tujuan
+                        <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" 
+                           class="form-control" 
+                           id="testPhoneNumber"
+                           placeholder="contoh: 08123456789"
+                           required>
+                    <small class="text-muted">
+                        Format: 08xxx atau 628xxx
+                    </small>
+                </div>
+                <div class="alert alert-info mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Pesan test akan dikirim ke nomor ini untuk memastikan konfigurasi bekerja dengan baik.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-success" id="btnSendTestMessage">
+                    <i class="bi bi-send me-2"></i>
+                    Kirim Test
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@endsection
+
+@push('scripts')
+<script>
+(function() {
+    // ✅ Handle flash messages dari server
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check if enabled checkbox should be checked based on current setting
+        const enabledCheckbox = document.getElementById('fonnte_enabled');
+        const currentEnabledStatus = {{ $settings['fonnte_enabled'] ? 'true' : 'false' }};
+        
+        if (enabledCheckbox && currentEnabledStatus) {
+            enabledCheckbox.checked = true;
+        }
+        
+        console.log('WhatsApp Notification Status:', {
+            enabled: currentEnabledStatus,
+            checkbox_checked: enabledCheckbox?.checked
+        });
+    });
+
+    const templateTextarea = document.getElementById('fonnte_message_template');
+    const previewDiv = document.getElementById('messagePreview');
+    const previewSender = document.getElementById('previewSender');
+    const senderInput = document.getElementById('fonnte_sender_number');
+    const testMessageModal = new bootstrap.Modal(document.getElementById('testMessageModal'));
+
+    function updatePreview() {
+        let template = templateTextarea.value;
+        const preview = template
+            .replace(/{student_name}/g, 'Ahmad Fauzi')
+            .replace(/{class_name}/g, 'XII RPL 1')
+            .replace(/{status}/g, '✅ HADIR')
+            .replace(/{time}/g, '07:15:30')
+            .replace(/{date}/g, new Date().toLocaleDateString('id-ID', { 
+                day: 'numeric', 
+                month: 'long', 
+                year: 'numeric' 
+            }));
+        previewDiv.textContent = preview;
+        const senderNumber = senderInput.value || 'Belum diisi';
+        previewSender.textContent = senderNumber;
+    }
+
+    updatePreview();
+    templateTextarea.addEventListener('input', updatePreview);
+    senderInput.addEventListener('input', updatePreview);
+
+    // ✅ FIXED: Kirim api_key DAN sender_number
+    document.getElementById('btnTestConnection').addEventListener('click', function() {
+        const btn = this;
+        const originalHTML = btn.innerHTML;
+        const apiKey = document.getElementById('fonnte_api_key').value;
+        const senderNumber = document.getElementById('fonnte_sender_number').value;
+
+        if (!apiKey) {
+            Swal.fire({
+                icon: 'warning', 
+                title: 'API Key Kosong', 
+                text: 'Silakan masukkan API Key terlebih dahulu'
+            });
+            return;
+        }
+        
+        if (!senderNumber) {
+            Swal.fire({
+                icon: 'warning', 
+                title: 'Nomor Pengirim Kosong', 
+                text: 'Silakan masukkan nomor WhatsApp pengirim terlebih dahulu'
+            });
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Testing...';
+
+        // ✅ Kirim kedua parameter
+        fetch('{{ route("admin.settings.whatsapp.test-connection") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json', 
+                'X-CSRF-TOKEN': '{{ csrf_token() }}', 
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                api_key: apiKey,           // ✅ Kirim API key
+                sender_number: senderNumber // ✅ Kirim sender number
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            const statusDiv = document.getElementById('connectionStatus');
+            
+            if (data.success) {
+                statusDiv.innerHTML = `
+                    <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
+                    <p class="text-success fw-semibold mt-3 mb-2">Koneksi Berhasil!</p>
+                    <small class="text-muted">API Key valid dan siap digunakan</small>
+                    <div class="mt-3 text-start">
+                        <small class="text-muted">
+                            <strong>Device:</strong> ${data.device_name || 'N/A'}<br>
+                            <strong>Nomor:</strong> ${senderNumber}
+                        </small>
+                    </div>
+                `;
+                
+                Swal.fire({
+                    icon: 'success', 
+                    title: 'Koneksi Berhasil!', 
+                    html: `
+                        <p>API Key valid dan Fonnte siap digunakan</p>
+                        <div class="alert alert-info mt-3 mb-0 text-start">
+                            ${data.device_name ? '<div><strong>Device:</strong> ' + data.device_name + '</div>' : ''}
+                            <div><strong>Nomor Pengirim:</strong> ${senderNumber}</div>
+                        </div>
+                    `, 
+                    confirmButtonColor: '#198754'
+                });
+            } else {
+                statusDiv.innerHTML = `
+                    <i class="bi bi-x-circle-fill text-danger" style="font-size: 3rem;"></i>
+                    <p class="text-danger fw-semibold mt-3 mb-0">Koneksi Gagal</p>
+                    <small class="text-muted">${data.message}</small>
+                `;
+                
+                Swal.fire({
+                    icon: 'error', 
+                    title: 'Koneksi Gagal', 
+                    html: `
+                        <p class="mb-3">${data.message || 'Gagal terhubung ke Fonnte'}</p>
+                        <div class="alert alert-warning text-start mb-0">
+                            <strong>Tips:</strong>
+                            <ul class="mb-0 mt-2 small">
+                                <li>Pastikan API Key benar</li>
+                                <li>Pastikan nomor WhatsApp sudah terhubung di Fonnte</li>
+                                <li>Cek status device di dashboard Fonnte</li>
+                            </ul>
+                        </div>
+                    `, 
+                    confirmButtonColor: '#dc3545'
+                });
+            }
+        })
+        .catch(error => {
+            Swal.fire({
+                icon: 'error', 
+                title: 'Error', 
+                text: 'Terjadi kesalahan: ' + error.message, 
+                confirmButtonColor: '#dc3545'
+            });
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+        });
+    });
+
+    document.getElementById('btnTestMessage').addEventListener('click', function() {
+        const apiKey = document.getElementById('fonnte_api_key').value;
+        const senderNumber = document.getElementById('fonnte_sender_number').value;
+        
+        if (!apiKey) {
+            Swal.fire({
+                icon: 'warning', 
+                title: 'API Key Kosong', 
+                text: 'Silakan masukkan API Key terlebih dahulu'
+            });
+            return;
+        }
+        
+        if (!senderNumber) {
+            Swal.fire({
+                icon: 'warning', 
+                title: 'Nomor Pengirim Kosong', 
+                text: 'Silakan masukkan nomor WhatsApp pengirim'
+            });
+            return;
+        }
+        
+        testMessageModal.show();
+    });
+
+    document.getElementById('btnSendTestMessage').addEventListener('click', function() {
+        const btn = this;
+        const originalHTML = btn.innerHTML;
+        const phoneNumber = document.getElementById('testPhoneNumber').value.trim();
+
+        if (!phoneNumber) {
+            Swal.fire({
+                icon: 'warning', 
+                title: 'Nomor Kosong', 
+                text: 'Silakan masukkan nomor WhatsApp tujuan'
+            });
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Mengirim...';
+
+        fetch('{{ route("admin.settings.whatsapp.test-message") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json', 
+                'X-CSRF-TOKEN': '{{ csrf_token() }}', 
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                phone_number: phoneNumber
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            testMessageModal.hide();
+            
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success', 
+                    title: 'Pesan Terkirim!', 
+                    html: 'Pesan test berhasil dikirim ke <strong>' + phoneNumber + '</strong>', 
+                    confirmButtonColor: '#198754'
+                });
+                document.getElementById('testPhoneNumber').value = '';
+            } else {
+                Swal.fire({
+                    icon: 'error', 
+                    title: 'Gagal Mengirim', 
+                    text: data.message || 'Gagal mengirim pesan test', 
+                    confirmButtonColor: '#dc3545'
+                });
+            }
+        })
+        .catch(error => {
+            testMessageModal.hide();
+            Swal.fire({
+                icon: 'error', 
+                title: 'Error', 
+                text: 'Terjadi kesalahan: ' + error.message, 
+                confirmButtonColor: '#dc3545'
+            });
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+        });
+    });
+})();
+</script>
+@endpush

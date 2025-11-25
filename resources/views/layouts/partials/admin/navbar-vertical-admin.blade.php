@@ -97,6 +97,17 @@
                 </a>
             </li>
 
+            <li class="nav-item">
+                <div class="navbar-heading">Pengaturan</div>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" href="{{ route('admin.settings.whatsapp') }}">
+                    <i data-feather="Whatsapp" class="bi bi-whatsapp icon-xs me-2"></i>
+                    Notifikasi Whatsapp
+                </a>
+            </li>
+
              {{-- <li class="nav-item">
                  <div class="navbar-heading">Pengaturan</div>
              </li>

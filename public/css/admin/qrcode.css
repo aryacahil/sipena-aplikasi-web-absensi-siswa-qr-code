@@ -94,22 +94,6 @@
     }
 }
 
-/* Avatar Styles for Student Lists */
-.avatar {
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.875rem;
-}
-
-.avatar-sm {
-    width: 28px;
-    height: 28px;
-    font-size: 0.75rem;
-}
-
 /* Status Badge Styles */
 .bg-success-soft {
     background-color: rgba(25, 135, 84, 0.1);

@@ -91,6 +91,7 @@
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
+// ==================== UPGRADE DARI KODE LAMA - TETAP SIMPLE ====================
 (function() {
     let scanner = null;
     let isScanning = false;
@@ -98,15 +99,12 @@
     
     function getCSRFToken() {
         let token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-        
         if (!token) {
             token = document.getElementById('csrf-token-input')?.value;
         }
-        
         if (!token && typeof Laravel !== 'undefined' && Laravel.csrfToken) {
             token = Laravel.csrfToken;
         }
-        
         return token || '';
     }
     
@@ -129,6 +127,49 @@
             }
         }, 1000);
         return;
+    }
+    
+    // ==================== FUNCTION BARU: CALCULATE DISTANCE ====================
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371000; // Earth radius in meters
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                  Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const distance = R * c;
+        
+        return Math.round(distance);
+    }
+    
+    // ==================== FUNCTION BARU: DETECT FAKE GPS ====================
+    function checkFakeGPS(position) {
+        const accuracy = position.coords.accuracy;
+        let warnings = [];
+        
+        // Check 1: Accuracy terlalu sempurna (< 3 meter)
+        if (accuracy !== null && accuracy < 3) {
+            warnings.push('GPS accuracy terlalu sempurna (' + accuracy + 'm)');
+        }
+        
+        // Check 2: Altitude null atau 0
+        if (position.coords.altitude === null || position.coords.altitude === 0) {
+            warnings.push('Data altitude tidak valid');
+        }
+        
+        // Check 3: Mock flag (Android)
+        if (position.coords.isMock === true || position.mocked === true) {
+            warnings.push('GPS Mock terdeteksi oleh sistem');
+        }
+        
+        return {
+            isSuspicious: warnings.length >= 2, // 2 atau lebih warning = suspicious
+            warnings: warnings,
+            accuracy: accuracy
+        };
     }
     
     function init() {
@@ -264,6 +305,8 @@
         })
         .then(data => {
             if (data.success) {
+                // SIMPAN SESSION DATA untuk validasi radius
+                window.sessionData = data.data;
                 requestLocationAndSubmit(data.data);
             } else {
                 throw new Error(data.message || 'QR Code tidak valid');
@@ -274,6 +317,7 @@
         });
     }
     
+    // ==================== FUNCTION UPGRADE: TAMBAH VALIDASI ====================
     function requestLocationAndSubmit(sessionData) {
         if (!navigator.geolocation) {
             showAlert('error', 'Error', 'Browser tidak mendukung geolocation');
@@ -284,7 +328,70 @@
         
         navigator.geolocation.getCurrentPosition(
             (position) => {
-                submitPresensi(sessionData.session_id, position.coords.latitude, position.coords.longitude);
+                console.log('GPS Position received:', position.coords);
+                
+                // ==================== CHECK FAKE GPS ====================
+                const gpsCheck = checkFakeGPS(position);
+                
+                if (gpsCheck.isSuspicious) {
+                    console.warn('Suspicious GPS detected:', gpsCheck.warnings);
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'GPS Mencurigakan!',
+                        html: `
+                            <p class="mb-3">Sistem mendeteksi kemungkinan Fake GPS.</p>
+                            <div class="alert alert-warning text-start mb-0">
+                                <strong>Peringatan:</strong>
+                                <ul class="mb-0 mt-2 small">
+                                    ${gpsCheck.warnings.map(w => `<li>${w}</li>`).join('')}
+                                </ul>
+                            </div>
+                            <p class="mt-3 text-muted small">Matikan aplikasi Fake GPS dan coba lagi dengan lokasi asli.</p>
+                        `,
+                        confirmButtonColor: '#dc3545',
+                        confirmButtonText: 'OK, Saya Mengerti'
+                    });
+                    return; // STOP - tidak bisa lanjut
+                }
+                
+                // ==================== CHECK RADIUS ====================
+                const userLat = position.coords.latitude;
+                const userLng = position.coords.longitude;
+                const sessionLat = sessionData.latitude;
+                const sessionLng = sessionData.longitude;
+                const allowedRadius = sessionData.radius;
+                
+                const distance = calculateDistance(userLat, userLng, sessionLat, sessionLng);
+                
+                console.log('Distance check:', {
+                    distance: distance,
+                    allowedRadius: allowedRadius,
+                    isValid: distance <= allowedRadius
+                });
+                
+                if (distance > allowedRadius) {
+                    console.warn('Location outside radius:', distance, '>', allowedRadius);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lokasi Terlalu Jauh!',
+                        html: `
+                            <p class="mb-3">Anda berada di luar radius yang diizinkan.</p>
+                            <div class="alert alert-danger text-start mb-0">
+                                <div class="mb-2"><strong>Jarak Anda:</strong> ${distance} meter</div>
+                                <div class="mb-2"><strong>Radius Maksimal:</strong> ${allowedRadius} meter</div>
+                                <div><strong>Selisih:</strong> ${distance - allowedRadius} meter</div>
+                            </div>
+                            <p class="mt-3 text-muted small">Datang lebih dekat ke lokasi presensi.</p>
+                        `,
+                        confirmButtonColor: '#dc3545',
+                        confirmButtonText: 'OK, Saya Mengerti'
+                    });
+                    return; // STOP - tidak bisa lanjut
+                }
+                
+                // ==================== SEMUA VALIDASI PASSED - SUBMIT ====================
+                console.log('All validations passed. Submitting...');
+                submitPresensi(sessionData.session_id, userLat, userLng, distance, gpsCheck.accuracy);
             },
             (error) => {
                 let msg = 'Gagal mengambil lokasi';
@@ -293,10 +400,10 @@
                         msg = 'Izin lokasi ditolak. Mohon izinkan akses lokasi.';
                         break;
                     case error.POSITION_UNAVAILABLE:
-                        msg = 'Informasi lokasi tidak tersedia.';
+                        msg = 'Informasi lokasi tidak tersedia. Pastikan GPS aktif.';
                         break;
                     case error.TIMEOUT:
-                        msg = 'Request timeout.';
+                        msg = 'Request timeout. Pastikan GPS aktif.';
                         break;
                 }
                 
@@ -310,12 +417,17 @@
         );
     }
     
-    function submitPresensi(sessionId, lat, lng) {
+    // ==================== FUNCTION UPGRADE: KIRIM DATA TAMBAHAN ====================
+    function submitPresensi(sessionId, lat, lng, distance, gpsAccuracy) {
         const payload = {
             session_id: sessionId,
             latitude: lat,
-            longitude: lng
+            longitude: lng,
+            distance: distance,
+            gps_accuracy: gpsAccuracy
         };
+        
+        console.log('Submitting presensi:', payload);
         
         fetch(submitRoute, {
             method: 'POST',
@@ -335,9 +447,6 @@
         })
         .then(data => {
             if (data.success) {
-                const locationWarning = !data.data.is_valid_location ? 
-                    '<p class="text-warning mt-2 mb-0 small"><i class="bi bi-exclamation-triangle me-1"></i>Lokasi di luar radius</p>' : '';
-                
                 Swal.fire({
                     icon: 'success',
                     title: 'Presensi Berhasil!',
@@ -346,9 +455,9 @@
                         <div class="alert alert-info mb-0 text-start">
                             <div class="mb-2"><strong>Status:</strong> ${data.data.status}</div>
                             <div class="mb-2"><strong>Waktu:</strong> ${data.data.waktu}</div>
-                            <div><strong>Tanggal:</strong> ${data.data.tanggal}</div>
+                            <div class="mb-2"><strong>Tanggal:</strong> ${data.data.tanggal}</div>
+                            <div><strong>Jarak:</strong> ${distance} meter</div>
                         </div>
-                        ${locationWarning}
                     `,
                     confirmButtonColor: '#198754',
                     allowOutsideClick: false
@@ -358,6 +467,7 @@
             }
         })
         .catch(error => {
+            console.error('Submit error:', error);
             showAlert('error', 'Gagal Menyimpan Presensi', error.message);
         });
     }
