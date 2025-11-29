@@ -136,7 +136,7 @@
                             <form action="{{ route('admin.users.index') }}" method="GET" class="d-flex">
                                 <div class="input-group" style="width: 250px;">
                                     <input type="text" name="search" class="form-control form-control-sm" 
-                                           placeholder="Cari nama atau email..." 
+                                           placeholder="Cari nama, email, atau NIS..." 
                                            value="{{ request('search') }}">
                                     <button class="btn btn-sm btn-outline-secondary" type="submit">
                                         <i class="bi bi-search"></i>
@@ -154,7 +154,7 @@
                                 <tr>
                                     <th class="border-0 text-center align-middle" style="width: 60px;">ID</th>
                                     <th class="border-0 align-middle">Nama</th>
-                                    <th class="border-0 align-middle">Email</th>
+                                    <th class="border-0 align-middle">Email / NIS</th>
                                     <th class="border-0 text-center align-middle">Role</th>
                                     <th class="border-0 text-center align-middle">Status</th>
                                     <th class="border-0 text-center align-middle" style="width: 120px;">Aksi</th>
@@ -182,7 +182,17 @@
                                         </div>
                                     </td>
                                     <td class="align-middle">
-                                        <span class="text-muted">{{ $user->email }}</span>
+                                        @if($user->role == 'siswa')
+                                            <span class="text-muted">
+                                                <i class="bi bi-credit-card-2-front me-1"></i>
+                                                {{ $user->nis ?? '-' }}
+                                            </span>
+                                        @else
+                                            <span class="text-muted">
+                                                <i class="bi bi-envelope me-1"></i>
+                                                {{ $user->email ?? '-' }}
+                                            </span>
+                                        @endif
                                     </td>
                                     <td class="align-middle text-center">
                                         @if($user->role == 'admin')
@@ -336,6 +346,7 @@
     </div>
 </div>
 
+<!-- Modal Tambah User -->
 <div class="modal fade" id="createUserModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
@@ -353,10 +364,7 @@
                             <label class="form-label">Nama Lengkap <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" name="name" required>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Email <span class="text-danger">*</span></label>
-                            <input type="email" class="form-control" name="email" required>
-                        </div>
+                        
                         <div class="col-md-6">
                             <label class="form-label">Role <span class="text-danger">*</span></label>
                             <select class="form-select" id="create_role" name="role" required onchange="toggleStudentFieldsCreate()">
@@ -366,6 +374,20 @@
                                 <option value="2">Siswa</option>
                             </select>
                         </div>
+
+                        <!-- Field Email (untuk Admin & Guru) -->
+                        <div class="col-md-6" id="create_email_group">
+                            <label class="form-label">Email <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" id="create_email" name="email">
+                            <small class="text-muted">Untuk Admin & Guru</small>
+                        </div>
+
+                        <!-- Field NIS (untuk Siswa) -->
+                        <div class="col-md-6" id="create_nis_group" style="display: none;">
+                            <label class="form-label">NIS <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="create_nis" name="nis" placeholder="Nomor Induk Siswa">
+                        </div>
+                        
                         <div class="col-md-6">
                             <label class="form-label">Status <span class="text-danger">*</span></label>
                             <select class="form-select" name="status" required>
@@ -373,22 +395,27 @@
                                 <option value="inactive">Nonaktif</option>
                             </select>
                         </div>
-<div class="col-md-6" id="create_kelas_group" style="display: none;">
-    <label class="form-label">Kelas</label>
-    <select class="form-select" id="create_kelas_id" name="kelas_id">
-        <option value="">Pilih Kelas</option>
-        @foreach($kelas as $item)
-            <option value="{{ $item->id }}">
-                {{ $item->nama_kelas }} - {{ $item->jurusan->nama_jurusan }}
-            </option>
-        @endforeach
-    </select>
-</div>
+
+                        <!-- Field Kelas (untuk Siswa) -->
+                        <div class="col-md-6" id="create_kelas_group" style="display: none;">
+                            <label class="form-label">Kelas</label>
+                            <select class="form-select" id="create_kelas_id" name="kelas_id">
+                                <option value="">Pilih Kelas</option>
+                                @foreach($kelas as $item)
+                                    <option value="{{ $item->id }}">
+                                        {{ $item->nama_kelas }} - {{ $item->jurusan->nama_jurusan }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <!-- Field No. Telepon Orang Tua (untuk Siswa) -->
                         <div class="col-md-6" id="create_parent_phone_group" style="display: none;">
-    <label class="form-label">No. Telepon Orang Tua</label>
-    <input type="text" class="form-control" id="create_parent_phone" 
-           name="parent_phone" placeholder="08xxxxxxxxxx">
-</div>
+                            <label class="form-label">No. Telepon Orang Tua</label>
+                            <input type="text" class="form-control" id="create_parent_phone" 
+                                   name="parent_phone" placeholder="08xxxxxxxxxx">
+                        </div>
+
                         <div class="col-md-6">
                             <label class="form-label">Kata Sandi <span class="text-danger">*</span></label>
                             <input type="password" class="form-control" name="password" required>
@@ -408,6 +435,7 @@
     </div>
 </div>
 
+<!-- Modal Detail User -->
 <div class="modal fade" id="showUserModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
@@ -429,6 +457,7 @@
     </div>
 </div>
 
+<!-- Modal Edit User -->
 <div class="modal fade" id="editUserModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
@@ -451,10 +480,7 @@
                                 <label class="form-label">Nama Lengkap <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control" id="edit_name" name="name" required>
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Email <span class="text-danger">*</span></label>
-                                <input type="email" class="form-control" id="edit_email" name="email" required>
-                            </div>
+                            
                             <div class="col-md-6">
                                 <label class="form-label">Role <span class="text-danger">*</span></label>
                                 <select class="form-select" id="edit_role" name="role" required onchange="toggleStudentFieldsEdit()">
@@ -464,6 +490,21 @@
                                     <option value="2">Siswa</option>
                                 </select>
                             </div>
+
+                            <!-- Field Email (untuk Admin & Guru) -->
+                            <div class="col-md-6" id="edit_email_group">
+                                <label class="form-label">Email <span class="text-danger">*</span></label>
+                                <input type="email" class="form-control" id="edit_email" name="email">
+                                <small class="text-muted">Untuk Admin & Guru</small>
+                            </div>
+
+                            <!-- Field NIS (untuk Siswa) -->
+                            <div class="col-md-6" id="edit_nis_group" style="display: none;">
+                                <label class="form-label">NIS <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="edit_nis" name="nis" placeholder="Nomor Induk Siswa">
+                                <small class="text-muted">Untuk Siswa</small>
+                            </div>
+                            
                             <div class="col-md-6">
                                 <label class="form-label">Status <span class="text-danger">*</span></label>
                                 <select class="form-select" id="edit_status" name="status" required>
@@ -471,22 +512,27 @@
                                     <option value="inactive">Nonaktif</option>
                                 </select>
                             </div>
+
+                            <!-- Field Kelas (untuk Siswa) -->
                             <div class="col-md-6" id="edit_kelas_group" style="display: none;">
-    <label class="form-label">Kelas</label>
-    <select class="form-select" id="edit_kelas_id" name="kelas_id">
-        <option value="">Pilih Kelas</option>
-        @foreach($kelas as $item)
-            <option value="{{ $item->id }}">
-                {{ $item->nama_kelas }} - {{ $item->jurusan->nama_jurusan }}
-            </option>
-        @endforeach
-    </select>
-</div>
-<div class="col-md-6" id="edit_parent_phone_group" style="display: none;">
-    <label class="form-label">No. Telepon Orang Tua</label>
-    <input type="text" class="form-control" id="edit_parent_phone" 
-           name="parent_phone" placeholder="08xxxxxxxxxx">
-</div>
+                                <label class="form-label">Kelas</label>
+                                <select class="form-select" id="edit_kelas_id" name="kelas_id">
+                                    <option value="">Pilih Kelas</option>
+                                    @foreach($kelas as $item)
+                                        <option value="{{ $item->id }}">
+                                            {{ $item->nama_kelas }} - {{ $item->jurusan->nama_jurusan }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <!-- Field No. Telepon Orang Tua (untuk Siswa) -->
+                            <div class="col-md-6" id="edit_parent_phone_group" style="display: none;">
+                                <label class="form-label">No. Telepon Orang Tua</label>
+                                <input type="text" class="form-control" id="edit_parent_phone" 
+                                       name="parent_phone" placeholder="08xxxxxxxxxx">
+                            </div>
+
                             <div class="col-12">
                                 <div class="alert alert-info">
                                     <i class="bi bi-info-circle me-2"></i>

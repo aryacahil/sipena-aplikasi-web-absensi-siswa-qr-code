@@ -15,41 +15,79 @@ document.addEventListener('DOMContentLoaded', function() {
         </svg>`;
     }
 
+    // Toggle fields untuk role Siswa - Create Modal
     window.toggleStudentFieldsCreate = function() {
         const role = document.getElementById('create_role').value;
+        const nisGroup = document.getElementById('create_nis_group');
+        const emailGroup = document.getElementById('create_email_group');
         const kelasGroup = document.getElementById('create_kelas_group');
         const parentPhoneGroup = document.getElementById('create_parent_phone_group');
+        const emailInput = document.getElementById('create_email');
+        const nisInput = document.getElementById('create_nis');
         const kelasSelect = document.getElementById('create_kelas_id');
         const parentPhoneInput = document.getElementById('create_parent_phone');
         
-        if (role == '2') {
+        if (role == '2') { // Siswa
+            // Tampilkan field NIS, Kelas, dan Parent Phone
+            nisGroup.style.display = 'block';
             kelasGroup.style.display = 'block';
             parentPhoneGroup.style.display = 'block';
-        } else {
+            // Sembunyikan field Email
+            emailGroup.style.display = 'none';
+            emailInput.value = '';
+            emailInput.removeAttribute('required');
+            nisInput.setAttribute('required', 'required');
+        } else { // Admin atau Guru
+            // Tampilkan field Email
+            emailGroup.style.display = 'block';
+            // Sembunyikan field NIS, Kelas, dan Parent Phone
+            nisGroup.style.display = 'none';
             kelasGroup.style.display = 'none';
             parentPhoneGroup.style.display = 'none';
-            // Clear values when hidden
+            // Clear values
+            nisInput.value = '';
             kelasSelect.value = '';
             parentPhoneInput.value = '';
+            emailInput.setAttribute('required', 'required');
+            nisInput.removeAttribute('required');
         }
     };
 
+    // Toggle fields untuk role Siswa - Edit Modal
     window.toggleStudentFieldsEdit = function() {
         const role = document.getElementById('edit_role').value;
+        const nisGroup = document.getElementById('edit_nis_group');
+        const emailGroup = document.getElementById('edit_email_group');
         const kelasGroup = document.getElementById('edit_kelas_group');
         const parentPhoneGroup = document.getElementById('edit_parent_phone_group');
+        const emailInput = document.getElementById('edit_email');
+        const nisInput = document.getElementById('edit_nis');
         const kelasSelect = document.getElementById('edit_kelas_id');
         const parentPhoneInput = document.getElementById('edit_parent_phone');
         
-        if (role == '2') {
+        if (role == '2') { // Siswa
+            // Tampilkan field NIS, Kelas, dan Parent Phone
+            nisGroup.style.display = 'block';
             kelasGroup.style.display = 'block';
             parentPhoneGroup.style.display = 'block';
-        } else {
+            // Sembunyikan field Email
+            emailGroup.style.display = 'none';
+            emailInput.value = '';
+            emailInput.removeAttribute('required');
+            nisInput.setAttribute('required', 'required');
+        } else { // Admin atau Guru
+            // Tampilkan field Email
+            emailGroup.style.display = 'block';
+            // Sembunyikan field NIS, Kelas, dan Parent Phone
+            nisGroup.style.display = 'none';
             kelasGroup.style.display = 'none';
             parentPhoneGroup.style.display = 'none';
-            // Clear values when hidden
+            // Clear values
+            nisInput.value = '';
             kelasSelect.value = '';
             parentPhoneInput.value = '';
+            emailInput.setAttribute('required', 'required');
+            nisInput.removeAttribute('required');
         }
     };
 
@@ -88,21 +126,37 @@ document.addEventListener('DOMContentLoaded', function() {
                         ? '<span class="badge bg-success">Aktif</span>' 
                         : '<span class="badge bg-secondary">Nonaktif</span>';
                     
-                    let kelasInfo = '';
-                    if (user.kelas) {
-                        kelasInfo = `<tr>
-                            <td class="fw-semibold text-muted">Kelas</td>
-                            <td>${user.kelas.nama_kelas} - ${user.kelas.jurusan.nama_jurusan}</td>
+                    // Info NIS atau Email
+                    let identifierInfo = '';
+                    if (user.role == 2) {
+                        identifierInfo = `<tr>
+                            <td class="fw-semibold text-muted">NIS</td>
+                            <td>${user.nis || '-'}</td>
                         </tr>`;
                     } else {
-                        kelasInfo = `<tr>
-                            <td class="fw-semibold text-muted">Kelas</td>
-                            <td><span class="badge bg-warning">Belum Ada Kelas</span></td>
+                        identifierInfo = `<tr>
+                            <td class="fw-semibold text-muted">Email</td>
+                            <td>${user.email || '-'}</td>
                         </tr>`;
                     }
                     
+                    let kelasInfo = '';
+                    if (user.role == 2) {
+                        if (user.kelas) {
+                            kelasInfo = `<tr>
+                                <td class="fw-semibold text-muted">Kelas</td>
+                                <td>${user.kelas.nama_kelas} - ${user.kelas.jurusan.nama_jurusan}</td>
+                            </tr>`;
+                        } else {
+                            kelasInfo = `<tr>
+                                <td class="fw-semibold text-muted">Kelas</td>
+                                <td><span class="badge bg-warning">Belum Ada Kelas</span></td>
+                            </tr>`;
+                        }
+                    }
+                    
                     let parentPhoneInfo = '';
-                    if (user.parent_phone) {
+                    if (user.role == 2 && user.parent_phone) {
                         parentPhoneInfo = `<tr>
                             <td class="fw-semibold text-muted">No. Telepon Ortu</td>
                             <td>${user.parent_phone}</td>
@@ -110,13 +164,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                     
                     const avatarSvg = createAvatar(user.name);
+                    const displayIdentifier = user.role == 2 ? (user.nis || '-') : (user.email || '-');
                     
                     content.innerHTML = `
                         <div class="row g-4">
                             <div class="col-md-4 text-center">
                                 <div class="mb-3">${avatarSvg}</div>
                                 <h5 class="mb-2">${user.name}</h5>
-                                <p class="text-muted mb-3">${user.email}</p>
+                                <p class="text-muted mb-3">${displayIdentifier}</p>
                                 <div class="mb-2">${roleBadge}</div>
                                 <div>${statusBadge}</div>
                             </div>
@@ -128,10 +183,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                             <td class="fw-semibold text-muted" style="width: 40%;">Nama</td>
                                             <td>${user.name}</td>
                                         </tr>
-                                        <tr>
-                                            <td class="fw-semibold text-muted">Email</td>
-                                            <td>${user.email}</td>
-                                        </tr>
+                                        ${identifierInfo}
                                         <tr>
                                             <td class="fw-semibold text-muted">Role</td>
                                             <td>${roleBadge}</td>
@@ -191,10 +243,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.success) {
                     const user = data.user;
                     document.getElementById('edit_name').value = user.name;
-                    document.getElementById('edit_email').value = user.email;
                     document.getElementById('edit_role').value = user.role;
                     document.getElementById('edit_status').value = user.status;
                     
+                    // Set Email atau NIS berdasarkan role
+                    if (user.role == 2) {
+                        document.getElementById('edit_nis').value = user.nis || '';
+                        document.getElementById('edit_email').value = '';
+                    } else {
+                        document.getElementById('edit_email').value = user.email || '';
+                        document.getElementById('edit_nis').value = '';
+                    }
+                    
+                    // Set Kelas dan Parent Phone untuk siswa
                     if (user.kelas_id) {
                         document.getElementById('edit_kelas_id').value = user.kelas_id;
                     } else {
@@ -269,7 +330,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     didOpen: () => Swal.showLoading()
                 });
 
-                // Ambil CSRF token dari form yang ada
                 const csrfToken = document.querySelector('input[name="_token"]').value;
 
                 fetch('/admin/users/bulk-delete', {
@@ -283,14 +343,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     body: JSON.stringify({ role: role })
                 })
                 .then(response => {
-                    console.log('Response status:', response.status);
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
                     return response.json();
                 })
                 .then(data => {
-                    console.log('Response data:', data);
                     if (data.success) {
                         Swal.fire({
                             icon: 'success',
@@ -310,7 +368,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 })
                 .catch(error => {
-                    console.error('Error details:', error);
                     Swal.fire({
                         icon: 'error',
                         title: 'Error!',
@@ -335,9 +392,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Success/Error notifications - harus di luar DOMContentLoaded
+// Success/Error notifications
 if (typeof Swal !== 'undefined') {
-    // Check for success message
     const successMessage = document.querySelector('meta[name="success-message"]');
     if (successMessage) {
         Swal.fire({
@@ -355,7 +411,6 @@ if (typeof Swal !== 'undefined') {
         });
     }
 
-    // Check for error message
     const errorMessage = document.querySelector('meta[name="error-message"]');
     if (errorMessage) {
         Swal.fire({

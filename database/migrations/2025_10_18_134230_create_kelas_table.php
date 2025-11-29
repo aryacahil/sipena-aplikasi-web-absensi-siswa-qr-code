@@ -16,6 +16,10 @@ return new class extends Migration
             $table->string('kode_kelas', 20)->unique();
             $table->foreignId('wali_kelas_id')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamps();
+
+            $table->index('jurusan_id');
+            $table->index('tingkat');
+            $table->index('kode_kelas');
         });
     }
 

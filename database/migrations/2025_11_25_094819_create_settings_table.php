@@ -13,9 +13,11 @@ return new class extends Migration
             $table->id();
             $table->string('key')->unique();
             $table->text('value')->nullable();
-            $table->string('type')->default('string'); // string, boolean, json
+            $table->string('type')->default('string');
             $table->text('description')->nullable();
             $table->timestamps();
+
+            $table->index('key');
         });
 
         // Insert default settings
@@ -24,7 +26,7 @@ return new class extends Migration
                 'key' => 'fonnte_api_key',
                 'value' => null,
                 'type' => 'string',
-                'description' => 'API Key dari Fonnte untuk mengirim WhatsApp',
+                'description' => 'API Key dari Fonnte',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -32,7 +34,7 @@ return new class extends Migration
                 'key' => 'fonnte_device_id',
                 'value' => null,
                 'type' => 'string',
-                'description' => 'Device ID WhatsApp yang terhubung di Fonnte (opsional)',
+                'description' => 'Device ID WhatsApp',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -40,7 +42,7 @@ return new class extends Migration
                 'key' => 'fonnte_sender_number',
                 'value' => null,
                 'type' => 'string',
-                'description' => 'Nomor WhatsApp pengirim (contoh: 628123456789)',
+                'description' => 'Nomor WhatsApp pengirim',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -48,15 +50,23 @@ return new class extends Migration
                 'key' => 'fonnte_enabled',
                 'value' => '0',
                 'type' => 'boolean',
-                'description' => 'Aktifkan/nonaktifkan notifikasi WhatsApp',
+                'description' => 'Aktifkan notifikasi WhatsApp',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
             [
-                'key' => 'fonnte_message_template',
-                'value' => "Assalamualaikum Bapak/Ibu *{parent_name}*\n\nKami informasikan bahwa putra/putri Anda:\n\n*Nama:* {student_name}\n*Kelas:* {class_name}\n*Status:* {status}\n*Waktu:* {time}\n*Tanggal:* {date}\n\nTerima kasih atas perhatiannya.\n\n_Pesan otomatis dari Sistem Presensi Sekolah_",
+                'key' => 'fonnte_message_template_checkin',
+                'value' => "Assalamualaikum Bapak/Ibu\n\nKami informasikan bahwa:\n\n*Nama:* {student_name}\n*NIS:* {nis}\n*Kelas:* {class_name}\n*Status:* ✅ MASUK\n*Waktu:* {checkin_time}\n*Tanggal:* {date}\n\nTerima kasih.\n\n_Sistem Presensi Sekolah_",
                 'type' => 'text',
-                'description' => 'Template pesan WhatsApp. Gunakan: {parent_name}, {student_name}, {class_name}, {status}, {time}, {date}',
+                'description' => 'Template pesan check-in',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'key' => 'fonnte_message_template_checkout',
+                'value' => "Assalamualaikum Bapak/Ibu\n\nKami informasikan bahwa:\n\n*Nama:* {student_name}\n*NIS:* {nis}\n*Kelas:* {class_name}\n*Status:* 🏠 PULANG\n*Check-in:* {checkin_time}\n*Check-out:* {checkout_time}\n*Tanggal:* {date}\n\nTerima kasih.\n\n_Sistem Presensi Sekolah_",
+                'type' => 'text',
+                'description' => 'Template pesan check-out',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],

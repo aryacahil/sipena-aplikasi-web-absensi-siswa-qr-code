@@ -37,7 +37,7 @@ class UserSeeder extends Seeder
         // Siswa 
         User::create([
             'name' => 'Siswa',
-            'email' => 'siswa@siswa.com',
+            'nis' => '233307037',
             'password' => Hash::make('password'),
             'role' => '2',
             'kelas_id' => null,
