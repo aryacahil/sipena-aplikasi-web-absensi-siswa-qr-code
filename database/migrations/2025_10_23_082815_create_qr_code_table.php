@@ -6,15 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * TABEL QR_CODES
-     * 
-     * Fungsi:
-     * - Menyimpan QR Code terpisah dari presensi_sessions
-     * - 1 sesi bisa punya banyak QR Code (history regenerate)
-     * - Ketika QR Code dihapus, sesi tetap ada
-     * - Bisa regenerate QR Code baru tanpa menghapus history
-     */
     public function up(): void
     {
         Schema::create('qr_codes', function (Blueprint $table) {

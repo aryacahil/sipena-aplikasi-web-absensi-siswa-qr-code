@@ -184,12 +184,10 @@
                                     <td class="align-middle">
                                         @if($user->role == 'siswa')
                                             <span class="text-muted">
-                                                <i class="bi bi-credit-card-2-front me-1"></i>
                                                 {{ $user->nis ?? '-' }}
                                             </span>
                                         @else
                                             <span class="text-muted">
-                                                <i class="bi bi-envelope me-1"></i>
                                                 {{ $user->email ?? '-' }}
                                             </span>
                                         @endif
@@ -379,7 +377,6 @@
                         <div class="col-md-6" id="create_email_group">
                             <label class="form-label">Email <span class="text-danger">*</span></label>
                             <input type="email" class="form-control" id="create_email" name="email">
-                            <small class="text-muted">Untuk Admin & Guru</small>
                         </div>
 
                         <!-- Field NIS (untuk Siswa) -->
