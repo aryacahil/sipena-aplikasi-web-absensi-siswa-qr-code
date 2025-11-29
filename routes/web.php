@@ -82,7 +82,7 @@ Route::middleware(['auth', 'user-role:admin'])->group(function() {
         'destroy' => 'admin.kelas.destroy',
     ]);
 
-    // QR CODE ROUTES
+    // QR CODE ROUTES - UPDATED dengan parameter type
     Route::get('admin/qrcode', [App\Http\Controllers\Admin\QRCodeController::class, 'index'])
         ->name('admin.qrcode.index');
     Route::get('admin/qrcode/create', [App\Http\Controllers\Admin\QRCodeController::class, 'create'])
@@ -91,6 +91,7 @@ Route::middleware(['auth', 'user-role:admin'])->group(function() {
         ->name('admin.qrcode.store');
     Route::get('admin/qrcode/{qrcode}', [App\Http\Controllers\Admin\QRCodeController::class, 'show'])
         ->name('admin.qrcode.show');
+    // UPDATED: Download dengan parameter type (checkin/checkout)
     Route::get('admin/qrcode/{qrcode}/download', [App\Http\Controllers\Admin\QRCodeController::class, 'download'])
         ->name('admin.qrcode.download');
     Route::patch('admin/qrcode/{qrcode}/status', [App\Http\Controllers\Admin\QRCodeController::class, 'updateStatus'])
@@ -126,7 +127,7 @@ Route::middleware(['auth', 'user-role:admin'])->group(function() {
     Route::post('admin/import/siswa', [App\Http\Controllers\Admin\ExportImportController::class, 'importSiswa'])
         ->name('admin.import.siswa');
 
-    // WHATSAPP SETTINGS ROUTES (FIXED - Using WhatsAppController)
+    // WHATSAPP SETTINGS ROUTES
     Route::get('admin/settings/whatsapp', [App\Http\Controllers\Admin\WhatsAppController::class, 'index'])
         ->name('admin.settings.whatsapp');
     Route::put('admin/settings/whatsapp', [App\Http\Controllers\Admin\WhatsAppController::class, 'update'])
@@ -141,7 +142,7 @@ Route::middleware(['auth', 'user-role:admin'])->group(function() {
 Route::middleware(['auth', 'user-role:guru'])->group(function() {
     Route::get('/guru/home', [HomeController::class, 'guruHome'])->name('guru.home');
 
-    // QR CODE ROUTES GURU
+    // QR CODE ROUTES GURU - UPDATED dengan parameter type
     Route::get('guru/qrcode', [App\Http\Controllers\Guru\QRCodeController::class, 'index'])
         ->name('guru.qrcode.index');
     Route::get('guru/qrcode/create', [App\Http\Controllers\Guru\QRCodeController::class, 'create'])
@@ -150,6 +151,7 @@ Route::middleware(['auth', 'user-role:guru'])->group(function() {
         ->name('guru.qrcode.store');
     Route::get('guru/qrcode/{qrcode}', [App\Http\Controllers\Guru\QRCodeController::class, 'show'])
         ->name('guru.qrcode.show');
+    // UPDATED: Download dengan parameter type (checkin/checkout)
     Route::get('guru/qrcode/{qrcode}/download', [App\Http\Controllers\Guru\QRCodeController::class, 'download'])
         ->name('guru.qrcode.download');
     Route::patch('guru/qrcode/{qrcode}/status', [App\Http\Controllers\Guru\QRCodeController::class, 'updateStatus'])
@@ -188,7 +190,7 @@ Route::middleware(['auth', 'user-role:guru'])->group(function() {
 Route::middleware(['auth', 'user-role:siswa'])->group(function() {
     Route::get('/siswa/home', [HomeController::class, 'siswaHome'])->name('siswa.home');
     
-    // Presensi Routes
+    // Presensi Routes - UPDATED untuk handle checkin/checkout
     Route::get('siswa/presensi', [\App\Http\Controllers\Siswa\PresensiController::class, 'index'])
         ->name('siswa.presensi.index');
     Route::post('siswa/presensi/validate', [\App\Http\Controllers\Siswa\PresensiController::class, 'validateQRCode'])

@@ -14,37 +14,34 @@ class PresensiSession extends Model
     protected $fillable = [
         'kelas_id',
         'created_by',
-        'qr_code',
         'tanggal',
-        'jam_mulai',
-        'jam_selesai',
-        'latitude',
-        'longitude',
-        'radius',
+        'jam_checkin_mulai',
+        'jam_checkin_selesai',
+        'jam_checkout_mulai',
+        'jam_checkout_selesai',
+        'latitude_checkin',
+        'longitude_checkin',
+        'radius_checkin',
+        'latitude_checkout',
+        'longitude_checkout',
+        'radius_checkout',
         'status',
         'keterangan',
     ];
 
     protected $casts = [
         'tanggal' => 'date',
-        'jam_mulai' => 'datetime:H:i',
-        'jam_selesai' => 'datetime:H:i',
-        'latitude' => 'decimal:8',
-        'longitude' => 'decimal:8',
-        'radius' => 'integer',
+        'jam_checkin_mulai' => 'datetime:H:i',
+        'jam_checkin_selesai' => 'datetime:H:i',
+        'jam_checkout_mulai' => 'datetime:H:i',
+        'jam_checkout_selesai' => 'datetime:H:i',
+        'latitude_checkin' => 'decimal:8',
+        'longitude_checkin' => 'decimal:8',
+        'latitude_checkout' => 'decimal:8',
+        'longitude_checkout' => 'decimal:8',
+        'radius_checkin' => 'integer',
+        'radius_checkout' => 'integer',
     ];
-
-    // Auto-generate QR code
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::creating(function ($model) {
-            if (empty($model->qr_code)) {
-                $model->qr_code = Str::random(32);
-            }
-        });
-    }
 
     // Relationships
     public function kelas()
@@ -62,28 +59,69 @@ class PresensiSession extends Model
         return $this->hasMany(Presensi::class, 'session_id');
     }
 
-    /**
-     * Check if QR Code session is currently active
-     */
-    public function isActive()
+    public function qrCode()
     {
-        if ($this->status === 'expired' || $this->status === 'inactive') {
+        return $this->hasOne(QRCode::class, 'session_id');
+    }
+
+    /**
+     * Check if checkin is currently active
+     */
+    public function isCheckinActive()
+    {
+        if ($this->status !== 'active') {
             return false;
         }
 
         $now = Carbon::now();
         $sessionDate = Carbon::parse($this->tanggal);
 
-        // Check date
         if (!$now->isSameDay($sessionDate)) {
             return false;
         }
 
-        // Combine date with time
-        $jamMulai = Carbon::parse($sessionDate->format('Y-m-d') . ' ' . $this->jam_mulai->format('H:i:s'));
-        $jamSelesai = Carbon::parse($sessionDate->format('Y-m-d') . ' ' . $this->jam_selesai->format('H:i:s'));
+        $checkinMulai = Carbon::parse($sessionDate->format('Y-m-d') . ' ' . $this->jam_checkin_mulai->format('H:i:s'));
+        $checkinSelesai = Carbon::parse($sessionDate->format('Y-m-d') . ' ' . $this->jam_checkin_selesai->format('H:i:s'));
 
-        return $now->between($jamMulai, $jamSelesai);
+        return $now->between($checkinMulai, $checkinSelesai);
+    }
+
+    /**
+     * Check if checkout is currently active
+     */
+    public function isCheckoutActive()
+    {
+        if ($this->status !== 'active') {
+            return false;
+        }
+
+        $now = Carbon::now();
+        $sessionDate = Carbon::parse($this->tanggal);
+
+        if (!$now->isSameDay($sessionDate)) {
+            return false;
+        }
+
+        $checkoutMulai = Carbon::parse($sessionDate->format('Y-m-d') . ' ' . $this->jam_checkout_mulai->format('H:i:s'));
+        $checkoutSelesai = Carbon::parse($sessionDate->format('Y-m-d') . ' ' . $this->jam_checkout_selesai->format('H:i:s'));
+
+        return $now->between($checkoutMulai, $checkoutSelesai);
+    }
+
+    /**
+     * Get current session phase (checkin/checkout/none)
+     */
+    public function getCurrentPhase()
+    {
+        if ($this->isCheckinActive()) {
+            return 'checkin';
+        }
+        
+        if ($this->isCheckoutActive()) {
+            return 'checkout';
+        }
+        
+        return 'none';
     }
 
     /**
@@ -102,22 +140,27 @@ class PresensiSession extends Model
             return 'expired';
         }
 
-        $jamMulai = Carbon::parse($sessionDate->format('Y-m-d') . ' ' . $this->jam_mulai->format('H:i:s'));
-        $jamSelesai = Carbon::parse($sessionDate->format('Y-m-d') . ' ' . $this->jam_selesai->format('H:i:s'));
+        $checkoutSelesai = Carbon::parse($sessionDate->format('Y-m-d') . ' ' . $this->jam_checkout_selesai->format('H:i:s'));
 
-        if ($now->isAfter($jamSelesai)) {
+        if ($now->isAfter($checkoutSelesai)) {
             return 'expired';
         }
 
-        if ($now->between($jamMulai, $jamSelesai)) {
-            return 'active';
+        if ($this->isCheckinActive()) {
+            return 'checkin_active';
         }
 
-        if ($now->isBefore($jamMulai)) {
+        if ($this->isCheckoutActive()) {
+            return 'checkout_active';
+        }
+
+        $checkinMulai = Carbon::parse($sessionDate->format('Y-m-d') . ' ' . $this->jam_checkin_mulai->format('H:i:s'));
+
+        if ($now->isBefore($checkinMulai)) {
             return 'waiting';
         }
 
-        return 'expired';
+        return 'between_sessions';
     }
 
     /**

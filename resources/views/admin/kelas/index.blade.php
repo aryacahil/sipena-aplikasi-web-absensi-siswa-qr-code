@@ -117,88 +117,89 @@
                     </div>
                 </div>
 
-<div class="card-body p-0">
-    <div class="table-responsive">
-        <table class="table table-hover table-nowrap mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th class="border-0 text-center align-middle" style="width: 60px;">No</th>
-                    <th class="border-0 text-center align-middle" style="width: 100px;">Tingkat</th>
-                    <th class="border-0 align-middle">Kode Kelas</th>
-                    <th class="border-0 text-center align-middle" style="width: 120px;">Jurusan</th>
-                    <th class="border-0 text-center align-middle" style="width: 120px;">Jumlah Siswa</th>
-                    <th class="border-0 text-center align-middle" style="width: 150px;">Aksi</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse($kelas as $index => $k)
-                <tr>
-                    <td class="align-middle text-center">
-                        <span class="text-muted fw-semibold">{{ $kelas->firstItem() + $index }}</span>
-                    </td>
-                    <td class="align-middle text-center">
-                        <span class="badge bg-primary-soft text-primary fs-6">{{ $k->tingkat }}</span>
-                    </td>
-                    <td class="align-middle">
-                        <h6 class="mb-0">{{ $k->kode_kelas }}</h6>
-                    </td>
-                    <td class="align-middle text-center">
-                        <span class="badge bg-info-soft text-info fs-6">{{ strtoupper($k->jurusan->kode_jurusan) }}</span>
-                    </td>
-                    <td class="align-middle text-center">
-                        <span class="badge bg-success-soft text-success">
-                            <i class="bi bi-people-fill me-1"></i>{{ $k->siswa_count ?? 0 }} Siswa
-                        </span>
-                    </td>
-                    <td class="align-middle text-center">
-                        <div class="d-flex justify-content-center gap-1">
-                            <button type="button" 
-                                    class="btn btn-sm btn-warning btn-show-kelas" 
-                                    data-kelas-id="{{ $k->id }}"
-                                    title="Lihat">
-                                <i class="bi bi-eye"></i>
-                            </button>
-                            <button type="button" 
-                                    class="btn btn-sm btn-primary btn-edit-kelas" 
-                                    data-kelas-id="{{ $k->id }}"
-                                    title="Ubah">
-                                <i class="bi bi-pencil"></i>
-                            </button>
-                            <form action="{{ route('admin.kelas.destroy', $k->id) }}" 
-                                  method="POST" 
-                                  class="d-inline delete-form">
-                                @csrf
-                                @method('DELETE')
-                                <button type="button" 
-                                        class="btn btn-sm btn-danger btn-delete" 
-                                        data-name="{{ $k->kode_kelas }}"
-                                        title="Hapus">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </form>
-                        </div>
-                    </td>
-                </tr>
-                @empty
-                <tr>
-                    <td colspan="6" class="text-center py-5">
-                        <div class="py-4">
-                            <i class="bi bi-inbox fs-1 text-muted"></i>
-                            <p class="text-muted mt-3 mb-0">
-                                @if(request()->hasAny(['search', 'tingkat', 'jurusan_id']))
-                                    Tidak ada data kelas yang sesuai dengan filter
-                                @else
-                                    Tidak ada data kelas
-                                @endif
-                            </p>
-                        </div>
-                    </td>
-                </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
-</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-nowrap mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="border-0 text-center align-middle" style="width: 60px;">No</th>
+                                    <th class="border-0 text-center align-middle" style="width: 100px;">Tingkat</th>
+                                    <th class="border-0 align-middle">Kode Kelas</th>
+                                    <th class="border-0 text-center align-middle" style="width: 120px;">Jurusan</th>
+                                    <th class="border-0 text-center align-middle" style="width: 120px;">Jumlah Siswa</th>
+                                    <th class="border-0 text-center align-middle" style="width: 150px;">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($kelas as $index => $k)
+                                <tr>
+                                    <td class="align-middle text-center">
+                                        <span class="text-muted fw-semibold">{{ $kelas->firstItem() + $index }}</span>
+                                    </td>
+                                    <td class="align-middle text-center">
+                                        <span class="badge bg-primary-soft text-primary fs-6">{{ $k->tingkat }}</span>
+                                    </td>
+                                    <td class="align-middle">
+                                        <h6 class="mb-0">{{ $k->kode_kelas }}</h6>
+                                        <small class="text-muted">{{ $k->nama_kelas }}</small>
+                                    </td>
+                                    <td class="align-middle text-center">
+                                        <span class="badge bg-info-soft text-info fs-6">{{ strtoupper($k->jurusan->kode_jurusan) }}</span>
+                                    </td>
+                                    <td class="align-middle text-center">
+                                        <span class="badge bg-success-soft text-success">
+                                            <i class="bi bi-people-fill me-1"></i>{{ $k->siswa_count ?? 0 }} Siswa
+                                        </span>
+                                    </td>
+                                    <td class="align-middle text-center">
+                                        <div class="d-flex justify-content-center gap-1">
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-warning btn-show-kelas" 
+                                                    data-kelas-id="{{ $k->id }}"
+                                                    title="Lihat">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-primary btn-edit-kelas" 
+                                                    data-kelas-id="{{ $k->id }}"
+                                                    title="Ubah">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <form action="{{ route('admin.kelas.destroy', $k->id) }}" 
+                                                  method="POST" 
+                                                  class="d-inline delete-form">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-danger btn-delete" 
+                                                        data-name="{{ $k->kode_kelas }}"
+                                                        title="Hapus">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="6" class="text-center py-5">
+                                        <div class="py-4">
+                                            <i class="bi bi-inbox fs-1 text-muted"></i>
+                                            <p class="text-muted mt-3 mb-0">
+                                                @if(request()->hasAny(['search', 'tingkat', 'jurusan_id']))
+                                                    Tidak ada data kelas yang sesuai dengan filter
+                                                @else
+                                                    Tidak ada data kelas
+                                                @endif
+                                            </p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
 
                 @if($kelas->total() > 0)
                 <div class="card-footer bg-white border-top">
@@ -276,6 +277,7 @@
     </div>
 </div>
 
+<!-- Modal Tambah Kelas -->
 <div class="modal fade" id="createKelasModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
@@ -339,10 +341,11 @@
     </div>
 </div>
 
+<!-- Modal Detail Kelas - DIPERBAIKI: TAMPILKAN NIS, TANPA EMAIL -->
 <div class="modal fade" id="showKelasModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
-            <div class="modal-header">
+            <div class="modal-header bg-light">
                 <h5 class="modal-title">
                     <i class="bi bi-info-circle me-2"></i>Detail Kelas
                 </h5>
@@ -351,78 +354,14 @@
             <div class="modal-body" id="showKelasContent">
                 <div class="text-center py-5">
                     <div class="spinner-border text-primary" role="status"></div>
+                    <p class="text-muted mt-2">Memuat data...</p>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="addSiswaModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header bg-light">
-                <h5 class="modal-title">
-                    <i class="bi bi-person-plus me-2"></i>Tambah Siswa ke Kelas
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-
-            <div class="modal-body">
-                <input type="hidden" id="add_siswa_kelas_id">
-                
-                <div class="mb-3">
-                    <div class="input-group">
-                        <span class="input-group-text bg-light">
-                            <i class="bi bi-search"></i>
-                        </span>
-                        <input type="text" 
-                               class="form-control" 
-                               id="search_siswa" 
-                               placeholder="Cari siswa berdasarkan nama atau email...">
-                    </div>
-                    <small class="text-muted">
-                        <i class="bi bi-info-circle me-1"></i>
-                        Hanya siswa yang belum memiliki kelas yang ditampilkan
-                    </small>
-                </div>
-
-                <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-light rounded">
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="text-muted">
-                            <i class="bi bi-people-fill me-2"></i>Siswa Tersedia:
-                        </span>
-                        <span class="badge bg-primary" id="available_siswa_count">0</span>
-                    </div>
-                    <button type="button" class="btn btn-sm btn-outline-primary btn-select-all-add-siswa">
-                        <i class="bi bi-check-square me-1"></i>Pilih Semua
-                    </button>
-                </div>
-
-                <div id="siswa_list_container" style="max-height: 400px; overflow-y: auto;">
-                    <div class="text-center py-4">
-                        <div class="spinner-border text-secondary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p class="text-muted mt-2">Memuat daftar siswa...</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="modal-footer bg-light d-flex justify-content-between">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="bi bi-x-circle me-1"></i>Tutup
-                </button>
-                <button type="button" 
-                        class="btn btn-primary btn-add-selected-to-class" 
-                        style="display: none;">
-                    <i class="bi bi-plus-circle me-1"></i>
-                    Tambahkan Terpilih (<span class="selected-count">0</span>)
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
+<!-- Modal Edit Kelas -->
 <div class="modal fade" id="editKelasModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
@@ -492,32 +431,69 @@
     </div>
 </div>
 
+<!-- Modal Tambah Siswa - DIPERBAIKI: TAMPILKAN NIS, TANPA EMAIL -->
 <div class="modal fade" id="addSiswaModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
-            <div class="modal-header">
+            <div class="modal-header bg-light">
                 <h5 class="modal-title">
                     <i class="bi bi-person-plus me-2"></i>Tambah Siswa ke Kelas
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form id="addSiswaForm">
-                @csrf
-                <input type="hidden" name="kelas_id" id="add_siswa_kelas_id">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Pilih Siswa <span class="text-danger">*</span></label>
-                        <select class="form-select" id="add_siswa_id" name="siswa_id" required>
-                            <option value="">Memuat daftar siswa...</option>
-                        </select>
-                        <small class="text-muted">Hanya siswa yang belum memiliki kelas yang ditampilkan</small>
+
+            <div class="modal-body">
+                <input type="hidden" id="add_siswa_kelas_id">
+                
+                <div class="mb-3">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" 
+                               class="form-control" 
+                               id="search_siswa" 
+                               placeholder="Cari siswa berdasarkan NIS atau nama...">
+                    </div>
+                    <small class="text-muted">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Hanya siswa yang belum memiliki kelas yang ditampilkan
+                    </small>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-light rounded">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted">
+                            <i class="bi bi-people-fill me-2"></i>Siswa Tersedia:
+                        </span>
+                        <span class="badge bg-primary" id="available_siswa_count">0</span>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary btn-select-all-add-siswa">
+                        <i class="bi bi-check-square me-1"></i>Pilih Semua
+                    </button>
+                </div>
+
+                <div id="siswa_list_container" style="max-height: 400px; overflow-y: auto;">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-secondary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="text-muted mt-2">Memuat daftar siswa...</p>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-primary">Tambahkan</button>
-                </div>
-            </form>
+            </div>
+
+            <div class="modal-footer bg-light d-flex justify-content-between">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Tutup
+                </button>
+                <button type="button" 
+                        class="btn btn-primary btn-add-selected-to-class" 
+                        style="display: none;">
+                    <i class="bi bi-plus-circle me-1"></i>
+                    Tambahkan Terpilih (<span class="selected-count">0</span>)
+                </button>
+            </div>
         </div>
     </div>
 </div>

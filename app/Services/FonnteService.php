@@ -31,7 +31,6 @@ class FonnteService
      */
     public function sendMessage(string $phoneNumber, string $message): array
     {
-        // Check if service is enabled
         if (!$this->isEnabled()) {
             Log::warning('Fonnte service is not enabled or API key is missing');
             return [
@@ -41,17 +40,14 @@ class FonnteService
         }
 
         try {
-            // Normalize phone number
             $phoneNumber = $this->normalizePhoneNumber($phoneNumber);
 
-            // Prepare request data
             $data = [
                 'target' => $phoneNumber,
                 'message' => $message,
-                'countryCode' => '62', // Indonesia
+                'countryCode' => '62',
             ];
 
-            // Add device ID if configured
             $deviceId = Setting::get('fonnte_device_id');
             if (!empty($deviceId)) {
                 $data['device'] = $deviceId;
@@ -60,27 +56,22 @@ class FonnteService
             Log::info('Sending WhatsApp message', [
                 'phone' => $phoneNumber,
                 'message_length' => strlen($message),
-                'has_device_id' => !empty($deviceId)
             ]);
 
-            // Send request to Fonnte API
             $response = Http::timeout(30)
                 ->withHeaders([
                     'Authorization' => $this->apiKey,
                 ])
                 ->post($this->apiUrl . '/send', $data);
 
-            // Log the response for debugging
             Log::info('Fonnte send message response', [
                 'status' => $response->status(),
                 'body' => $response->json()
             ]);
 
-            // Check response
             if ($response->successful()) {
                 $result = $response->json();
                 
-                // ✅ Fonnte returns status:true when successful
                 if (isset($result['status']) && $result['status'] === true) {
                     return [
                         'success' => true,
@@ -89,14 +80,12 @@ class FonnteService
                     ];
                 }
 
-                // ❌ API returned error
                 return [
                     'success' => false,
                     'message' => $result['reason'] ?? 'Failed to send message'
                 ];
             }
 
-            // ❌ HTTP Error
             $errorBody = $response->json();
             return [
                 'success' => false,
@@ -118,11 +107,9 @@ class FonnteService
 
     /**
      * Test Fonnte API connection
-     * FIXED VERSION - Gunakan sender number sebagai target
      */
     public function testConnection(): array
     {
-        // Check if service is configured
         if (empty($this->apiKey)) {
             return [
                 'success' => false,
@@ -130,7 +117,6 @@ class FonnteService
             ];
         }
 
-        // Get sender number for test
         $senderNumber = Setting::get('fonnte_sender_number');
         if (empty($senderNumber)) {
             return [
@@ -140,14 +126,12 @@ class FonnteService
         }
 
         try {
-            // Normalize phone number
             $targetNumber = $this->normalizePhoneNumber($senderNumber);
 
             Log::info('Testing Fonnte API connection', [
                 'target_number' => $targetNumber
             ]);
 
-            // ✅ Use /validate endpoint dengan target parameter
             $response = Http::timeout(10)
                 ->withHeaders([
                     'Authorization' => $this->apiKey,
@@ -164,7 +148,6 @@ class FonnteService
             if ($response->successful()) {
                 $result = $response->json();
                 
-                // ✅ Check status true
                 if (isset($result['status']) && $result['status'] === true) {
                     $deviceName = $result['device'] ?? $result['name'] ?? 'Unknown Device';
                     
@@ -176,7 +159,6 @@ class FonnteService
                     ];
                 }
 
-                // ❌ Check if there's an error message
                 if (isset($result['reason'])) {
                     return [
                         'success' => false,
@@ -184,7 +166,6 @@ class FonnteService
                     ];
                 }
 
-                // ❌ Status false
                 if (isset($result['status']) && $result['status'] === false) {
                     return [
                         'success' => false,
@@ -192,7 +173,6 @@ class FonnteService
                     ];
                 }
 
-                // ✅ No explicit status but successful response
                 return [
                     'success' => true,
                     'message' => 'API Key valid',
@@ -201,7 +181,6 @@ class FonnteService
                 ];
             }
 
-            // ❌ HTTP Error
             $errorBody = $response->json();
             return [
                 'success' => false,
@@ -222,10 +201,12 @@ class FonnteService
 
     /**
      * Send presensi notification to parent
+     * 
+     * @param mixed $presensi Presensi model instance
+     * @param string $type 'checkin' or 'checkout'
      */
-    public function sendPresensiNotification($presensi): array
+    public function sendPresensiNotification($presensi, string $type = 'checkin'): array
     {
-        // Check if service is enabled
         if (!$this->isEnabled()) {
             Log::info('Fonnte service is disabled, skipping notification');
             return [
@@ -236,13 +217,11 @@ class FonnteService
         }
 
         try {
-            // Load relationships
             $presensi->load(['siswa', 'kelas.jurusan']);
             
             $siswa = $presensi->siswa;
             $kelas = $presensi->kelas;
             
-            // Validate student exists
             if (!$siswa) {
                 Log::warning('Student not found for presensi', [
                     'presensi_id' => $presensi->id,
@@ -256,7 +235,6 @@ class FonnteService
                 ];
             }
             
-            // Validate parent phone number exists
             if (empty($siswa->parent_phone)) {
                 Log::warning('Student has no parent phone number', [
                     'student_id' => $siswa->id,
@@ -270,40 +248,57 @@ class FonnteService
                 ];
             }
 
-            // Get message template
-            $template = Setting::get('fonnte_message_template', $this->getDefaultTemplate());
-
-            // Get parent name from student name
-            $parentName = $this->getParentName($siswa->name);
+            // Get template berdasarkan tipe
+            $templateKey = $type === 'checkin' 
+                ? 'fonnte_message_template_checkin' 
+                : 'fonnte_message_template_checkout';
             
-            // Get class name
+            $template = Setting::get($templateKey, $this->getDefaultTemplate($type));
+
+            $parentName = $this->getParentName($siswa->name);
             $className = $kelas ? $kelas->nama_kelas : '-';
 
-            // Replace variables in template
-            $message = $this->replaceVariables($template, [
+            // Build variables untuk template
+            $variables = [
                 'parent_name' => $parentName,
                 'student_name' => $siswa->name,
+                'nis' => $siswa->nis ?? '-',
                 'class_name' => $className,
-                'status' => $this->getStatusEmoji($presensi->status) . ' ' . strtoupper($presensi->status),
-                'time' => $presensi->waktu_absen ? $presensi->waktu_absen->format('H:i:s') : $presensi->created_at->format('H:i:s'),
                 'date' => $presensi->tanggal_presensi->format('d F Y'),
-            ]);
+            ];
+
+            if ($type === 'checkin') {
+                $variables['checkin_time'] = $presensi->waktu_checkin 
+                    ? $presensi->waktu_checkin->format('H:i') 
+                    : '-';
+                $variables['status'] = '✅ MASUK';
+            } else {
+                $variables['checkin_time'] = $presensi->waktu_checkin 
+                    ? $presensi->waktu_checkin->format('H:i') 
+                    : '-';
+                $variables['checkout_time'] = $presensi->waktu_checkout 
+                    ? $presensi->waktu_checkout->format('H:i') 
+                    : '-';
+                $variables['status'] = '🏠 PULANG';
+            }
+
+            $message = $this->replaceVariables($template, $variables);
 
             Log::info('Sending presensi notification', [
                 'presensi_id' => $presensi->id,
+                'type' => $type,
                 'siswa_name' => $siswa->name,
                 'parent_phone' => $siswa->parent_phone,
-                'class_name' => $className
             ]);
 
-            // Send message
             return $this->sendMessage($siswa->parent_phone, $message);
 
         } catch (\Exception $e) {
             Log::error('Failed to send attendance notification', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
-                'presensi_id' => $presensi->id ?? null
+                'presensi_id' => $presensi->id ?? null,
+                'type' => $type ?? null
             ]);
 
             return [
@@ -326,26 +321,10 @@ class FonnteService
     }
 
     /**
-     * Get emoji for attendance status
-     */
-    protected function getStatusEmoji(string $status): string
-    {
-        $emojis = [
-            'hadir' => '✅',
-            'izin' => '📝',
-            'sakit' => '🏥',
-            'alpha' => '❌',
-        ];
-
-        return $emojis[strtolower($status)] ?? '📌';
-    }
-
-    /**
      * Get parent name from student name
      */
     protected function getParentName(string $studentName): string
     {
-        // Simple logic: use "Orang Tua [First Name]"
         $firstName = explode(' ', $studentName)[0];
         return "Orang Tua " . $firstName;
     }
@@ -355,15 +334,12 @@ class FonnteService
      */
     protected function normalizePhoneNumber(string $phone): string
     {
-        // Remove all non-numeric characters
         $phone = preg_replace('/[^0-9]/', '', $phone);
         
-        // Convert 08xxx to 628xxx
         if (substr($phone, 0, 1) === '0') {
             $phone = '62' . substr($phone, 1);
         }
         
-        // Add 62 if not present
         if (substr($phone, 0, 2) !== '62') {
             $phone = '62' . $phone;
         }
@@ -374,16 +350,31 @@ class FonnteService
     /**
      * Get default message template
      */
-    protected function getDefaultTemplate(): string
+    protected function getDefaultTemplate(string $type = 'checkin'): string
     {
-        return "Assalamualaikum Bapak/Ibu\n\n" .
-               "Kami informasikan bahwa putra/putri Anda:\n\n" .
-               "*Nama:* {student_name}\n" .
-               "*Kelas:* {class_name}\n" .
-               "*Status:* {status}\n" .
-               "*Waktu:* {time}\n" .
-               "*Tanggal:* {date}\n\n" .
-               "Terima kasih atas perhatiannya.\n\n" .
-               "_Pesan otomatis dari Sistem Presensi Sekolah_";
+        if ($type === 'checkin') {
+            return "Assalamualaikum Bapak/Ibu\n\n" .
+                   "Kami informasikan bahwa:\n\n" .
+                   "*Nama:* {student_name}\n" .
+                   "*NIS:* {nis}\n" .
+                   "*Kelas:* {class_name}\n" .
+                   "*Status:* ✅ MASUK\n" .
+                   "*Waktu:* {checkin_time}\n" .
+                   "*Tanggal:* {date}\n\n" .
+                   "Terima kasih.\n\n" .
+                   "_Sistem Presensi Sekolah_";
+        } else {
+            return "Assalamualaikum Bapak/Ibu\n\n" .
+                   "Kami informasikan bahwa:\n\n" .
+                   "*Nama:* {student_name}\n" .
+                   "*NIS:* {nis}\n" .
+                   "*Kelas:* {class_name}\n" .
+                   "*Status:* 🏠 PULANG\n" .
+                   "*Check-in:* {checkin_time}\n" .
+                   "*Check-out:* {checkout_time}\n" .
+                   "*Tanggal:* {date}\n\n" .
+                   "Terima kasih.\n\n" .
+                   "_Sistem Presensi Sekolah_";
+        }
     }
 }

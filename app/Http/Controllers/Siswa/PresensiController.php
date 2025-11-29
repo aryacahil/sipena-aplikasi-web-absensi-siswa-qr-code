@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Siswa;
 
 use App\Http\Controllers\Controller;
 use App\Models\PresensiSession;
+use App\Models\QRCode;
 use App\Models\Presensi;
 use App\Services\FonnteService;
 use Illuminate\Http\Request;
@@ -32,6 +33,7 @@ class PresensiController extends Controller
                 ->with('error', 'Anda belum terdaftar di kelas manapun. Silakan hubungi admin.');
         }
 
+        // Cek presensi hari ini
         $todayPresensi = Presensi::where('siswa_id', $siswa->id)
             ->whereDate('tanggal_presensi', now())
             ->first();
@@ -40,7 +42,8 @@ class PresensiController extends Controller
             'siswa_id' => $siswa->id,
             'siswa_name' => $siswa->name,
             'kelas_id' => $siswa->kelas_id,
-            'already_attended' => !!$todayPresensi
+            'has_checkin' => $todayPresensi ? $todayPresensi->hasCheckedIn() : false,
+            'has_checkout' => $todayPresensi ? $todayPresensi->hasCheckedOut() : false,
         ]);
 
         return view('siswa.presensi.index', compact('todayPresensi'));
@@ -57,9 +60,9 @@ class PresensiController extends Controller
         ]);
 
         try {
-            $qrCode = $request->input('qr_code');
+            $qrCodeString = $request->input('qr_code');
             
-            if (!$qrCode) {
+            if (!$qrCodeString) {
                 Log::warning('QR Code empty');
                 return response()->json([
                     'success' => false,
@@ -67,27 +70,54 @@ class PresensiController extends Controller
                 ], 400);
             }
 
-            Log::info('Searching for session with QR code', ['qr_code' => $qrCode]);
-
-            $session = PresensiSession::where('qr_code', $qrCode)
-                ->with('kelas.jurusan')
+            // Cari QR Code di database
+            $qrCode = QRCode::where('qr_code_checkin', $qrCodeString)
+                ->orWhere('qr_code_checkout', $qrCodeString)
                 ->first();
 
-            if (!$session) {
-                Log::warning('Session not found', ['qr_code' => $qrCode]);
+            if (!$qrCode) {
+                Log::warning('QR Code not found', ['qr_code' => $qrCodeString]);
                 return response()->json([
                     'success' => false,
                     'message' => 'QR Code tidak ditemukan atau sudah tidak berlaku'
                 ], 404);
             }
 
-            Log::info('Session found', [
+            // Tentukan tipe QR Code
+            $type = ($qrCode->qr_code_checkin === $qrCodeString) ? 'checkin' : 'checkout';
+
+            // Load session
+            $session = $qrCode->session;
+            if (!$session) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Sesi presensi tidak ditemukan'
+                ], 404);
+            }
+
+            $session->load('kelas.jurusan');
+
+            Log::info('QR Code found', [
+                'qr_code_id' => $qrCode->id,
                 'session_id' => $session->id,
+                'type' => $type,
                 'kelas_id' => $session->kelas_id,
-                'status' => $session->status,
-                'tanggal' => $session->tanggal->format('Y-m-d')
+                'status' => $qrCode->status,
             ]);
 
+            // Validasi status QR Code
+            if ($qrCode->status !== 'active') {
+                Log::warning('QR Code not active', [
+                    'qr_code_id' => $qrCode->id,
+                    'status' => $qrCode->status
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'QR Code sudah tidak aktif'
+                ], 400);
+            }
+
+            // Validasi status session
             if ($session->status !== 'active') {
                 Log::warning('Session not active', [
                     'session_id' => $session->id,
@@ -99,24 +129,29 @@ class PresensiController extends Controller
                 ], 400);
             }
 
-            // Validasi waktu
+            // Validasi waktu berdasarkan tipe
             $now = Carbon::now();
             $sessionDate = $session->tanggal;
             
-            $jamMulai = Carbon::parse(
-                $sessionDate->format('Y-m-d') . ' ' . $session->jam_mulai->format('H:i:s')
-            );
-            $jamSelesai = Carbon::parse(
-                $sessionDate->format('Y-m-d') . ' ' . $session->jam_selesai->format('H:i:s')
-            );
+            if ($type === 'checkin') {
+                $jamMulai = Carbon::parse($sessionDate->format('Y-m-d') . ' ' . $session->jam_checkin_mulai->format('H:i:s'));
+                $jamSelesai = Carbon::parse($sessionDate->format('Y-m-d') . ' ' . $session->jam_checkin_selesai->format('H:i:s'));
+                $phaseText = 'Check-in';
+            } else {
+                $jamMulai = Carbon::parse($sessionDate->format('Y-m-d') . ' ' . $session->jam_checkout_mulai->format('H:i:s'));
+                $jamSelesai = Carbon::parse($sessionDate->format('Y-m-d') . ' ' . $session->jam_checkout_selesai->format('H:i:s'));
+                $phaseText = 'Check-out';
+            }
 
             Log::info('Time validation', [
+                'type' => $type,
                 'now' => $now->toDateTimeString(),
                 'session_date' => $sessionDate->format('Y-m-d'),
                 'jam_mulai' => $jamMulai->toDateTimeString(),
                 'jam_selesai' => $jamSelesai->toDateTimeString()
             ]);
 
+            // Validasi tanggal
             if ($now->format('Y-m-d') !== $sessionDate->format('Y-m-d')) {
                 Log::warning('Date mismatch', [
                     'today' => $now->format('Y-m-d'),
@@ -128,38 +163,82 @@ class PresensiController extends Controller
                 ], 400);
             }
 
+            // Validasi waktu mulai
             if ($now->lt($jamMulai)) {
                 Log::warning('Too early', [
+                    'type' => $type,
                     'now' => $now->toTimeString(),
                     'jam_mulai' => $jamMulai->toTimeString()
                 ]);
                 return response()->json([
                     'success' => false,
-                    'message' => 'Presensi belum dimulai. Waktu mulai: ' . $jamMulai->format('H:i')
+                    'message' => $phaseText . ' belum dimulai. Waktu mulai: ' . $jamMulai->format('H:i')
                 ], 400);
             }
 
+            // Validasi waktu selesai
             if ($now->gt($jamSelesai)) {
                 Log::warning('Too late', [
+                    'type' => $type,
                     'now' => $now->toTimeString(),
                     'jam_selesai' => $jamSelesai->toTimeString()
                 ]);
                 return response()->json([
                     'success' => false,
-                    'message' => 'Waktu presensi sudah berakhir. Waktu selesai: ' . $jamSelesai->format('H:i')
+                    'message' => 'Waktu ' . strtolower($phaseText) . ' sudah berakhir. Waktu selesai: ' . $jamSelesai->format('H:i')
                 ], 400);
             }
 
+            // Validasi presensi siswa berdasarkan tipe
+            $siswa = Auth::user();
+            $existingPresensi = Presensi::where('siswa_id', $siswa->id)
+                ->where('kelas_id', $session->kelas_id)
+                ->whereDate('tanggal_presensi', $sessionDate)
+                ->first();
+
+            if ($type === 'checkin') {
+                // Validasi: Sudah checkin?
+                if ($existingPresensi && $existingPresensi->hasCheckedIn()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Anda sudah melakukan check-in pada pukul ' . $existingPresensi->waktu_checkin->format('H:i')
+                    ], 400);
+                }
+            } else {
+                // Validasi: Harus checkin dulu
+                if (!$existingPresensi || !$existingPresensi->hasCheckedIn()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Anda harus check-in terlebih dahulu sebelum check-out'
+                    ], 400);
+                }
+                
+                // Validasi: Sudah checkout?
+                if ($existingPresensi->hasCheckedOut()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Anda sudah melakukan check-out pada pukul ' . $existingPresensi->waktu_checkout->format('H:i')
+                    ], 400);
+                }
+            }
+
+            // Pilih koordinat yang sesuai
+            $latitude = $type === 'checkin' ? $session->latitude_checkin : $session->latitude_checkout;
+            $longitude = $type === 'checkin' ? $session->longitude_checkin : $session->longitude_checkout;
+            $radius = $type === 'checkin' ? $session->radius_checkin : $session->radius_checkout;
+
             $responseData = [
+                'qr_code_id' => $qrCode->id,
                 'session_id' => $session->id,
+                'type' => $type,
                 'kelas' => $session->kelas->nama_kelas,
                 'jurusan' => $session->kelas->jurusan->nama_jurusan,
                 'tanggal' => $session->tanggal->format('d M Y'),
-                'jam_mulai' => $session->jam_mulai->format('H:i'),
-                'jam_selesai' => $session->jam_selesai->format('H:i'),
-                'latitude' => (float) $session->latitude,
-                'longitude' => (float) $session->longitude,
-                'radius' => (int) $session->radius,
+                'jam_mulai' => $jamMulai->format('H:i'),
+                'jam_selesai' => $jamSelesai->format('H:i'),
+                'latitude' => (float) $latitude,
+                'longitude' => (float) $longitude,
+                'radius' => (int) $radius,
             ];
 
             Log::info('Validation successful', $responseData);
@@ -184,7 +263,7 @@ class PresensiController extends Controller
     }
 
     /**
-     * Submit Presensi dengan Validasi Ketat
+     * Submit Presensi (Checkin atau Checkout)
      */
     public function submitPresensi(Request $request)
     {
@@ -195,7 +274,9 @@ class PresensiController extends Controller
 
         try {
             $validated = $request->validate([
+                'qr_code_id' => 'required|exists:qr_codes,id',
                 'session_id' => 'required|exists:presensi_sessions,id',
+                'type' => 'required|in:checkin,checkout',
                 'latitude' => 'required|numeric|between:-90,90',
                 'longitude' => 'required|numeric|between:-180,180',
                 'distance' => 'nullable|numeric',
@@ -213,13 +294,10 @@ class PresensiController extends Controller
             }
 
             $session = PresensiSession::findOrFail($validated['session_id']);
+            $qrCode = QRCode::findOrFail($validated['qr_code_id']);
+            $type = $validated['type'];
 
-            Log::info('Session retrieved', [
-                'session_id' => $session->id,
-                'session_kelas_id' => $session->kelas_id,
-                'siswa_kelas_id' => $siswa->kelas_id
-            ]);
-
+            // Validasi kelas
             if ($siswa->kelas_id !== $session->kelas_id) {
                 Log::warning('Class mismatch', [
                     'siswa_kelas_id' => $siswa->kelas_id,
@@ -231,52 +309,67 @@ class PresensiController extends Controller
                 ], 403);
             }
 
+            // Cek existing presensi
             $existingPresensi = Presensi::where('siswa_id', $siswa->id)
                 ->where('kelas_id', $session->kelas_id)
                 ->whereDate('tanggal_presensi', $session->tanggal)
                 ->first();
 
-            if ($existingPresensi) {
-                Log::warning('Already attended', [
-                    'siswa_id' => $siswa->id,
-                    'presensi_id' => $existingPresensi->id
-                ]);
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Anda sudah melakukan presensi hari ini',
-                    'presensi' => [
-                        'status' => $existingPresensi->status,
-                        'waktu' => $existingPresensi->created_at->format('H:i:s')
-                    ]
-                ], 400);
+            // Validasi SERVER-SIDE berdasarkan tipe
+            if ($type === 'checkin') {
+                if ($existingPresensi && $existingPresensi->hasCheckedIn()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Anda sudah melakukan check-in pada pukul ' . $existingPresensi->waktu_checkin->format('H:i')
+                    ], 400);
+                }
+            } else {
+                if (!$existingPresensi || !$existingPresensi->hasCheckedIn()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Anda harus check-in terlebih dahulu sebelum check-out'
+                    ], 400);
+                }
+                
+                if ($existingPresensi->hasCheckedOut()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Anda sudah melakukan check-out pada pukul ' . $existingPresensi->waktu_checkout->format('H:i')
+                    ], 400);
+                }
             }
 
             // Validasi radius (SERVER-SIDE)
+            $targetLat = $type === 'checkin' ? $session->latitude_checkin : $session->latitude_checkout;
+            $targetLng = $type === 'checkin' ? $session->longitude_checkin : $session->longitude_checkout;
+            $allowedRadius = $type === 'checkin' ? $session->radius_checkin : $session->radius_checkout;
+
             $distance = $this->validateLocation(
                 $validated['latitude'],
                 $validated['longitude'],
-                $session->latitude,
-                $session->longitude,
-                $session->radius
+                $targetLat,
+                $targetLng,
+                $allowedRadius
             );
 
             Log::info('Server-side distance validation', [
+                'type' => $type,
                 'siswa_lat' => $validated['latitude'],
                 'siswa_lng' => $validated['longitude'],
-                'session_lat' => $session->latitude,
-                'session_lng' => $session->longitude,
-                'radius' => $session->radius,
+                'target_lat' => $targetLat,
+                'target_lng' => $targetLng,
+                'radius' => $allowedRadius,
                 'calculated_distance' => $distance,
-                'is_within_radius' => $distance <= $session->radius
+                'is_within_radius' => $distance <= $allowedRadius
             ]);
 
             // TOLAK jika di luar radius
-            if ($distance > $session->radius) {
+            if ($distance > $allowedRadius) {
                 Log::warning('Location outside radius - REJECTED', [
                     'siswa_id' => $siswa->id,
+                    'type' => $type,
                     'distance' => $distance,
-                    'allowed_radius' => $session->radius,
-                    'difference' => $distance - $session->radius
+                    'allowed_radius' => $allowedRadius,
                 ]);
                 
                 return response()->json([
@@ -284,56 +377,89 @@ class PresensiController extends Controller
                     'message' => 'Lokasi Anda di luar radius yang diizinkan',
                     'data' => [
                         'distance' => $distance,
-                        'allowed_radius' => $session->radius,
-                        'difference' => $distance - $session->radius
+                        'allowed_radius' => $allowedRadius,
+                        'difference' => $distance - $allowedRadius
                     ]
                 ], 403);
             }
 
-            $isValidLocation = true; // Pasti valid karena sudah dicek di atas
-
-            // Buat presensi
+            $isValidLocation = true;
             $keterangan = "Jarak: {$distance}m";
             if (isset($validated['gps_accuracy'])) {
                 $keterangan .= " | GPS Accuracy: {$validated['gps_accuracy']}m";
             }
-            
-            $presensi = Presensi::create([
-                'session_id' => $session->id,
-                'kelas_id' => $session->kelas_id,
-                'siswa_id' => $siswa->id,
-                'tanggal_presensi' => $session->tanggal,
-                'waktu_absen' => now(),
-                'status' => 'hadir',
-                'latitude' => $validated['latitude'],
-                'longitude' => $validated['longitude'],
-                'metode' => 'qr',
-                'is_valid_location' => $isValidLocation,
-                'keterangan' => $keterangan,
-            ]);
 
-            Log::info('Presensi created successfully', [
-                'presensi_id' => $presensi->id,
-                'siswa_id' => $siswa->id,
-                'distance' => $distance,
-                'is_valid_location' => $isValidLocation
-            ]);
+            // Proses Checkin atau Checkout
+            if ($type === 'checkin') {
+                // Buat presensi baru
+                $presensi = Presensi::create([
+                    'session_id' => $session->id,
+                    'qr_code_id' => $qrCode->id,
+                    'kelas_id' => $session->kelas_id,
+                    'siswa_id' => $siswa->id,
+                    'tanggal_presensi' => $session->tanggal,
+                    'waktu_checkin' => now(),
+                    'status' => 'hadir',
+                    'latitude_checkin' => $validated['latitude'],
+                    'longitude_checkin' => $validated['longitude'],
+                    'is_valid_location_checkin' => $isValidLocation,
+                    'keterangan_checkin' => $keterangan,
+                    'metode' => 'qr',
+                ]);
 
-            // ==================== KIRIM NOTIFIKASI WA ====================
-            $this->sendWhatsAppNotification($presensi);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Presensi berhasil dicatat!',
-                'data' => [
+                Log::info('Checkin created successfully', [
                     'presensi_id' => $presensi->id,
-                    'status' => $presensi->status,
-                    'waktu' => $presensi->created_at->format('H:i:s'),
-                    'tanggal' => $presensi->tanggal_presensi->format('d M Y'),
+                    'siswa_id' => $siswa->id,
                     'distance' => $distance,
-                    'is_valid_location' => $isValidLocation
-                ]
-            ]);
+                ]);
+
+                // Kirim notifikasi checkin
+                $this->sendWhatsAppNotification($presensi, 'checkin');
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Check-in berhasil dicatat!',
+                    'data' => [
+                        'presensi_id' => $presensi->id,
+                        'type' => 'checkin',
+                        'waktu_checkin' => $presensi->waktu_checkin->format('H:i:s'),
+                        'tanggal' => $presensi->tanggal_presensi->format('d M Y'),
+                        'distance' => $distance,
+                    ]
+                ]);
+
+            } else {
+                // Update presensi dengan checkout
+                $existingPresensi->update([
+                    'waktu_checkout' => now(),
+                    'latitude_checkout' => $validated['latitude'],
+                    'longitude_checkout' => $validated['longitude'],
+                    'is_valid_location_checkout' => $isValidLocation,
+                    'keterangan_checkout' => $keterangan,
+                ]);
+
+                Log::info('Checkout updated successfully', [
+                    'presensi_id' => $existingPresensi->id,
+                    'siswa_id' => $siswa->id,
+                    'distance' => $distance,
+                ]);
+
+                // Kirim notifikasi checkout
+                $this->sendWhatsAppNotification($existingPresensi, 'checkout');
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Check-out berhasil dicatat!',
+                    'data' => [
+                        'presensi_id' => $existingPresensi->id,
+                        'type' => 'checkout',
+                        'waktu_checkin' => $existingPresensi->waktu_checkin->format('H:i:s'),
+                        'waktu_checkout' => $existingPresensi->waktu_checkout->format('H:i:s'),
+                        'tanggal' => $existingPresensi->tanggal_presensi->format('d M Y'),
+                        'distance' => $distance,
+                    ]
+                ]);
+            }
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             Log::error('Validation error', [
@@ -361,10 +487,9 @@ class PresensiController extends Controller
     /**
      * Kirim notifikasi WhatsApp ke orang tua
      */
-    protected function sendWhatsAppNotification($presensi)
+    protected function sendWhatsAppNotification($presensi, $type = 'checkin')
     {
         try {
-            // Cek apakah fitur notifikasi aktif
             if (!$this->fonnteService->isEnabled()) {
                 Log::info('WhatsApp notification disabled', [
                     'presensi_id' => $presensi->id
@@ -372,26 +497,33 @@ class PresensiController extends Controller
                 return;
             }
 
-            // Kirim notifikasi menggunakan method yang benar
-            $result = $this->fonnteService->sendPresensiNotification($presensi);
+            // Kirim notifikasi sesuai tipe
+            $result = $this->fonnteService->sendPresensiNotification($presensi, $type);
 
             if ($result['success']) {
+                // Update flag notifikasi
+                if ($type === 'checkin') {
+                    $presensi->update(['notifikasi_checkin_terkirim' => true]);
+                } else {
+                    $presensi->update(['notifikasi_checkout_terkirim' => true]);
+                }
+
                 Log::info('WhatsApp notification sent successfully', [
                     'presensi_id' => $presensi->id,
-                    'siswa_id' => $presensi->siswa_id
+                    'type' => $type,
                 ]);
             } else if (!isset($result['skipped'])) {
-                // Log failed notification (but don't show error to student)
                 Log::warning('Failed to send WhatsApp notification', [
                     'presensi_id' => $presensi->id,
+                    'type' => $type,
                     'reason' => $result['message']
                 ]);
             }
 
         } catch (\Exception $e) {
-            // Jangan sampai gagal notifikasi mengganggu proses presensi
             Log::error('Error sending WhatsApp notification', [
                 'presensi_id' => $presensi->id,
+                'type' => $type,
                 'error' => $e->getMessage()
             ]);
         }
@@ -425,6 +557,6 @@ class PresensiController extends Controller
             'is_within_radius' => $distance <= $radiusInMeters
         ]);
 
-        return round($distance, 2); // Return actual distance
+        return round($distance, 2);
     }
 }

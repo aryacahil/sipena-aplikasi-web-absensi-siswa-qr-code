@@ -7,6 +7,7 @@ use App\Models\Kelas;
 use App\Models\Jurusan;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class KelasController extends Controller
 {
@@ -34,7 +35,13 @@ class KelasController extends Controller
         
         $kelas = $query->paginate(10);
         $jurusans = Jurusan::all();
-        $gurus = User::where('role', 0)->get(); 
+        
+        // Ambil guru dengan raw query untuk bypass accessor
+        $gurus = DB::table('users')
+            ->where('role', 0)
+            ->select('id', 'name', 'email')
+            ->orderBy('name', 'asc')
+            ->get();
         
         return view('admin.kelas.index', compact('kelas', 'jurusans', 'gurus'));
     }
@@ -42,7 +49,13 @@ class KelasController extends Controller
     public function create()
     {
         $jurusans = Jurusan::all();
-        $gurus = User::where('role', 0)->get(); 
+        
+        // Ambil guru dengan raw query
+        $gurus = DB::table('users')
+            ->where('role', 0)
+            ->select('id', 'name', 'email')
+            ->orderBy('name', 'asc')
+            ->get();
         
         return view('admin.kelas.create', compact('jurusans', 'gurus'));
     }
@@ -72,7 +85,15 @@ class KelasController extends Controller
     public function show(Kelas $kela)
     {
         if (request()->wantsJson()) {
-            $kela->load(['jurusan', 'waliKelas', 'siswa']);
+            $kela->load(['jurusan', 'waliKelas']);
+            
+            // Ambil siswa dengan raw query - HANYA NIS, tanpa email
+            $siswaData = DB::table('users')
+                ->where('kelas_id', $kela->id)
+                ->where('role', 2)
+                ->select('id', 'name', 'nis')
+                ->orderBy('nis', 'asc')
+                ->get();
             
             return response()->json([
                 'success' => true,
@@ -89,12 +110,12 @@ class KelasController extends Controller
                         'name' => $kela->waliKelas->name,
                         'email' => $kela->waliKelas->email,
                     ] : null,
-                    'siswa_count' => $kela->siswa->count(),
-                    'siswa' => $kela->siswa->map(function($siswa) {
+                    'siswa_count' => $siswaData->count(),
+                    'siswa' => $siswaData->map(function($siswa) {
                         return [
                             'id' => $siswa->id,
                             'name' => $siswa->name,
-                            'email' => $siswa->email,
+                            'nis' => $siswa->nis ?? '-',
                         ];
                     }),
                 ]
@@ -108,16 +129,29 @@ class KelasController extends Controller
     public function edit(Kelas $kela)
     {
         if (request()->wantsJson()) {
+            // Ambil guru dengan raw query
+            $gurus = DB::table('users')
+                ->where('role', 0)
+                ->select('id', 'name', 'email')
+                ->orderBy('name', 'asc')
+                ->get();
+            
             return response()->json([
                 'success' => true,
                 'kelas' => $kela,
                 'jurusans' => Jurusan::all(),
-                'gurus' => User::where('role', 0)->get(),
+                'gurus' => $gurus,
             ]);
         }
 
         $jurusans = Jurusan::all();
-        $gurus = User::where('role', 0)->get();
+        
+        // Ambil guru dengan raw query
+        $gurus = DB::table('users')
+            ->where('role', 0)
+            ->select('id', 'name', 'email')
+            ->orderBy('name', 'asc')
+            ->get();
         
         return view('admin.kelas.edit', compact('kela', 'jurusans', 'gurus'));
     }
@@ -147,27 +181,50 @@ class KelasController extends Controller
     public function destroy(Kelas $kela)
     {
         try {
+            // Cek apakah ada siswa di kelas
+            $siswaCount = DB::table('users')
+                ->where('kelas_id', $kela->id)
+                ->count();
+            
+            if ($siswaCount > 0) {
+                return redirect()->route('admin.kelas.index')
+                    ->with('error', "Tidak dapat menghapus kelas karena masih ada {$siswaCount} siswa di kelas ini");
+            }
+            
             $kela->delete();
             return redirect()->route('admin.kelas.index')
                 ->with('success', 'Kelas berhasil dihapus');
         } catch (\Exception $e) {
             return redirect()->route('admin.kelas.index')
-                ->with('error', 'Gagal menghapus kelas');
+                ->with('error', 'Gagal menghapus kelas: ' . $e->getMessage());
         }
     }
 
     public function availableSiswa(Kelas $kela)
     {
-        $siswa = User::where('role', 2)
+        // Ambil siswa yang belum punya kelas - HANYA NIS, tanpa email
+        $siswa = DB::table('users')
+            ->where('role', 2)
             ->where(function($query) {
                 $query->whereNull('kelas_id')
                       ->orWhere('kelas_id', '');
             })
-            ->get(['id', 'name', 'email']);
+            ->select('id', 'name', 'nis')
+            ->orderBy('nis', 'asc')
+            ->get();
+
+        // Format data siswa
+        $formattedSiswa = $siswa->map(function($s) {
+            return [
+                'id' => $s->id,
+                'name' => $s->name,
+                'nis' => $s->nis ?? '-',
+            ];
+        });
 
         return response()->json([
             'success' => true,
-            'siswa' => $siswa
+            'siswa' => $formattedSiswa
         ]);
     }
 
@@ -182,34 +239,52 @@ class KelasController extends Controller
         $errors = [];
 
         foreach ($request->siswa_ids as $siswaId) {
-            $siswa = User::find($siswaId);
+            // Cek apakah siswa belum punya kelas
+            $siswa = DB::table('users')
+                ->where('id', $siswaId)
+                ->where('role', 2)
+                ->whereNull('kelas_id')
+                ->first();
             
-            if ($siswa && !$siswa->kelas_id) {
-                $siswa->kelas_id = $kela->id;
-                $siswa->save();
+            if ($siswa) {
+                DB::table('users')
+                    ->where('id', $siswaId)
+                    ->update(['kelas_id' => $kela->id]);
                 $addedCount++;
             } else {
-                $errors[] = $siswa ? $siswa->name : "Siswa ID: $siswaId";
+                $userData = DB::table('users')->where('id', $siswaId)->first();
+                if ($userData) {
+                    $errors[] = "{$userData->name} (NIS: {$userData->nis})";
+                } else {
+                    $errors[] = "Siswa ID: $siswaId";
+                }
             }
         }
 
         if ($addedCount > 0) {
+            $message = "$addedCount siswa berhasil ditambahkan ke kelas";
+            if (count($errors) > 0) {
+                $message .= ". Gagal menambahkan: " . implode(', ', $errors);
+            }
+            
             return response()->json([
                 'success' => true,
-                'message' => "$addedCount siswa berhasil ditambahkan ke kelas",
+                'message' => $message,
+                'added_count' => $addedCount,
                 'errors' => $errors
             ]);
         }
 
         return response()->json([
             'success' => false,
-            'message' => 'Tidak ada siswa yang ditambahkan',
+            'message' => 'Tidak ada siswa yang ditambahkan. ' . implode(', ', $errors),
             'errors' => $errors
         ], 422);
     }
 
     public function removeSiswa(Request $request, Kelas $kela)
     {
+        // Jika menghapus multiple siswa
         if ($request->has('siswa_ids')) {
             $request->validate([
                 'siswa_ids' => 'required|array',
@@ -220,52 +295,77 @@ class KelasController extends Controller
             $errors = [];
 
             foreach ($request->siswa_ids as $siswaId) {
-                $siswa = User::find($siswaId);
+                $siswa = DB::table('users')
+                    ->where('id', $siswaId)
+                    ->where('kelas_id', $kela->id)
+                    ->first();
                 
-                if ($siswa && $siswa->kelas_id == $kela->id) {
-                    $siswa->kelas_id = null;
-                    $siswa->save();
+                if ($siswa) {
+                    DB::table('users')
+                        ->where('id', $siswaId)
+                        ->update(['kelas_id' => null]);
                     $removedCount++;
                 } else {
-                    $errors[] = $siswa ? $siswa->name : "Siswa ID: $siswaId";
+                    $userData = DB::table('users')->where('id', $siswaId)->first();
+                    if ($userData) {
+                        $errors[] = "{$userData->name} (NIS: {$userData->nis})";
+                    } else {
+                        $errors[] = "Siswa ID: $siswaId";
+                    }
                 }
             }
 
             if ($removedCount > 0) {
+                $message = "$removedCount siswa berhasil dikeluarkan dari kelas";
+                if (count($errors) > 0) {
+                    $message .= ". Gagal mengeluarkan: " . implode(', ', $errors);
+                }
+                
                 return response()->json([
                     'success' => true,
-                    'message' => "$removedCount siswa berhasil dikeluarkan dari kelas",
+                    'message' => $message,
+                    'removed_count' => $removedCount,
                     'errors' => $errors
                 ]);
             }
 
             return response()->json([
                 'success' => false,
-                'message' => 'Tidak ada siswa yang dikeluarkan',
+                'message' => 'Tidak ada siswa yang dikeluarkan. ' . implode(', ', $errors),
                 'errors' => $errors
             ], 422);
-        } else {
+        } 
+        // Jika menghapus single siswa
+        else {
+            $request->validate([
+                'siswa_id' => 'required|exists:users,id',
+            ]);
+            
             try {
-                $siswa = User::findOrFail($request->siswa_id);
+                $siswa = DB::table('users')
+                    ->where('id', $request->siswa_id)
+                    ->where('kelas_id', $kela->id)
+                    ->first();
                 
-                if ($siswa->kelas_id != $kela->id) {
+                if (!$siswa) {
                     return response()->json([
                         'success' => false,
                         'message' => 'Siswa tidak berada di kelas ini'
                     ], 422);
                 }
                 
-                $siswa->kelas_id = null;
-                $siswa->save();
+                DB::table('users')
+                    ->where('id', $request->siswa_id)
+                    ->update(['kelas_id' => null]);
 
                 return response()->json([
                     'success' => true,
-                    'message' => 'Siswa berhasil dikeluarkan dari kelas'
+                    'message' => "{$siswa->name} (NIS: {$siswa->nis}) berhasil dikeluarkan dari kelas"
                 ]);
             } catch (\Exception $e) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Gagal mengeluarkan siswa dari kelas'
+                    'message' => 'Gagal mengeluarkan siswa dari kelas: ' . $e->getMessage()
                 ], 500);
             }
         }
@@ -274,7 +374,10 @@ class KelasController extends Controller
     public function removeAllSiswa(Kelas $kela)
     {
         try {
-            $siswaCount = $kela->siswa()->count();
+            $siswaCount = DB::table('users')
+                ->where('kelas_id', $kela->id)
+                ->where('role', 2)
+                ->count();
             
             if ($siswaCount == 0) {
                 return response()->json([
@@ -283,7 +386,10 @@ class KelasController extends Controller
                 ], 422);
             }
 
-            User::where('kelas_id', $kela->id)->update(['kelas_id' => null]);
+            DB::table('users')
+                ->where('kelas_id', $kela->id)
+                ->where('role', 2)
+                ->update(['kelas_id' => null]);
 
             return response()->json([
                 'success' => true,
@@ -292,7 +398,7 @@ class KelasController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengeluarkan semua siswa dari kelas'
+                'message' => 'Gagal mengeluarkan semua siswa dari kelas: ' . $e->getMessage()
             ], 500);
         }
     }

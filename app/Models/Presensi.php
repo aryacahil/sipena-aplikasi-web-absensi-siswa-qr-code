@@ -11,33 +11,79 @@ class Presensi extends Model
 
     protected $fillable = [
         'session_id',
+        'qr_code_id',
         'kelas_id',
         'siswa_id',
         'tanggal_presensi',
+        'waktu_checkin',
+        'waktu_checkout',
         'status',
-        'latitude',
-        'longitude',
-        'metode',  
-        'keterangan',
+        'latitude_checkin',
+        'longitude_checkin',
+        'latitude_checkout',
+        'longitude_checkout',
+        'is_valid_location_checkin',
+        'is_valid_location_checkout',
+        'keterangan_checkin',
+        'keterangan_checkout',
+        'metode',
         'bukti_file',
-        'notifikasi_terkirim',
-        'is_valid_location',
+        'notifikasi_checkin_terkirim',
+        'notifikasi_checkout_terkirim',
     ];
 
     protected $casts = [
-        'notifikasi_terkirim' => 'boolean',
-        'is_valid_location' => 'boolean',
+        'notifikasi_checkin_terkirim' => 'boolean',
+        'notifikasi_checkout_terkirim' => 'boolean',
+        'is_valid_location_checkin' => 'boolean',
+        'is_valid_location_checkout' => 'boolean',
         'tanggal_presensi' => 'date',
+        'waktu_checkin' => 'datetime',
+        'waktu_checkout' => 'datetime',
     ];
 
+    /**
+     * Accessor untuk waktu_presensi (backward compatibility)
+     * Return waktu checkin sebagai default
+     */
     public function getWaktuPresensiAttribute()
     {
-        return $this->created_at;
+        return $this->waktu_checkin ?? $this->created_at;
     }
 
+    /**
+     * Check if student has checked in
+     */
+    public function hasCheckedIn()
+    {
+        return !is_null($this->waktu_checkin);
+    }
+
+    /**
+     * Check if student has checked out
+     */
+    public function hasCheckedOut()
+    {
+        return !is_null($this->waktu_checkout);
+    }
+
+    /**
+     * Check if presensi is complete (both checkin and checkout)
+     */
+    public function isComplete()
+    {
+        return $this->hasCheckedIn() && $this->hasCheckedOut();
+    }
+
+    // Relationships
     public function session()
     {
         return $this->belongsTo(PresensiSession::class, 'session_id');
+    }
+
+    public function qrCode()
+    {
+        return $this->belongsTo(QRCode::class, 'qr_code_id');
     }
 
     public function siswa()
@@ -50,6 +96,7 @@ class Presensi extends Model
         return $this->belongsTo(Kelas::class, 'kelas_id');
     }
 
+    // Scopes
     public function scopeByDate($query, $date)
     {
         return $query->whereDate('tanggal_presensi', $date);
@@ -63,5 +110,21 @@ class Presensi extends Model
     public function scopeByStatus($query, $status)
     {
         return $query->where('status', $status);
+    }
+
+    public function scopeCheckedIn($query)
+    {
+        return $query->whereNotNull('waktu_checkin');
+    }
+
+    public function scopeCheckedOut($query)
+    {
+        return $query->whereNotNull('waktu_checkout');
+    }
+
+    public function scopeIncomplete($query)
+    {
+        return $query->whereNotNull('waktu_checkin')
+                     ->whereNull('waktu_checkout');
     }
 }
