@@ -95,7 +95,7 @@ class PresensiController extends Controller
                         'siswa' => [
                             'id' => $item['siswa']->id,
                             'name' => $item['siswa']->name,
-                            'email' => $item['siswa']->email,
+                            'nis' => $item['siswa']->nis,
                         ],
                         'presensi' => $item['presensi'] ? [
                             'id' => $item['presensi']->id,
@@ -184,15 +184,16 @@ class PresensiController extends Controller
             'kelas_id' => $kelas->id,
             'siswa_id' => $validated['siswa_id'],
             'tanggal_presensi' => $validated['tanggal_presensi'],
-            'waktu_checkin' => now(), // FIXED: Set waktu checkin
             'status' => $validated['status'],
             'metode' => 'manual',
-            'keterangan_checkin' => $validated['keterangan'] ?? null, // FIXED: keterangan_checkin
+            'keterangan_checkin' => $validated['keterangan'] ?? null,
             'session_id' => null,
-            'qr_code_id' => null,
-            'latitude_checkin' => null, // FIXED: latitude_checkin
-            'longitude_checkin' => null, // FIXED: longitude_checkin
-            'is_valid_location_checkin' => true, // FIXED: is_valid_location_checkin
+            'latitude_checkin' => null,
+            'longitude_checkin' => null,
+            'latitude_checkout' => null,
+            'longitude_checkout' => null,
+            'is_valid_location_checkin' => true,
+            'is_valid_location_checkout' => true,
         ]);
 
         Log::info('Presensi created successfully', [

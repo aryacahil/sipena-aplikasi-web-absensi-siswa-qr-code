@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                         <div>
                                             <strong>${index + 1}. ${siswa.name}</strong><br>
                                             <small class="text-muted">
-                                                <i class="bi bi-envelope me-1"></i>${siswa.email}
+                                                ${siswa.nis}
                                             </small>
                                         </div>
                                     </div>
@@ -471,7 +471,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 const filteredSiswa = allSiswaData.filter(siswa => 
                     siswa.name.toLowerCase().includes(searchTerm) || 
-                    siswa.email.toLowerCase().includes(searchTerm)
+                    siswa.nis.toLowerCase().includes(searchTerm)
                 );
                 renderSiswaList(filteredSiswa);
             }
@@ -930,7 +930,7 @@ function renderSiswaList(siswaArray) {
                         <label for="siswa_checkbox_${siswaIdStr}" class="flex-grow-1 mb-0" style="cursor: pointer;">
                             <h6 class="mb-1">${siswa.name}</h6>
                             <small class="text-muted">
-                                <i class="bi bi-envelope me-1"></i>${siswa.email}
+                                ${siswa.nis}
                             </small>
                         </label>
                     </div>

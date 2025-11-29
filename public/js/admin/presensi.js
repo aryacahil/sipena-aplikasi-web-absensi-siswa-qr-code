@@ -184,8 +184,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         <tr>
                             <th style="width: 50px;" class="text-center">NO</th>
                             <th>SISWA</th>
-                            <th class="text-center" style="width: 120px;">MASUK</th>
-                            <th class="text-center" style="width: 120px;">PULANG</th>
+                            <th class="text-center" style="width: 100px;">MASUK</th>
+                            <th class="text-center" style="width: 100px;">PULANG</th>
                             <th class="text-center" style="width: 100px;">STATUS</th>
                             <th class="text-center" style="width: 100px;">METODE</th>
                             <th class="text-center" style="width: 120px;">AKSI</th>
@@ -235,13 +235,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     ? '<span class="badge bg-primary-soft text-primary"><i class="bi bi-qr-code me-1"></i>QR</span>'
                     : (presensi ? '<span class="badge bg-secondary-soft text-secondary"><i class="bi bi-pencil me-1"></i>Manual</span>' : '-');
 
-                // FIXED: Tampilkan waktu checkin dan checkout terpisah
-                const checkinTime = presensi && presensi.waktu_checkin 
-                    ? `<small class="text-muted">${presensi.waktu_checkin}</small>` 
+                // ✅ FIXED: Tampilkan waktu checkin dan checkout terpisah
+                const checkinTime = presensi && presensi.waktu_checkin && presensi.waktu_checkin !== '-'
+                    ? `<small class="text-muted"><i class="bi bi-box-arrow-in-right me-1"></i>${presensi.waktu_checkin}</small>` 
                     : '<small class="text-muted">-</small>';
 
-                const checkoutTime = presensi && presensi.waktu_checkout 
-                    ? `<small class="text-success">${presensi.waktu_checkout}</small>` 
+                const checkoutTime = presensi && presensi.waktu_checkout && presensi.waktu_checkout !== '-'
+                    ? `<small class="text-success"><i class="bi bi-box-arrow-right me-1"></i>${presensi.waktu_checkout}</small>` 
                     : '<small class="text-muted">-</small>';
 
                 html += `
@@ -256,7 +256,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </div>
                                 <div class="siswa-info">
                                     <div class="siswa-name">${siswa.name}</div>
-                                    <span class="siswa-email">${siswa.email}</span>
+                                    <span class="siswa-nis">${siswa.nis}</span>
                                 </div>
                             </div>
                         </td>

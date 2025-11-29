@@ -42,6 +42,53 @@ class Presensi extends Model
         'waktu_checkout' => 'datetime',
     ];
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Event saat creating (sebelum insert)
+        static::creating(function ($presensi) {
+            // Jika presensi manual
+            if ($presensi->metode === 'manual') {
+                // Hanya isi waktu untuk status HADIR
+                if ($presensi->status === 'hadir') {
+                    $presensi->waktu_checkin = \Carbon\Carbon::parse($presensi->tanggal_presensi)
+                        ->setTime(7, 0, 0);
+                    
+                    $presensi->waktu_checkout = \Carbon\Carbon::parse($presensi->tanggal_presensi)
+                        ->setTime(15, 0, 0);
+                } else {
+                    // Untuk sakit, izin, alpha -> waktu NULL
+                    $presensi->waktu_checkin = null;
+                    $presensi->waktu_checkout = null;
+                }
+            }
+        });
+
+        // Event saat updating (saat update)
+        static::updating(function ($presensi) {
+            // Jika presensi manual
+            if ($presensi->metode === 'manual') {
+                // Jika statusnya HADIR dan waktu masih kosong
+                if ($presensi->status === 'hadir') {
+                    if (empty($presensi->waktu_checkin)) {
+                        $presensi->waktu_checkin = \Carbon\Carbon::parse($presensi->tanggal_presensi)
+                            ->setTime(7, 0, 0);
+                    }
+                    
+                    if (empty($presensi->waktu_checkout)) {
+                        $presensi->waktu_checkout = \Carbon\Carbon::parse($presensi->tanggal_presensi)
+                            ->setTime(15, 0, 0);
+                    }
+                } else {
+                    // Untuk sakit, izin, alpha -> kosongkan waktu
+                    $presensi->waktu_checkin = null;
+                    $presensi->waktu_checkout = null;
+                }
+            }
+        });
+    }
+    
     /**
      * Accessor untuk waktu_presensi (backward compatibility)
      * Return waktu checkin sebagai default
