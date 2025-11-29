@@ -50,7 +50,8 @@ class PresensiExport implements FromCollection, WithHeadings, WithMapping, WithS
             'Kelas',
             'Jurusan',
             'Tanggal',
-            'Waktu',
+            'Waktu Check-in',     // FIXED: Split waktu
+            'Waktu Check-out',    // FIXED: Tambah checkout
             'Status',
             'Metode',
             'Keterangan',
@@ -59,23 +60,42 @@ class PresensiExport implements FromCollection, WithHeadings, WithMapping, WithS
 
     public function map($presensi): array
     {
+        // FIXED: Gabungkan keterangan checkin dan checkout
+        $keterangan = [];
+        if ($presensi->keterangan_checkin) {
+            $keterangan[] = 'Checkin: ' . $presensi->keterangan_checkin;
+        }
+        if ($presensi->keterangan_checkout) {
+            $keterangan[] = 'Checkout: ' . $presensi->keterangan_checkout;
+        }
+        $keteranganText = !empty($keterangan) ? implode(' | ', $keterangan) : '-';
+
         return [
             $presensi->id,
             $presensi->siswa->name,
             $presensi->kelas->nama_kelas,
             $presensi->kelas->jurusan->nama_jurusan,
             $presensi->tanggal_presensi->format('d-m-Y'),
-            $presensi->created_at->format('H:i:s'),
+            // FIXED: Tampilkan waktu checkin dan checkout terpisah
+            $presensi->waktu_checkin ? $presensi->waktu_checkin->format('H:i:s') : '-',
+            $presensi->waktu_checkout ? $presensi->waktu_checkout->format('H:i:s') : '-',
             strtoupper($presensi->status),
             strtoupper($presensi->metode),
-            $presensi->keterangan ?? '-',
+            $keteranganText,
         ];
     }
 
     public function styles(Worksheet $sheet)
     {
         return [
-            1 => ['font' => ['bold' => true]],
+            // Style untuk header
+            1 => [
+                'font' => ['bold' => true],
+                'fill' => [
+                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => 'E2E8F0']
+                ]
+            ],
         ];
     }
 }

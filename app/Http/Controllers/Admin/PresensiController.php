@@ -33,9 +33,11 @@ class PresensiController extends Controller
             'total_kelas' => $kelasList->count(),
             'total_siswa' => User::where('role', 2)->count(),
             'hadir_hari_ini' => Presensi::whereDate('tanggal_presensi', $today)
-                ->where('status', 'hadir')->count(),
+                ->whereNotNull('waktu_checkin') // FIXED: Check waktu_checkin
+                ->count(),
             'alpha_hari_ini' => Presensi::whereDate('tanggal_presensi', $today)
-                ->where('status', 'alpha')->count(),
+                ->where('status', 'alpha')
+                ->count(),
         ];
 
         return view('admin.presensi.index', compact('kelasList', 'jurusans', 'stats'));
@@ -98,10 +100,12 @@ class PresensiController extends Controller
                         'presensi' => $item['presensi'] ? [
                             'id' => $item['presensi']->id,
                             'status' => $item['presensi']->status,
-                            'waktu_presensi' => $item['presensi']->created_at ? 
-                                $item['presensi']->created_at->format('H:i:s') : '-',
+                            'waktu_checkin' => $item['presensi']->waktu_checkin ? 
+                                $item['presensi']->waktu_checkin->format('H:i:s') : '-',
+                            'waktu_checkout' => $item['presensi']->waktu_checkout ? 
+                                $item['presensi']->waktu_checkout->format('H:i:s') : '-',
                             'metode' => $item['presensi']->metode,
-                            'keterangan' => $item['presensi']->keterangan,
+                            'keterangan' => $item['presensi']->keterangan_checkin ?? $item['presensi']->keterangan_checkout,
                         ] : null,
                         'status' => $item['status'],
                     ];
@@ -110,8 +114,10 @@ class PresensiController extends Controller
                 'active_session' => $activeSession ? [
                     'id' => $activeSession->id,
                     'tanggal' => $activeSession->tanggal->format('d M Y'),
-                    'jam_mulai' => $activeSession->jam_mulai->format('H:i'),
-                    'jam_selesai' => $activeSession->jam_selesai->format('H:i'),
+                    'jam_checkin_mulai' => $activeSession->jam_checkin_mulai->format('H:i'),
+                    'jam_checkin_selesai' => $activeSession->jam_checkin_selesai->format('H:i'),
+                    'jam_checkout_mulai' => $activeSession->jam_checkout_mulai->format('H:i'),
+                    'jam_checkout_selesai' => $activeSession->jam_checkout_selesai->format('H:i'),
                 ] : null,
                 'filter_date' => $filterDate,
             ]);
@@ -173,17 +179,20 @@ class PresensiController extends Controller
             ], 422);
         }
 
+        // FIXED: Gunakan struktur baru dengan checkin/checkout
         $presensi = Presensi::create([
             'kelas_id' => $kelas->id,
             'siswa_id' => $validated['siswa_id'],
             'tanggal_presensi' => $validated['tanggal_presensi'],
+            'waktu_checkin' => now(), // FIXED: Set waktu checkin
             'status' => $validated['status'],
             'metode' => 'manual',
-            'keterangan' => $validated['keterangan'] ?? null,
+            'keterangan_checkin' => $validated['keterangan'] ?? null, // FIXED: keterangan_checkin
             'session_id' => null,
-            'latitude' => null,
-            'longitude' => null,
-            'is_valid_location' => true,
+            'qr_code_id' => null,
+            'latitude_checkin' => null, // FIXED: latitude_checkin
+            'longitude_checkin' => null, // FIXED: longitude_checkin
+            'is_valid_location_checkin' => true, // FIXED: is_valid_location_checkin
         ]);
 
         Log::info('Presensi created successfully', [
@@ -201,7 +210,7 @@ class PresensiController extends Controller
                     'presensi' => [
                         'id' => $presensi->id,
                         'status' => $presensi->status,
-                        'waktu_presensi' => $presensi->created_at->format('H:i:s'),
+                        'waktu_checkin' => $presensi->waktu_checkin->format('H:i:s'), // FIXED
                         'metode' => $presensi->metode,
                     ],
                 ],
@@ -239,7 +248,7 @@ class PresensiController extends Controller
                     'presensi' => [
                         'id' => $presensi->id,
                         'status' => $presensi->status,
-                        'keterangan' => $presensi->keterangan ?? '',
+                        'keterangan' => $presensi->keterangan_checkin ?? $presensi->keterangan_checkout ?? '', // FIXED
                         'siswa' => [
                             'name' => $presensi->siswa->name,
                         ],
@@ -286,7 +295,17 @@ class PresensiController extends Controller
             $validated['bukti_file'] = $path;
         }
 
-        $presensi->update($validated);
+        // FIXED: Update keterangan_checkin (karena manual presensi set di checkin)
+        $updateData = [
+            'status' => $validated['status'],
+            'keterangan_checkin' => $validated['keterangan'] ?? null,
+        ];
+
+        if (isset($validated['bukti_file'])) {
+            $updateData['bukti_file'] = $validated['bukti_file'];
+        }
+
+        $presensi->update($updateData);
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([

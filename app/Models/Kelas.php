@@ -28,12 +28,11 @@ class Kelas extends Model
         return $this->belongsTo(User::class, 'wali_kelas_id');
     }
 
-    // Relasi dengan siswa - diperbaiki untuk include NIS
+    // FIXED: Relasi dengan siswa - Hapus filter role
     public function siswa()
     {
         return $this->hasMany(User::class, 'kelas_id')
-                    ->select(['id', 'name', 'email', 'nis', 'kelas_id']) // Pastikan NIS diambil
-                    ->where('role', 'siswa'); // Filter hanya siswa
+                    ->where('role', 2); // 2 adalah raw value untuk siswa
     }
 
     // Accessor untuk mendapatkan jumlah siswa
