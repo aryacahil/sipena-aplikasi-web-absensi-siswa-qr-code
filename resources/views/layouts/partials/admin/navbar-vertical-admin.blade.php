@@ -102,7 +102,7 @@
             </li>
 
             <li class="nav-item">
-                <a class="nav-link" href="{{ route('admin.settings.whatsapp') }}">
+                <a class="nav-link" href="{{ route('admin.settings.whatsapp.index') }}">
                     <i data-feather="Whatsapp" class="bi bi-whatsapp icon-xs me-2"></i>
                     Notifikasi Whatsapp
                 </a>

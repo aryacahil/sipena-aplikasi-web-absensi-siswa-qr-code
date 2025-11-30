@@ -20,40 +20,18 @@ return new class extends Migration
             $table->index('key');
         });
 
-        // Insert default settings
         DB::table('settings')->insert([
-            [
-                'key' => 'fonnte_api_key',
-                'value' => null,
-                'type' => 'string',
-                'description' => 'API Key dari Fonnte',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'key' => 'fonnte_device_id',
-                'value' => null,
-                'type' => 'string',
-                'description' => 'Device ID WhatsApp',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'key' => 'fonnte_sender_number',
-                'value' => null,
-                'type' => 'string',
-                'description' => 'Nomor WhatsApp pengirim',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
+            // Global WhatsApp notification toggle
             [
                 'key' => 'fonnte_enabled',
                 'value' => '0',
                 'type' => 'boolean',
-                'description' => 'Aktifkan notifikasi WhatsApp',
+                'description' => 'Aktifkan notifikasi WhatsApp (Global)',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
+            
+            // Message templates (masih di settings karena global untuk semua device)
             [
                 'key' => 'fonnte_message_template_checkin',
                 'value' => "Assalamualaikum Bapak/Ibu\n\nKami informasikan bahwa:\n\n*Nama:* {student_name}\n*NIS:* {nis}\n*Kelas:* {class_name}\n*Status:* ✅ MASUK\n*Waktu:* {checkin_time}\n*Tanggal:* {date}\n\nTerima kasih.\n\n_Sistem Presensi Sekolah_",

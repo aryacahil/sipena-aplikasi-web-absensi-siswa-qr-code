@@ -502,11 +502,11 @@
 <div class="modal fade" id="pindahKelasModal" tabindex="-1" aria-labelledby="pindahKelasModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
+            <div class="modal-header bg-light">
                 <h5 class="modal-title" id="pindahKelasModalLabel">
                     <i class="bi bi-arrow-left-right me-2"></i>Pindah Siswa ke Kelas Lain
                 </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <!-- Pilih Kelas Tujuan -->

@@ -403,5 +403,198 @@ class KelasController extends Controller
         }
     }
 
-    
+    // ============================================================
+    // ⭐ METHOD BARU UNTUK PINDAH KELAS
+    // ============================================================
+
+    /**
+     * Get daftar semua kelas untuk dropdown Pindah Kelas
+     * Route: GET /admin/kelas/list-all
+     */
+    public function listAll()
+    {
+        try {
+            $kelas = DB::table('kelas')
+                ->join('jurusans', 'kelas.jurusan_id', '=', 'jurusans.id')
+                ->select(
+                    'kelas.id',
+                    'kelas.nama_kelas',
+                    'kelas.kode_kelas',
+                    'kelas.tingkat',
+                    'jurusans.kode_jurusan'
+                )
+                ->orderBy('kelas.tingkat', 'asc')
+                ->orderBy('kelas.nama_kelas', 'asc')
+                ->get();
+
+            // Hitung siswa per kelas
+            $kelasWithCount = $kelas->map(function($k) {
+                $siswaCount = DB::table('users')
+                    ->where('kelas_id', $k->id)
+                    ->where('role', 2)
+                    ->count();
+                
+                return [
+                    'id' => $k->id,
+                    'nama_kelas' => $k->nama_kelas,
+                    'kode_kelas' => $k->kode_kelas,
+                    'tingkat' => $k->tingkat,
+                    'kode_jurusan' => $k->kode_jurusan,
+                    'siswa_count' => $siswaCount,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'kelas' => $kelasWithCount
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memuat daftar kelas: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get semua siswa (termasuk yang sudah punya kelas) untuk Pindah Kelas
+     * Route: GET /admin/kelas/all-siswa
+     */
+    public function allSiswa()
+    {
+        try {
+            // Ambil semua siswa dengan informasi kelas mereka
+            $siswa = DB::table('users as u')
+                ->leftJoin('kelas as k', 'u.kelas_id', '=', 'k.id')
+                ->where('u.role', 2)
+                ->select(
+                    'u.id',
+                    'u.name',
+                    'u.nis',
+                    'u.kelas_id',
+                    'k.nama_kelas as kelas_nama'
+                )
+                ->orderBy('u.name', 'asc')
+                ->get();
+
+            // Format data siswa
+            $formattedSiswa = $siswa->map(function($s) {
+                return [
+                    'id' => $s->id,
+                    'name' => $s->name,
+                    'nis' => $s->nis ?? '-',
+                    'kelas_id' => $s->kelas_id,
+                    'kelas' => $s->kelas_nama ? [
+                        'nama_kelas' => $s->kelas_nama
+                    ] : null,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'siswa' => $formattedSiswa
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memuat daftar siswa: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Pindahkan siswa ke kelas lain
+     * Route: POST /admin/kelas/pindah-siswa
+     */
+    public function pindahSiswa(Request $request)
+    {
+        try {
+            $request->validate([
+                'siswa_ids' => 'required|array',
+                'siswa_ids.*' => 'exists:users,id',
+                'target_kelas_id' => 'required|exists:kelas,id',
+            ], [
+                'siswa_ids.required' => 'Pilih minimal satu siswa',
+                'target_kelas_id.required' => 'Kelas tujuan wajib dipilih',
+                'target_kelas_id.exists' => 'Kelas tujuan tidak valid',
+            ]);
+
+            $siswaIds = $request->siswa_ids;
+            $targetKelasId = $request->target_kelas_id;
+
+            // Get target kelas info
+            $targetKelas = DB::table('kelas')
+                ->where('id', $targetKelasId)
+                ->first();
+
+            if (!$targetKelas) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Kelas tujuan tidak ditemukan'
+                ], 404);
+            }
+
+            $movedCount = 0;
+            $movedNames = [];
+            $errors = [];
+
+            foreach ($siswaIds as $siswaId) {
+                $siswa = DB::table('users')
+                    ->where('id', $siswaId)
+                    ->where('role', 2)
+                    ->first();
+                
+                if ($siswa) {
+                    // Cek jika siswa sudah di kelas tujuan
+                    if ($siswa->kelas_id == $targetKelasId) {
+                        $errors[] = "{$siswa->name} sudah berada di kelas tujuan";
+                        continue;
+                    }
+
+                    // Pindahkan siswa
+                    DB::table('users')
+                        ->where('id', $siswaId)
+                        ->update(['kelas_id' => $targetKelasId]);
+                    
+                    $movedCount++;
+                    $movedNames[] = $siswa->name;
+                } else {
+                    $errors[] = "Siswa ID {$siswaId} tidak ditemukan atau bukan siswa";
+                }
+            }
+
+            if ($movedCount > 0) {
+                $message = "{$movedCount} siswa berhasil dipindahkan ke {$targetKelas->nama_kelas}";
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => $message,
+                    'data' => [
+                        'moved_count' => $movedCount,
+                        'moved_names' => $movedNames,
+                        'target_kelas' => $targetKelas->nama_kelas
+                    ],
+                    'errors' => $errors
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak ada siswa yang dipindahkan. ' . implode(', ', $errors),
+                'errors' => $errors
+            ], 422);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memindahkan siswa: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

@@ -131,8 +131,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             <button class="btn btn-sm btn-primary btn-add-siswa-modal" data-kelas-id="${kelas.id}">
                                 <i class="bi bi-plus-circle me-1"></i>Tambah Siswa
                             </button>
-                            <button class="btn btn-sm btn-primary btn-add-siswa-modal" data-kelas-id="${kelas.id}">
-                                <i class="bi bi-plus-circle me-1"></i>Pindah Kelas
+                            <button class="btn btn-sm btn-primary btn-pindah-kelas" data-kelas-id="${kelas.id}">
+                                <i class="bi bi-arrow-left-right me-1"></i>Pindah Kelas
                             </button>
                             </div>
                         </div>
@@ -1076,7 +1076,8 @@ function loadAllSiswaForPindah(kelasId) {
         </div>
     `;
     
-    fetch(`/admin/kelas/all-siswa`, {
+    // ⭐ PERBAIKAN: Ganti URL dari /admin/kelas/all-siswa ke /admin/kelas/all-siswa
+    fetch(`/admin/kelas/all-siswa`, {  // ← BUKAN /admin/kelas/${kelasId}/all-siswa
         method: 'GET',
         headers: {
             'X-CSRF-TOKEN': csrfToken,
@@ -1086,6 +1087,9 @@ function loadAllSiswaForPindah(kelasId) {
     })
     .then(response => {
         console.log('All siswa response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         return response.json();
     })
     .then(data => {
@@ -1117,7 +1121,12 @@ function loadKelasListForPindah(currentKelasId) {
     const csrfToken = document.querySelector('input[name="_token"]').value;
     const select = document.getElementById('target_kelas_select');
     
-    fetch(`/admin/kelas/list`, {
+    // Set loading state
+    select.innerHTML = '<option value="">Memuat...</option>';
+    select.disabled = true;
+    
+    // ⭐ PERBAIKAN: Ganti URL menjadi /admin/kelas/list-all
+    fetch(`/admin/kelas/list-all`, {  // ← BUKAN /admin/kelas/list
         method: 'GET',
         headers: {
             'X-CSRF-TOKEN': csrfToken,
@@ -1125,29 +1134,58 @@ function loadKelasListForPindah(currentKelasId) {
             'X-Requested-With': 'XMLHttpRequest'
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('Kelas list response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
         console.log('Kelas list data:', data);
         
         if (data.success) {
             select.innerHTML = '<option value="">-- Pilih Kelas Tujuan --</option>';
-            data.kelas.forEach(kelas => {
-                if (kelas.id != currentKelasId) {
-                    select.innerHTML += `<option value="${kelas.id}">${kelas.nama_kelas} (${kelas.siswa_count || 0} siswa)</option>`;
-                }
-            });
+            
+            if (data.kelas && data.kelas.length > 0) {
+                data.kelas.forEach(kelas => {
+                    // Jangan tampilkan kelas yang sedang aktif
+                    if (currentKelasId && kelas.id == currentKelasId) {
+                        return;
+                    }
+                    
+                    const siswaCount = kelas.siswa_count || 0;
+                    const option = document.createElement('option');
+                    option.value = kelas.id;
+                    option.textContent = `${kelas.nama_kelas} (${siswaCount} siswa)`;
+                    select.appendChild(option);
+                });
+            } else {
+                select.innerHTML = '<option value="">Tidak ada kelas tersedia</option>';
+            }
+            
+            select.disabled = false;
+        } else {
+            throw new Error(data.message || 'Failed to load kelas');
         }
     })
     .catch(error => {
         console.error('Error loading kelas list:', error);
+        select.innerHTML = '<option value="">Gagal memuat kelas</option>';
+        select.disabled = false;
+        
         Swal.fire({
             icon: 'error',
             title: 'Gagal!',
-            text: 'Gagal memuat daftar kelas',
+            text: 'Gagal memuat daftar kelas: ' + error.message,
             confirmButtonColor: '#dc3545'
         });
     });
 }
+
+// ============================================================
+// PERBAIKAN renderSiswaPindahList - DESIGN SAMA DENGAN TAMBAH SISWA
+// ============================================================
 
 function renderSiswaPindahList(siswaArray) {
     console.log('Rendering siswa pindah list:', siswaArray.length, 'items');
@@ -1166,6 +1204,7 @@ function renderSiswaPindahList(siswaArray) {
         return;
     }
     
+    // ⭐ DESIGN BARU: Sama seperti modal Tambah Siswa
     const siswaHtml = siswaArray.map((siswa, index) => {
         const siswaIdStr = siswa.id.toString();
         const isSelected = selectedSiswaIds.has(siswaIdStr);
@@ -1186,7 +1225,9 @@ function renderSiswaPindahList(siswaArray) {
                         <label for="siswa_pindah_${siswaIdStr}" class="flex-grow-1 mb-0" style="cursor: pointer;">
                             <h6 class="mb-1">${siswa.name}</h6>
                             <small class="text-muted d-block">NIS: ${siswa.nis}</small>
-                            <span class="badge ${kelasColor} mt-1">${kelasName}</span>
+                            <span class="badge ${kelasColor} mt-1">
+                                <i class="bi bi-building me-1"></i>${kelasName}
+                            </span>
                         </label>
                     </div>
                 </div>

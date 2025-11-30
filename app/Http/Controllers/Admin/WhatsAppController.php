@@ -4,10 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
+use App\Models\FonnteDevice;
 use App\Services\FonnteService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Http;
 
 class WhatsAppController extends Controller
 {
@@ -19,62 +19,55 @@ class WhatsAppController extends Controller
     }
 
     /**
-     * Display WhatsApp settings page
+     * Display WhatsApp settings page with all devices
      */
     public function index()
     {
         $settings = [
-            'fonnte_api_key' => Setting::get('fonnte_api_key', ''),
             'fonnte_enabled' => Setting::get('fonnte_enabled', false),
-            'fonnte_sender_number' => Setting::get('fonnte_sender_number', ''),
-            'fonnte_device_id' => Setting::get('fonnte_device_id', ''),
-            'fonnte_message_template' => Setting::get('fonnte_message_template_checkin', $this->getDefaultTemplate('checkin')),
+            'fonnte_message_template_checkin' => Setting::get('fonnte_message_template_checkin', $this->getDefaultTemplate('checkin')),
             'fonnte_message_template_checkout' => Setting::get('fonnte_message_template_checkout', $this->getDefaultTemplate('checkout')),
         ];
 
-        return view('admin.settings.whatsapp', compact('settings'));
+        // Get all devices
+        $devices = FonnteDevice::orderBy('priority', 'asc')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Get statistics
+        $stats = $this->fonnteService->getDeviceStatistics();
+
+        return view('admin.settings.whatsapp', compact('settings', 'devices', 'stats'));
     }
 
     /**
-     * Update WhatsApp settings
+     * Update WhatsApp settings (Global settings & templates)
      */
     public function update(Request $request)
     {
         $validated = $request->validate([
-            'fonnte_api_key' => 'required|string|max:255',
-            'fonnte_sender_number' => 'required|string|max:20',
-            'fonnte_device_id' => 'nullable|string|max:100',
-            'fonnte_enabled' => 'nullable',
-            'fonnte_message_template' => 'required|string', // Check-in template
-            'fonnte_message_template_checkout' => 'required|string', // Check-out template
+            'fonnte_message_template_checkin' => 'required|string',
+            'fonnte_message_template_checkout' => 'required|string',
         ]);
 
         try {
-            // Update all settings
-            Setting::set('fonnte_api_key', $validated['fonnte_api_key']);
-            Setting::set('fonnte_sender_number', $validated['fonnte_sender_number']);
-            Setting::set('fonnte_device_id', $validated['fonnte_device_id'] ?? '');
-            Setting::set('fonnte_message_template_checkin', $validated['fonnte_message_template']);
+            // Update templates
+            Setting::set('fonnte_message_template_checkin', $validated['fonnte_message_template_checkin']);
             Setting::set('fonnte_message_template_checkout', $validated['fonnte_message_template_checkout']);
             
-            // Clear cache
-            Setting::clearCache();
-            
-            // Handle enabled status
+            // Handle enabled status (checkbox)
             $wantsToEnable = $request->has('fonnte_enabled') && 
-                            in_array($request->input('fonnte_enabled'), ['on', '1', 'true', true], true);
+                            $request->input('fonnte_enabled') == '1';
             
             if ($wantsToEnable) {
-                $testService = new FonnteService();
-                $testResult = $testService->testConnection();
-                
-                if (!$testResult['success']) {
+                // Check if there are available devices
+                if (!$this->fonnteService->hasAvailableDevices()) {
                     Setting::set('fonnte_enabled', false);
                     Setting::clearCache();
                     
                     return redirect()
                         ->back()
-                        ->with('error', 'Pengaturan disimpan, tetapi notifikasi TIDAK DIAKTIFKAN. Alasan: ' . $testResult['message'])
+                        ->with('error', 'Tidak ada device yang tersedia. Silakan tambahkan device terlebih dahulu.')
                         ->withInput();
                 }
                 
@@ -82,7 +75,7 @@ class WhatsAppController extends Controller
                 Setting::clearCache();
                 
                 return redirect()
-                    ->route('admin.settings.whatsapp')
+                    ->route('admin.settings.whatsapp.index')
                     ->with('success', 'Pengaturan berhasil disimpan dan notifikasi WhatsApp DIAKTIFKAN! ✅');
             }
             
@@ -90,7 +83,7 @@ class WhatsAppController extends Controller
             Setting::clearCache();
 
             return redirect()
-                ->route('admin.settings.whatsapp')
+                ->route('admin.settings.whatsapp.index')
                 ->with('success', 'Pengaturan berhasil disimpan. Notifikasi WhatsApp tidak aktif.');
 
         } catch (\Exception $e) {
@@ -106,115 +99,307 @@ class WhatsAppController extends Controller
     }
 
     /**
-     * Test Fonnte connection
+     * Store new device
      */
-    public function testConnection(Request $request)
+    public function storeDevice(Request $request)
     {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'api_key' => 'required|string|max:255|unique:fonnte_devices,api_key',
+            'phone_number' => 'required|string|max:20',
+            'device_id' => 'nullable|string|max:100',
+            'priority' => 'required|integer|min:1|max:100',
+        ]);
+
         try {
-            // Get API key dan sender number dari form
-            $apiKey = $request->input('api_key') ?? Setting::get('fonnte_api_key');
-            $senderNumber = $request->input('sender_number') ?? Setting::get('fonnte_sender_number');
-            
-            if (empty($apiKey)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'API Key tidak boleh kosong'
-                ], 400);
-            }
-
-            if (empty($senderNumber)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Nomor WhatsApp pengirim tidak boleh kosong'
-                ], 400);
-            }
-
             // Normalize phone number
-            $targetNumber = $this->normalizePhoneNumber($senderNumber);
+            $validated['phone_number'] = $this->normalizePhoneNumber($validated['phone_number']);
+            
+            // Handle is_active checkbox
+            $validated['is_active'] = $request->input('is_active') == '1';
 
-            Log::info('Testing Fonnte connection', [
-                'api_key_length' => strlen($apiKey),
-                'api_key_preview' => substr($apiKey, 0, 10) . '...',
-                'target_number' => $targetNumber
+            Log::info('Creating new device', [
+                'name' => $validated['name'],
+                'phone' => $validated['phone_number'],
+                'is_active' => $validated['is_active']
             ]);
 
-            // Test dengan endpoint /validate dan target parameter
-            $response = Http::timeout(10)
-                ->withHeaders([
-                    'Authorization' => $apiKey,
-                ])
-                ->post('https://api.fonnte.com/validate', [
-                    'target' => $targetNumber
-                ]);
+            // Create device
+            $device = FonnteDevice::create($validated);
 
-            Log::info('Fonnte validate response', [
-                'status' => $response->status(),
-                'body' => $response->json()
+            Log::info('Device created successfully', [
+                'device_id' => $device->id,
+                'name' => $device->name
             ]);
 
-            if ($response->successful()) {
-                $result = $response->json();
-                
-                // Check status
-                if (isset($result['status']) && $result['status'] === true) {
-                    $deviceName = $result['device'] ?? $result['name'] ?? 'Connected Device';
-                    
-                    return response()->json([
-                        'success' => true,
-                        'message' => 'Koneksi berhasil! API Key valid.',
-                        'device_name' => $deviceName,
-                        'data' => $result
-                    ]);
-                }
+            // Test connection
+            $testResult = $this->fonnteService->testDevice($device);
 
-                // Check if there's an error message
-                if (isset($result['reason'])) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => $result['reason']
-                    ], 400);
-                }
+            if ($testResult['success']) {
+                return redirect()
+                    ->route('admin.settings.whatsapp.index')
+                    ->with('success', 'Device berhasil ditambahkan dan terhubung! ✅');
+            } else {
+                return redirect()
+                    ->route('admin.settings.whatsapp.index')
+                    ->with('warning', 'Device berhasil ditambahkan, tapi koneksi gagal: ' . $testResult['message']);
+            }
 
-                // Status false
-                if (isset($result['status']) && $result['status'] === false) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => $result['reason'] ?? 'Validasi gagal'
-                    ], 400);
-                }
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Validation failed for device creation', [
+                'errors' => $e->errors()
+            ]);
 
-                // No explicit status but successful response
+            return redirect()
+                ->back()
+                ->withErrors($e->errors())
+                ->with('error', 'Validasi gagal. Periksa data yang diinput.')
+                ->withInput();
+
+        } catch (\Exception $e) {
+            Log::error('Failed to create device', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return redirect()
+                ->back()
+                ->with('error', 'Gagal menambahkan device: ' . $e->getMessage())
+                ->withInput();
+        }
+    }
+
+    /**
+     * Update device
+     */
+    public function updateDevice(Request $request, FonnteDevice $device)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'api_key' => 'required|string|max:255|unique:fonnte_devices,api_key,' . $device->id,
+            'phone_number' => 'required|string|max:20',
+            'device_id' => 'nullable|string|max:100',
+            'priority' => 'required|integer|min:1|max:100',
+        ]);
+
+        try {
+            // Normalize phone number
+            $validated['phone_number'] = $this->normalizePhoneNumber($validated['phone_number']);
+            
+            // Handle is_active checkbox
+            $validated['is_active'] = $request->input('is_active') == '1';
+
+            // Update device
+            $device->update($validated);
+
+            // Return JSON for AJAX request
+            if ($request->wantsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'API Key valid',
-                    'device_name' => 'Connected',
-                    'data' => $result
+                    'message' => 'Device berhasil diupdate!'
                 ]);
             }
 
-            // HTTP Error
-            $errorBody = $response->json();
-            $errorMessage = $errorBody['reason'] ?? 'Invalid API Key atau koneksi gagal';
-            
-            Log::warning('Fonnte test connection failed', [
-                'status' => $response->status(),
-                'error' => $errorMessage
+            return redirect()
+                ->route('admin.settings.whatsapp.index')
+                ->with('success', 'Device berhasil diupdate!');
+
+        } catch (\Exception $e) {
+            Log::error('Failed to update device', [
+                'device_id' => $device->id,
+                'error' => $e->getMessage()
             ]);
+
+            // Return JSON for AJAX request
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal update device: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return redirect()
+                ->back()
+                ->with('error', 'Gagal update device: ' . $e->getMessage())
+                ->withInput();
+        }
+    }
+
+    /**
+ * Delete device - Enhanced with debugging
+ */
+public function deleteDevice(Request $request, $deviceId)
+{
+    try {
+        // Log incoming request
+        Log::info('Delete device request received', [
+            'device_id_param' => $deviceId,
+            'request_method' => $request->method(),
+            'is_ajax' => $request->ajax(),
+            'wants_json' => $request->wantsJson(),
+            'headers' => $request->headers->all()
+        ]);
+
+        // Find device manually by ID
+        $device = FonnteDevice::find($deviceId);
+        
+        if (!$device) {
+            Log::warning('Device not found', ['device_id' => $deviceId]);
+            
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Device tidak ditemukan'
+                ], 404);
+            }
+
+            return redirect()
+                ->back()
+                ->with('error', 'Device tidak ditemukan');
+        }
+
+        $deviceName = $device->name;
+        
+        Log::info('Deleting device', [
+            'device_id' => $device->id,
+            'name' => $deviceName
+        ]);
+
+        $device->delete();
+
+        Log::info('Device deleted successfully', [
+            'device_id' => $device->id,
+            'name' => $deviceName
+        ]);
+
+        // Always return JSON for AJAX request
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Device '$deviceName' berhasil dihapus!"
+            ], 200);
+        }
+
+        return redirect()
+            ->route('admin.settings.whatsapp.index')
+            ->with('success', "Device '$deviceName' berhasil dihapus!");
+
+    } catch (\Exception $e) {
+        Log::error('Failed to delete device', [
+            'device_id' => $deviceId ?? null,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghapus device: ' . $e->getMessage()
+            ], 500);
+        }
+
+        return redirect()
+            ->back()
+            ->with('error', 'Gagal menghapus device: ' . $e->getMessage());
+    }
+}
+
+    /**
+     * Test device connection
+     */
+    public function testDeviceConnection(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'device_id' => 'required|exists:fonnte_devices,id'
+            ]);
+
+            $device = FonnteDevice::findOrFail($validated['device_id']);
+
+            $result = $this->fonnteService->testDevice($device);
+
+            if ($result['success']) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Koneksi berhasil!',
+                    'device_name' => $result['device_name'] ?? 'Connected',
+                    'status' => $device->fresh()->status
+                ]);
+            }
 
             return response()->json([
                 'success' => false,
-                'message' => $errorMessage
+                'message' => $result['message'] ?? 'Koneksi gagal'
             ], 400);
 
         } catch (\Exception $e) {
-            Log::error('Test connection error', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+            Log::error('Test device connection error', [
+                'error' => $e->getMessage()
             ]);
 
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Test all devices
+     */
+    public function testAllDevices()
+    {
+        try {
+            $results = $this->fonnteService->testAllDevices();
+
+            $successCount = collect($results)->where('success', true)->count();
+            $totalCount = count($results);
+
+            return response()->json([
+                'success' => true,
+                'message' => "$successCount dari $totalCount device berhasil terhubung",
+                'results' => $results
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Test all devices error', [
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Toggle device active status
+     */
+    public function toggleDevice(FonnteDevice $device)
+    {
+        try {
+            $device->update([
+                'is_active' => !$device->is_active
+            ]);
+
+            $status = $device->is_active ? 'diaktifkan' : 'dinonaktifkan';
+
+            return response()->json([
+                'success' => true,
+                'message' => "Device berhasil $status",
+                'is_active' => $device->is_active
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Toggle device active error', [
+                'device_id' => $device->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengubah status: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -229,22 +414,17 @@ class WhatsAppController extends Controller
         ]);
 
         try {
-            // Clear cache dulu untuk get latest settings
+            // Clear cache
             Setting::clearCache();
             
-            // Recreate service dengan setting terbaru
+            // Recreate service
             $fonnteService = new FonnteService();
             
             // Check if service is ready
             if (!$fonnteService->isEnabled()) {
-                Log::warning('Fonnte service not enabled for test message', [
-                    'api_key_exists' => !empty(Setting::get('fonnte_api_key')),
-                    'enabled' => Setting::get('fonnte_enabled', false)
-                ]);
-                
                 return response()->json([
                     'success' => false,
-                    'message' => 'Notifikasi WhatsApp belum diaktifkan. Silakan centang "Aktifkan Notifikasi WhatsApp" dan simpan terlebih dahulu.'
+                    'message' => 'Notifikasi WhatsApp belum diaktifkan atau tidak ada device tersedia.'
                 ], 400);
             }
 
@@ -252,9 +432,7 @@ class WhatsAppController extends Controller
             $phoneNumber = $this->normalizePhoneNumber($validated['phone_number']);
 
             Log::info('Sending test message', [
-                'to' => $phoneNumber,
-                'api_key_exists' => !empty(Setting::get('fonnte_api_key')),
-                'enabled' => Setting::get('fonnte_enabled', false)
+                'to' => $phoneNumber
             ]);
 
             $testMessage = "📱 *Test Notifikasi*\n\n";
@@ -263,19 +441,19 @@ class WhatsAppController extends Controller
             $testMessage .= "Waktu: " . now()->format('d F Y, H:i:s') . "\n\n";
             $testMessage .= "_Pesan otomatis dari Sistem Presensi_";
 
-            $result = $fonnteService->sendMessage(
-                $phoneNumber,
-                $testMessage
-            );
+            $result = $fonnteService->sendMessage($phoneNumber, $testMessage);
 
             if ($result['success']) {
                 Log::info('Test message sent successfully', [
-                    'to' => $phoneNumber
+                    'to' => $phoneNumber,
+                    'device_id' => $result['device_id'] ?? null,
+                    'device_name' => $result['device_name'] ?? null
                 ]);
                 
                 return response()->json([
                     'success' => true,
-                    'message' => 'Pesan test berhasil dikirim ke ' . $phoneNumber
+                    'message' => 'Pesan test berhasil dikirim ke ' . $phoneNumber . ' via ' . ($result['device_name'] ?? 'device'),
+                    'device_name' => $result['device_name'] ?? 'Unknown'
                 ]);
             }
 
@@ -308,15 +486,12 @@ class WhatsAppController extends Controller
      */
     protected function normalizePhoneNumber($phone)
     {
-        // Remove all non-numeric characters
         $phone = preg_replace('/[^0-9]/', '', $phone);
         
-        // Convert 08xxx to 628xxx
         if (substr($phone, 0, 1) === '0') {
             $phone = '62' . substr($phone, 1);
         }
         
-        // Add 62 if not present
         if (substr($phone, 0, 2) !== '62') {
             $phone = '62' . $phone;
         }

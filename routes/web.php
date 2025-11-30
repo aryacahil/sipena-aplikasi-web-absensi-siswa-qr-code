@@ -71,6 +71,12 @@ Route::middleware(['auth', 'user-role:admin'])->group(function() {
         ->name('admin.kelas.remove-siswa');
     Route::delete('admin/kelas/{kela}/remove-all-siswa', [KelasController::class, 'removeAllSiswa'])
         ->name('admin.kelas.remove-all-siswa');
+    Route::get('admin/kelas/list-all', [KelasController::class, 'listAll'])
+        ->name('admin.kelas.list-all');
+    Route::get('admin/kelas/all-siswa', [KelasController::class, 'allSiswa'])
+        ->name('admin.kelas.all-siswa');
+    Route::post('admin/kelas/pindah-siswa', [KelasController::class, 'pindahSiswa'])
+        ->name('admin.kelas.pindah-siswa');
     
     Route::resource('admin/kelas', KelasController::class)->names([
         'index' => 'admin.kelas.index',
@@ -82,7 +88,7 @@ Route::middleware(['auth', 'user-role:admin'])->group(function() {
         'destroy' => 'admin.kelas.destroy',
     ]);
 
-    // QR CODE ROUTES - UPDATED dengan parameter type
+    // QR CODE ROUTES
     Route::get('admin/qrcode', [App\Http\Controllers\Admin\QRCodeController::class, 'index'])
         ->name('admin.qrcode.index');
     Route::get('admin/qrcode/create', [App\Http\Controllers\Admin\QRCodeController::class, 'create'])
@@ -91,7 +97,6 @@ Route::middleware(['auth', 'user-role:admin'])->group(function() {
         ->name('admin.qrcode.store');
     Route::get('admin/qrcode/{qrcode}', [App\Http\Controllers\Admin\QRCodeController::class, 'show'])
         ->name('admin.qrcode.show');
-    // UPDATED: Download dengan parameter type (checkin/checkout)
     Route::get('admin/qrcode/{qrcode}/download', [App\Http\Controllers\Admin\QRCodeController::class, 'download'])
         ->name('admin.qrcode.download');
     Route::patch('admin/qrcode/{qrcode}/status', [App\Http\Controllers\Admin\QRCodeController::class, 'updateStatus'])
@@ -127,22 +132,46 @@ Route::middleware(['auth', 'user-role:admin'])->group(function() {
     Route::post('admin/import/siswa', [App\Http\Controllers\Admin\ExportImportController::class, 'importSiswa'])
         ->name('admin.import.siswa');
 
-    // WHATSAPP SETTINGS ROUTES
-    Route::get('admin/settings/whatsapp', [App\Http\Controllers\Admin\WhatsAppController::class, 'index'])
-        ->name('admin.settings.whatsapp');
-    Route::put('admin/settings/whatsapp', [App\Http\Controllers\Admin\WhatsAppController::class, 'update'])
-        ->name('admin.settings.whatsapp.update');
-    Route::post('admin/settings/whatsapp/test-connection', [App\Http\Controllers\Admin\WhatsAppController::class, 'testConnection'])
-        ->name('admin.settings.whatsapp.test-connection');
-    Route::post('admin/settings/whatsapp/test-message', [App\Http\Controllers\Admin\WhatsAppController::class, 'testMessage'])
-        ->name('admin.settings.whatsapp.test-message');
+    // ==================== WHATSAPP SETTINGS ROUTES ====================
+// Main WhatsApp settings page (index)
+Route::get('admin/settings/whatsapp', [App\Http\Controllers\Admin\WhatsAppController::class, 'index'])
+    ->name('admin.settings.whatsapp.index');
+
+// Update global settings & templates
+Route::put('admin/settings/whatsapp', [App\Http\Controllers\Admin\WhatsAppController::class, 'update'])
+    ->name('admin.settings.whatsapp.update');
+
+// Device Management Routes
+Route::post('admin/settings/whatsapp/devices', [App\Http\Controllers\Admin\WhatsAppController::class, 'storeDevice'])
+    ->name('admin.settings.whatsapp.devices.store');
+
+Route::put('admin/settings/whatsapp/devices/{device}', [App\Http\Controllers\Admin\WhatsAppController::class, 'updateDevice'])
+    ->name('admin.settings.whatsapp.devices.update');
+
+// DELETE route - use {id} instead of {device} for manual handling
+Route::delete('admin/settings/whatsapp/devices/{id}', [App\Http\Controllers\Admin\WhatsAppController::class, 'deleteDevice'])
+    ->name('admin.settings.whatsapp.devices.destroy');
+
+Route::post('admin/settings/whatsapp/devices/{device}/toggle', [App\Http\Controllers\Admin\WhatsAppController::class, 'toggleDevice'])
+    ->name('admin.settings.whatsapp.devices.toggle');
+
+// Device Testing Routes
+Route::post('admin/settings/whatsapp/devices/test-connection', [App\Http\Controllers\Admin\WhatsAppController::class, 'testDeviceConnection'])
+    ->name('admin.settings.whatsapp.devices.test-connection');
+
+Route::post('admin/settings/whatsapp/devices/test-all', [App\Http\Controllers\Admin\WhatsAppController::class, 'testAllDevices'])
+    ->name('admin.settings.whatsapp.devices.test-all');
+
+// Test Message Route
+Route::post('admin/settings/whatsapp/test-message', [App\Http\Controllers\Admin\WhatsAppController::class, 'testMessage'])
+    ->name('admin.settings.whatsapp.test-message');
 });
 
 // ==================== GURU ROUTES ====================
 Route::middleware(['auth', 'user-role:guru'])->group(function() {
     Route::get('/guru/home', [HomeController::class, 'guruHome'])->name('guru.home');
 
-    // QR CODE ROUTES GURU - UPDATED dengan parameter type
+    // QR CODE ROUTES GURU
     Route::get('guru/qrcode', [App\Http\Controllers\Guru\QRCodeController::class, 'index'])
         ->name('guru.qrcode.index');
     Route::get('guru/qrcode/create', [App\Http\Controllers\Guru\QRCodeController::class, 'create'])
@@ -151,7 +180,6 @@ Route::middleware(['auth', 'user-role:guru'])->group(function() {
         ->name('guru.qrcode.store');
     Route::get('guru/qrcode/{qrcode}', [App\Http\Controllers\Guru\QRCodeController::class, 'show'])
         ->name('guru.qrcode.show');
-    // UPDATED: Download dengan parameter type (checkin/checkout)
     Route::get('guru/qrcode/{qrcode}/download', [App\Http\Controllers\Guru\QRCodeController::class, 'download'])
         ->name('guru.qrcode.download');
     Route::patch('guru/qrcode/{qrcode}/status', [App\Http\Controllers\Guru\QRCodeController::class, 'updateStatus'])
@@ -190,7 +218,7 @@ Route::middleware(['auth', 'user-role:guru'])->group(function() {
 Route::middleware(['auth', 'user-role:siswa'])->group(function() {
     Route::get('/siswa/home', [HomeController::class, 'siswaHome'])->name('siswa.home');
     
-    // Presensi Routes - UPDATED untuk handle checkin/checkout
+    // Presensi Routes
     Route::get('siswa/presensi', [\App\Http\Controllers\Siswa\PresensiController::class, 'index'])
         ->name('siswa.presensi.index');
     Route::post('siswa/presensi/validate', [\App\Http\Controllers\Siswa\PresensiController::class, 'validateQRCode'])
