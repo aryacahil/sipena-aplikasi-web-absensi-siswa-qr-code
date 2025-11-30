@@ -127,8 +127,12 @@ document.addEventListener('DOMContentLoaded', function() {
                             <h6 class="mb-0">
                                 <i class="bi bi-people-fill me-2"></i>Daftar Siswa
                             </h6>
+                            <div class="d-flex gap-2">
                             <button class="btn btn-sm btn-primary btn-add-siswa-modal" data-kelas-id="${kelas.id}">
                                 <i class="bi bi-plus-circle me-1"></i>Tambah Siswa
+                            </button>
+                            <button class="btn btn-sm btn-primary btn-add-siswa-modal" data-kelas-id="${kelas.id}">
+                                <i class="bi bi-plus-circle me-1"></i>Pindah Kelas
                             </button>
                         </div>
 

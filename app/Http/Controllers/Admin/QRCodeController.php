@@ -46,97 +46,153 @@ class QRCodeController extends Controller
 
     public function store(Request $request)
     {
+        Log::info('QRCode store method called', [
+            'request_data' => $request->all()
+        ]);
+
+        // ✅ VALIDASI YANG BENAR
         $validated = $request->validate([
             'kelas_id' => 'required|exists:kelas,id',
             'tanggal' => 'required|date',
+            // Waktu Check-In
             'jam_checkin_mulai' => 'required|date_format:H:i',
             'jam_checkin_selesai' => 'required|date_format:H:i|after:jam_checkin_mulai',
+            // Waktu Check-Out
             'jam_checkout_mulai' => 'required|date_format:H:i|after:jam_checkin_selesai',
             'jam_checkout_selesai' => 'required|date_format:H:i|after:jam_checkout_mulai',
+            // Lokasi Checkin (REQUIRED)
             'latitude_checkin' => 'required|numeric|between:-90,90',
             'longitude_checkin' => 'required|numeric|between:-180,180',
             'radius_checkin' => 'required|integer|min:50|max:1000',
+            // Lokasi Checkout (OPTIONAL)
             'latitude_checkout' => 'nullable|numeric|between:-90,90',
             'longitude_checkout' => 'nullable|numeric|between:-180,180',
             'radius_checkout' => 'nullable|integer|min:50|max:1000',
         ]);
 
-        // ========================================
-        // HAPUS SESSION & QR CODE LAMA UNTUK KELAS YANG SAMA
-        // ========================================
-        $oldSessions = PresensiSession::where('kelas_id', $validated['kelas_id'])->get();
-        
-        foreach ($oldSessions as $oldSession) {
-            try {
-                // Hapus QR Code terkait
-                if ($oldSession->qrCode) {
-                    $this->deleteQRCodeFiles($oldSession->qrCode);
-                    $oldSession->qrCode->delete();
+        try {
+            Log::info('Validation passed', $validated);
+
+            // ========================================
+            // HAPUS SESSION & QR CODE LAMA
+            // ========================================
+            $oldSessions = PresensiSession::where('kelas_id', $validated['kelas_id'])->get();
+            
+            Log::info('Found old sessions to delete', ['count' => $oldSessions->count()]);
+            
+            foreach ($oldSessions as $oldSession) {
+                try {
+                    if ($oldSession->qrCode) {
+                        $this->deleteQRCodeFiles($oldSession->qrCode);
+                        $oldSession->qrCode->delete();
+                    }
+                    $oldSession->delete();
+                    
+                    Log::info('Old session deleted', [
+                        'session_id' => $oldSession->id
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to delete old session', [
+                        'session_id' => $oldSession->id,
+                        'error' => $e->getMessage()
+                    ]);
                 }
-                
-                // Hapus session
-                $oldSession->delete();
-                
-                Log::info('Old Session and QR Code deleted', [
-                    'session_id' => $oldSession->id,
-                    'kelas_id' => $oldSession->kelas_id,
-                ]);
-            } catch (\Exception $e) {
-                Log::error('Failed to delete old session', [
-                    'session_id' => $oldSession->id,
-                    'error' => $e->getMessage()
-                ]);
             }
-        }
 
-        // ========================================
-        // BUAT SESSION BARU
-        // ========================================
-        $validated['created_by'] = auth()->id();
-        $validated['status'] = 'active';
+            // ========================================
+            // BUAT SESSION BARU
+            // ========================================
+            $validated['created_by'] = auth()->id();
+            $validated['status'] = 'active';
 
-        // Set default checkout location same as checkin if not provided
-        if (empty($validated['latitude_checkout'])) {
-            $validated['latitude_checkout'] = $validated['latitude_checkin'];
-        }
-        if (empty($validated['longitude_checkout'])) {
-            $validated['longitude_checkout'] = $validated['longitude_checkin'];
-        }
-        if (empty($validated['radius_checkout'])) {
-            $validated['radius_checkout'] = $validated['radius_checkin'];
-        }
+            // Set default checkout = checkin jika tidak diisi
+            if (empty($validated['latitude_checkout'])) {
+                $validated['latitude_checkout'] = $validated['latitude_checkin'];
+            }
+            if (empty($validated['longitude_checkout'])) {
+                $validated['longitude_checkout'] = $validated['longitude_checkin'];
+            }
+            if (empty($validated['radius_checkout'])) {
+                $validated['radius_checkout'] = $validated['radius_checkin'];
+            }
 
-        $session = PresensiSession::create($validated);
+            Log::info('Creating new session', $validated);
 
-        // ========================================
-        // BUAT QR CODE (Checkin & Checkout)
-        // ========================================
-        $qrCodeCheckin = Str::random(32);
-        $qrCodeCheckout = Str::random(32);
+            $session = PresensiSession::create($validated);
 
-        $qrCode = QRCode::create([
-            'session_id' => $session->id,
-            'qr_code_checkin' => $qrCodeCheckin,
-            'qr_code_checkout' => $qrCodeCheckout,
-            'status' => 'active',
-        ]);
+            Log::info('Session created', [
+                'session_id' => $session->id,
+                'kelas_id' => $session->kelas_id
+            ]);
 
-        // Generate dan simpan QR code files
-        $generatedCheckin = $this->generateAndSaveQRCode($qrCodeCheckin, 'checkin');
-        $generatedCheckout = $this->generateAndSaveQRCode($qrCodeCheckout, 'checkout');
-        
-        if (!$generatedCheckin || !$generatedCheckout) {
-            // Rollback jika gagal generate
-            $qrCode->delete();
-            $session->delete();
+            // ========================================
+            // BUAT QR CODE
+            // ========================================
+            $qrCodeCheckin = Str::random(32);
+            $qrCodeCheckout = Str::random(32);
+
+            Log::info('Generating QR codes', [
+                'checkin_length' => strlen($qrCodeCheckin),
+                'checkout_length' => strlen($qrCodeCheckout)
+            ]);
+
+            $qrCode = QRCode::create([
+                'session_id' => $session->id,
+                'qr_code_checkin' => $qrCodeCheckin,
+                'qr_code_checkout' => $qrCodeCheckout,
+                'status' => 'active',
+            ]);
+
+            Log::info('QR Code record created', [
+                'qr_code_id' => $qrCode->id
+            ]);
+
+            // Generate files
+            $generatedCheckin = $this->generateAndSaveQRCode($qrCodeCheckin, 'checkin');
+            $generatedCheckout = $this->generateAndSaveQRCode($qrCodeCheckout, 'checkout');
+            
+            if (!$generatedCheckin || !$generatedCheckout) {
+                Log::error('Failed to generate QR code files');
+                
+                // Rollback
+                $qrCode->delete();
+                $session->delete();
+                
+                return redirect()
+                    ->route('admin.qrcode.index')
+                    ->with('error', 'Gagal generate QR Code files');
+            }
+
+            Log::info('QR codes generated successfully');
+
             return redirect()
-                ->route('admin.qrcode.index')
-                ->with('error', 'Gagal generate QR Code');
+                ->route('admin.qrcode.show', $session->id)
+                ->with('success', 'QR Code berhasil dibuat');
+                
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Validation failed', [
+                'errors' => $e->errors()
+            ]);
+            
+            return redirect()
+                ->back()
+                ->withErrors($e->errors())
+                ->withInput()
+                ->with('error', 'Validasi gagal: ' . implode(', ', array_map(fn($err) => implode(', ', $err), $e->errors())));
+                
+        } catch (\Exception $e) {
+            Log::error('Error in store method', [
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'Gagal membuat QR Code: ' . $e->getMessage());
         }
-
-        return redirect()
-            ->route('admin.qrcode.show', $session->id)
-            ->with('success', 'QR Code berhasil dibuat');
     }
 
     public function show(PresensiSession $qrcode)
@@ -144,7 +200,7 @@ class QRCodeController extends Controller
         try {
             $qrcode->load(['kelas.jurusan', 'creator', 'presensis.siswa', 'qrCode']);
             
-            // Generate QR Code SVG untuk checkin
+            // Generate QR Code SVG
             $qrCodeCheckinSvg = '';
             $qrCodeCheckoutSvg = '';
             
@@ -202,7 +258,10 @@ class QRCodeController extends Controller
                         ],
                         'presensis' => $qrcode->presensis->map(function($presensi) {
                             return [
-                                'siswa' => ['name' => $presensi->siswa->name],
+                                'siswa' => [
+                                    'name' => $presensi->siswa->name,
+                                    'nis' => $presensi->siswa->nis,
+                                ],
                                 'status' => $presensi->status,
                                 'waktu_checkin' => $presensi->waktu_checkin ? $presensi->waktu_checkin->format('H:i') : null,
                                 'waktu_checkout' => $presensi->waktu_checkout ? $presensi->waktu_checkout->format('H:i') : null,
@@ -211,7 +270,7 @@ class QRCodeController extends Controller
                         'siswa_belum_presensi' => $siswaBelumPresensi->map(function($siswa) {
                             return [
                                 'name' => $siswa->name,
-                                'email' => $siswa->email,
+                                'nis' => $siswa->nis,
                             ];
                         }),
                         'stats' => $stats,
@@ -249,7 +308,7 @@ class QRCodeController extends Controller
     public function download(PresensiSession $qrcode, Request $request)
     {
         // Validate type parameter
-        $type = $request->input('type', 'checkin'); // default checkin
+        $type = $request->input('type', 'checkin');
         
         if (!in_array($type, ['checkin', 'checkout'])) {
             return back()->with('error', 'Tipe QR Code tidak valid');
@@ -308,7 +367,6 @@ class QRCodeController extends Controller
 
         $qrcode->update($validated);
 
-        // Jika diubah ke expired, update QR code status juga
         if ($validated['status'] === 'expired' && $qrcode->qrCode) {
             $qrcode->qrCode->update(['status' => 'expired']);
         }
@@ -322,7 +380,6 @@ class QRCodeController extends Controller
     public function destroy(PresensiSession $qrcode)
     {
         try {
-            // Hapus QR Code files dan record
             if ($qrcode->qrCode) {
                 $this->deleteQRCodeFiles($qrcode->qrCode);
                 $qrcode->qrCode->delete();
@@ -348,7 +405,6 @@ class QRCodeController extends Controller
                 Storage::disk('public')->makeDirectory($folder);
             }
 
-            // Generate QR code SVG
             $qrCode = QrCodeFacade::format('svg')
                 ->size(500)
                 ->errorCorrection('H')
@@ -384,14 +440,12 @@ class QRCodeController extends Controller
         try {
             $deleted = false;
 
-            // Delete checkin QR code
             $checkinPath = "qrcodes/{$qrCode->qr_code_checkin}-checkin.svg";
             if (Storage::disk('public')->exists($checkinPath)) {
                 Storage::disk('public')->delete($checkinPath);
                 $deleted = true;
             }
 
-            // Delete checkout QR code
             $checkoutPath = "qrcodes/{$qrCode->qr_code_checkout}-checkout.svg";
             if (Storage::disk('public')->exists($checkoutPath)) {
                 Storage::disk('public')->delete($checkoutPath);

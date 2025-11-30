@@ -189,7 +189,7 @@ class PresensiController extends Controller
                 ], 400);
             }
 
-            // Validasi presensi siswa berdasarkan tipe
+            // ✅ VALIDASI PRESENSI SISWA
             $siswa = Auth::user();
             $existingPresensi = Presensi::where('siswa_id', $siswa->id)
                 ->where('kelas_id', $session->kelas_id)
@@ -205,16 +205,9 @@ class PresensiController extends Controller
                     ], 400);
                 }
             } else {
-                // Validasi: Harus checkin dulu
-                if (!$existingPresensi || !$existingPresensi->hasCheckedIn()) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Anda harus check-in terlebih dahulu sebelum check-out'
-                    ], 400);
-                }
-                
+                // ✅ CHECKOUT TIDAK HARUS CHECKIN DULU
                 // Validasi: Sudah checkout?
-                if ($existingPresensi->hasCheckedOut()) {
+                if ($existingPresensi && $existingPresensi->hasCheckedOut()) {
                     return response()->json([
                         'success' => false,
                         'message' => 'Anda sudah melakukan check-out pada pukul ' . $existingPresensi->waktu_checkout->format('H:i')
@@ -315,7 +308,7 @@ class PresensiController extends Controller
                 ->whereDate('tanggal_presensi', $session->tanggal)
                 ->first();
 
-            // Validasi SERVER-SIDE berdasarkan tipe
+            // ✅ VALIDASI SERVER-SIDE 
             if ($type === 'checkin') {
                 if ($existingPresensi && $existingPresensi->hasCheckedIn()) {
                     return response()->json([
@@ -324,14 +317,8 @@ class PresensiController extends Controller
                     ], 400);
                 }
             } else {
-                if (!$existingPresensi || !$existingPresensi->hasCheckedIn()) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Anda harus check-in terlebih dahulu sebelum check-out'
-                    ], 400);
-                }
-                
-                if ($existingPresensi->hasCheckedOut()) {
+                // ✅ CHECKOUT TIDAK HARUS CHECKIN DULU
+                if ($existingPresensi && $existingPresensi->hasCheckedOut()) {
                     return response()->json([
                         'success' => false,
                         'message' => 'Anda sudah melakukan check-out pada pukul ' . $existingPresensi->waktu_checkout->format('H:i')
@@ -389,7 +376,7 @@ class PresensiController extends Controller
                 $keterangan .= " | GPS Accuracy: {$validated['gps_accuracy']}m";
             }
 
-            // Proses Checkin atau Checkout
+            // ✅ PROSES CHECKIN ATAU CHECKOUT
             if ($type === 'checkin') {
                 // Buat presensi baru
                 $presensi = Presensi::create([
@@ -422,43 +409,85 @@ class PresensiController extends Controller
                     'data' => [
                         'presensi_id' => $presensi->id,
                         'type' => 'checkin',
-                        'waktu_checkin' => $presensi->waktu_checkin->format('H:i:s'),
+                        'status' => $presensi->status,
+                        'waktu' => $presensi->waktu_checkin->format('H:i:s'),
                         'tanggal' => $presensi->tanggal_presensi->format('d M Y'),
                         'distance' => $distance,
                     ]
                 ]);
 
             } else {
-                // Update presensi dengan checkout
-                $existingPresensi->update([
-                    'waktu_checkout' => now(),
-                    'latitude_checkout' => $validated['latitude'],
-                    'longitude_checkout' => $validated['longitude'],
-                    'is_valid_location_checkout' => $isValidLocation,
-                    'keterangan_checkout' => $keterangan,
-                ]);
+                // ✅ CHECKOUT: Bisa update existing ATAU buat baru
+                if ($existingPresensi) {
+                    // Update presensi yang sudah ada
+                    $existingPresensi->update([
+                        'waktu_checkout' => now(),
+                        'latitude_checkout' => $validated['latitude'],
+                        'longitude_checkout' => $validated['longitude'],
+                        'is_valid_location_checkout' => $isValidLocation,
+                        'keterangan_checkout' => $keterangan,
+                    ]);
 
-                Log::info('Checkout updated successfully', [
-                    'presensi_id' => $existingPresensi->id,
-                    'siswa_id' => $siswa->id,
-                    'distance' => $distance,
-                ]);
-
-                // Kirim notifikasi checkout
-                $this->sendWhatsAppNotification($existingPresensi, 'checkout');
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Check-out berhasil dicatat!',
-                    'data' => [
+                    Log::info('Checkout updated successfully', [
                         'presensi_id' => $existingPresensi->id,
-                        'type' => 'checkout',
-                        'waktu_checkin' => $existingPresensi->waktu_checkin->format('H:i:s'),
-                        'waktu_checkout' => $existingPresensi->waktu_checkout->format('H:i:s'),
-                        'tanggal' => $existingPresensi->tanggal_presensi->format('d M Y'),
+                        'siswa_id' => $siswa->id,
                         'distance' => $distance,
-                    ]
-                ]);
+                    ]);
+
+                    // Kirim notifikasi checkout
+                    $this->sendWhatsAppNotification($existingPresensi, 'checkout');
+
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Check-out berhasil dicatat!',
+                        'data' => [
+                            'presensi_id' => $existingPresensi->id,
+                            'type' => 'checkout',
+                            'status' => $existingPresensi->status,
+                            'waktu' => $existingPresensi->waktu_checkout->format('H:i:s'),
+                            'tanggal' => $existingPresensi->tanggal_presensi->format('d M Y'),
+                            'distance' => $distance,
+                        ]
+                    ]);
+                } else {
+                    // Buat presensi baru (checkout tanpa checkin)
+                    $presensi = Presensi::create([
+                        'session_id' => $session->id,
+                        'qr_code_id' => $qrCode->id,
+                        'kelas_id' => $session->kelas_id,
+                        'siswa_id' => $siswa->id,
+                        'tanggal_presensi' => $session->tanggal,
+                        'waktu_checkout' => now(),
+                        'status' => 'hadir',
+                        'latitude_checkout' => $validated['latitude'],
+                        'longitude_checkout' => $validated['longitude'],
+                        'is_valid_location_checkout' => $isValidLocation,
+                        'keterangan_checkout' => $keterangan,
+                        'metode' => 'qr',
+                    ]);
+
+                    Log::info('Checkout created without checkin', [
+                        'presensi_id' => $presensi->id,
+                        'siswa_id' => $siswa->id,
+                        'distance' => $distance,
+                    ]);
+
+                    // Kirim notifikasi checkout
+                    $this->sendWhatsAppNotification($presensi, 'checkout');
+
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Check-out berhasil dicatat!',
+                        'data' => [
+                            'presensi_id' => $presensi->id,
+                            'type' => 'checkout',
+                            'status' => $presensi->status,
+                            'waktu' => $presensi->waktu_checkout->format('H:i:s'),
+                            'tanggal' => $presensi->tanggal_presensi->format('d M Y'),
+                            'distance' => $distance,
+                        ]
+                    ]);
+                }
             }
 
         } catch (\Illuminate\Validation\ValidationException $e) {

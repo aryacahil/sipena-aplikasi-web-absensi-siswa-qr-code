@@ -211,7 +211,7 @@ class PresensiController extends Controller
                     'presensi' => [
                         'id' => $presensi->id,
                         'status' => $presensi->status,
-                        'waktu_checkin' => $presensi->waktu_checkin->format('H:i:s'), // FIXED
+                        'waktu_checkin' => $presensi->waktu_checkin?->format('H:i:s') ?? '-',
                         'metode' => $presensi->metode,
                     ],
                 ],

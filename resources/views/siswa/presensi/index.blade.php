@@ -16,22 +16,59 @@
     <div class="row mt-6">
         <div class="col-lg-8 mx-auto">
             
+            {{-- ✅ ALERT BARU: Informative, tidak blocking --}}
             @if($todayPresensi)
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <div class="alert alert-info alert-dismissible fade show" role="alert">
                 <div class="d-flex align-items-center">
-                    <i class="bi bi-check-circle-fill fs-2 me-3"></i>
+                    <i class="bi bi-info-circle-fill fs-2 me-3"></i>
                     <div class="flex-grow-1">
-                        <h5 class="alert-heading mb-1">Anda Sudah Presensi Hari Ini!</h5>
+                        <h5 class="alert-heading mb-1">Status Presensi Hari Ini</h5>
                         <p class="mb-2">
-                            <strong>Status:</strong> {{ ucfirst($todayPresensi->status) }} | 
-                            <strong>Waktu:</strong> {{ $todayPresensi->created_at->format('H:i:s') }} |
-                            <strong>Metode:</strong> {{ $todayPresensi->metode == 'qr' ? 'QR Code' : 'Manual' }}
+                            @if($todayPresensi->waktu_checkin)
+                                <strong>✅ Check-In:</strong> {{ $todayPresensi->waktu_checkin->format('H:i:s') }}
+                            @else
+                                <strong>⏳ Check-In:</strong> Belum
+                            @endif
+                            
+                            @if($todayPresensi->waktu_checkout)
+                                | <strong>✅ Check-Out:</strong> {{ $todayPresensi->waktu_checkout->format('H:i:s') }}
+                            @else
+                                | <strong>⏳ Check-Out:</strong> Belum
+                            @endif
                         </p>
-                        @if(!$todayPresensi->is_valid_location)
-                        <small class="text-warning">
-                            <i class="bi bi-exclamation-triangle me-1"></i>
-                            Catatan: Lokasi di luar radius yang ditentukan
+                        
+                        <small class="text-muted">
+                            @if(!$todayPresensi->waktu_checkin)
+                                <i class="bi bi-arrow-right-circle me-1"></i>Anda bisa scan QR Check-In
+                            @elseif(!$todayPresensi->waktu_checkout)
+                                <i class="bi bi-arrow-right-circle me-1"></i>Anda bisa scan QR Check-Out
+                            @else
+                                <i class="bi bi-check-circle me-1"></i>Presensi hari ini sudah lengkap
+                            @endif
                         </small>
+                        
+                        {{-- Validasi lokasi --}}
+                        @php
+                            $hasInvalidCheckin = $todayPresensi->waktu_checkin && !$todayPresensi->is_valid_location_checkin;
+                            $hasInvalidCheckout = $todayPresensi->waktu_checkout && !$todayPresensi->is_valid_location_checkout;
+                        @endphp
+                        
+                        @if($hasInvalidCheckin || $hasInvalidCheckout)
+                        <div class="mt-2">
+                            <small class="text-warning">
+                                <i class="bi bi-exclamation-triangle me-1"></i>
+                                Catatan: 
+                                @if($hasInvalidCheckin)
+                                    Check-in dilakukan di luar radius
+                                @endif
+                                @if($hasInvalidCheckin && $hasInvalidCheckout)
+                                    dan 
+                                @endif
+                                @if($hasInvalidCheckout)
+                                    Check-out dilakukan di luar radius
+                                @endif
+                            </small>
+                        </div>
                         @endif
                     </div>
                 </div>
@@ -91,11 +128,11 @@
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
-// ==================== UPGRADE DARI KODE LAMA - TETAP SIMPLE ====================
+// ==================== SISTEM PRESENSI QR CODE ====================
 (function() {
     let scanner = null;
     let isScanning = false;
-    const alreadyAttended = {{ $todayPresensi ? 'true' : 'false' }};
+    // ✅ HAPUS: const alreadyAttended - siswa bisa scan berkali-kali
     
     function getCSRFToken() {
         let token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
@@ -129,7 +166,7 @@
         return;
     }
     
-    // ==================== FUNCTION BARU: CALCULATE DISTANCE ====================
+    // ==================== CALCULATE DISTANCE ====================
     function calculateDistance(lat1, lon1, lat2, lon2) {
         const R = 6371000; // Earth radius in meters
         const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -145,7 +182,7 @@
         return Math.round(distance);
     }
     
-    // ==================== FUNCTION BARU: DETECT FAKE GPS ====================
+    // ==================== DETECT FAKE GPS ====================
     function checkFakeGPS(position) {
         const accuracy = position.coords.accuracy;
         let warnings = [];
@@ -180,10 +217,7 @@
         if (startBtn) {
             startBtn.addEventListener('click', function() {
                 if (isScanning) return;
-                if (alreadyAttended) {
-                    showAlert('info', 'Sudah Presensi', 'Anda sudah presensi hari ini');
-                    return;
-                }
+                // ✅ HAPUS: if (alreadyAttended) check
                 startScanning();
             });
         }
@@ -196,11 +230,7 @@
         
         if (testQRBtn) {
             testQRBtn.addEventListener('click', function() {
-                if (alreadyAttended) {
-                    showAlert('info', 'Sudah Presensi', 'Anda sudah presensi hari ini');
-                    return;
-                }
-                
+                // ✅ HAPUS: if (alreadyAttended) check
                 const testCode = prompt('Masukkan QR Code:\n\n(Default: IojRZFbqsmCJEi9HLNKqND4Vx0rlhFjc)', 'IojRZFbqsmCJEi9HLNKqND4Vx0rlhFjc');
                 
                 if (testCode && testCode.trim()) {
@@ -317,7 +347,6 @@
         });
     }
     
-    // ==================== FUNCTION UPGRADE: TAMBAH VALIDASI ====================
     function requestLocationAndSubmit(sessionData) {
         if (!navigator.geolocation) {
             showAlert('error', 'Error', 'Browser tidak mendukung geolocation');
@@ -417,10 +446,20 @@
         );
     }
     
-    // ==================== FUNCTION UPGRADE: KIRIM DATA TAMBAHAN ====================
     function submitPresensi(sessionId, lat, lng, distance, gpsAccuracy) {
+        // ✅ AMBIL DATA DARI sessionData yang disimpan
+        const sessionData = window.sessionData;
+        
+        if (!sessionData) {
+            console.error('Session data not found');
+            showAlert('error', 'Error', 'Data sesi tidak ditemukan. Silakan scan ulang.');
+            return;
+        }
+        
         const payload = {
+            qr_code_id: sessionData.qr_code_id,  // ✅ TAMBAHKAN
             session_id: sessionId,
+            type: sessionData.type,               // ✅ TAMBAHKAN
             latitude: lat,
             longitude: lng,
             distance: distance,

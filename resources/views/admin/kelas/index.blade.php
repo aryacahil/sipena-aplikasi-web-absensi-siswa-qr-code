@@ -497,6 +497,92 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Pindah Kelas - TAMBAHKAN SETELAH Modal Tambah Siswa -->
+<div class="modal fade" id="pindahKelasModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title">
+                    <i class="bi bi-arrow-left-right me-2"></i>Pindah Siswa ke Kelas
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <input type="hidden" id="pindah_kelas_id">
+                
+                <!-- Info Alert -->
+                <div class="alert alert-primary d-flex align-items-start mb-3" role="alert">
+                    <i class="bi bi-info-circle me-2 mt-1"></i>
+                    <div>
+                        <strong>Pilih siswa dari kelas lain untuk dipindahkan ke kelas ini</strong>
+                        <p class="mb-0 mt-1 small">Siswa yang dipilih akan dipindahkan dari kelas asal mereka ke kelas tujuan.</p>
+                    </div>
+                </div>
+
+                <!-- Search Bar -->
+                <div class="mb-3">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" 
+                               class="form-control" 
+                               id="search_siswa_pindah" 
+                               placeholder="Cari siswa berdasarkan NIS atau nama...">
+                    </div>
+                </div>
+
+                <!-- Filter Kelas Asal -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">
+                        <i class="bi bi-funnel me-1"></i>Filter berdasarkan Kelas Asal
+                    </label>
+                    <select class="form-select" id="filter_kelas_asal">
+                        <option value="">Semua Kelas</option>
+                        <!-- Options akan diisi via JavaScript -->
+                    </select>
+                </div>
+
+                <!-- Counter & Select All -->
+                <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-light rounded">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted">
+                            <i class="bi bi-people-fill me-2"></i>Siswa Tersedia:
+                        </span>
+                        <span class="badge bg-primary" id="available_siswa_pindah_count">0</span>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary btn-select-all-pindah-siswa">
+                        <i class="bi bi-check-square me-1"></i>Pilih Semua
+                    </button>
+                </div>
+
+                <!-- Siswa List Container -->
+                <div id="siswa_pindah_list_container" style="max-height: 400px; overflow-y: auto;">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-secondary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="text-muted mt-2">Memuat daftar siswa...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer bg-light d-flex justify-content-between">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Tutup
+                </button>
+                <button type="button" 
+                        class="btn btn-success btn-pindah-selected-to-class" 
+                        style="display: none;">
+                    <i class="bi bi-arrow-left-right me-1"></i>
+                    Pindahkan Terpilih (<span class="selected-count-pindah">0</span>)
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')

@@ -35,7 +35,7 @@
         <div class="col-md-12">
             <div class="card shadow-sm rounded-3">
                 
-                <!-- Advanced Filter (Collapsed by default) -->
+                <!-- Advanced Filter -->
                 <div class="collapse" id="advancedFilter">
                     <div class="card-header bg-white border-bottom">
                         <h5 class="mb-3">
@@ -79,7 +79,7 @@
                     </div>
                 </div>
 
-                <!-- Card Header with Quick Filters -->
+                <!-- Card Header -->
                 <div class="card-header bg-white border-bottom rounded-top">
                     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
                         <div>
@@ -121,30 +121,34 @@
                                     <th class="border-0 text-center align-middle" style="width: 120px;">Tanggal</th>
                                     <th class="border-0 text-center align-middle" style="width: 150px;">Waktu</th>
                                     <th class="border-0 text-center align-middle" style="width: 100px;">Presensi</th>
-                                    <th class="border-0 text-center align-middle" style="width: 100px;">Status</th>
-                                    <th class="border-0 text-center align-middle" style="width: 200px;">Aksi</th>
+                                    <th class="border-0 text-center align-middle" style="width: 140px;">Status</th>
+                                    <th class="border-0 text-center align-middle" style="width: 180px;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @forelse($sessions as $index => $session)
+                                @php
+                                    // Get real-time status
+                                    $statusText = $session->getStatusText();
+                                    $currentPhase = $session->getCurrentPhase();
+                                @endphp
                                 <tr>
                                     <td class="align-middle text-center">
                                         <span class="text-muted fw-semibold">{{ $sessions->firstItem() + $index }}</span>
                                     </td>
                                     <td class="align-middle">
-                                        <div>
-                                            <h6 class="mb-0">{{ $session->kelas->nama_kelas }}</h6>
-                                        </div>
+                                        <h6 class="mb-0">{{ $session->kelas->nama_kelas }}</h6>
                                     </td>
                                     <td class="align-middle text-center">
                                         <span class="badge bg-primary-soft text-primary">
+                                            <i class="bi bi-calendar3 me-1"></i>
                                             {{ $session->tanggal->format('d M Y') }}
                                         </span>
                                     </td>
                                     <td class="align-middle text-center" style="white-space: nowrap;">
                                         <small class="text-muted">
                                             <i class="bi bi-clock me-1"></i>
-                                            {{ $session->jam_mulai->format('H:i') }} - {{ $session->jam_selesai->format('H:i') }}
+                                            {{ $session->jam_checkin_mulai->format('H:i') }} - {{ $session->jam_checkout_selesai->format('H:i') }}
                                         </small>
                                     </td>
                                     <td class="align-middle text-center">
@@ -154,13 +158,21 @@
                                         </span>
                                     </td>
                                     <td class="align-middle text-center">
-                                        @if($session->status === 'active' && $session->isActive())
+                                        @if($statusText === 'checkin_active')
                                             <span class="badge bg-success">
-                                                <i class="bi bi-check-circle me-1"></i>Aktif
+                                                <i class="bi bi-box-arrow-in-right me-1"></i>Check-In
                                             </span>
-                                        @elseif($session->getStatusText() === 'waiting')
-                                            <span class="badge bg-warning">
-                                                <i class="bi bi-clock me-1"></i>Menunggu
+                                        @elseif($statusText === 'checkout_active')
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="bi bi-box-arrow-right me-1"></i>Check-Out
+                                            </span>
+                                        @elseif($statusText === 'waiting')
+                                            <span class="badge bg-info">
+                                                <i class="bi bi-clock-history me-1"></i>Menunggu
+                                            </span>
+                                        @elseif($statusText === 'between_sessions')
+                                            <span class="badge bg-primary">
+                                                <i class="bi bi-hourglass-split me-1"></i>Jeda
                                             </span>
                                         @else
                                             <span class="badge bg-secondary">
@@ -171,20 +183,23 @@
                                     <td class="align-middle text-center">
                                         <div class="d-flex justify-content-center gap-1">
                                             <button type="button" 
-                                                    class="btn btn-sm btn-warning btn-show-qr" 
+                                                    class="btn btn-sm btn-primary btn-show-qr" 
                                                     data-session-id="{{ $session->id }}"
                                                     title="Lihat Detail">
                                                 <i class="bi bi-eye"></i>
                                             </button>
                                             
-                                            <a href="{{ route('admin.qrcode.download', $session->id) }}" 
-                                               class="btn btn-sm btn-info" 
-                                               title="Download QR Code">
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-success btn-download-both" 
+                                                    data-session-id="{{ $session->id }}"
+                                                    data-kelas-name="{{ $session->kelas->kode_kelas }}"
+                                                    data-tanggal="{{ $session->tanggal->format('Ymd') }}"
+                                                    title="Download QR Check-In & Check-Out">
                                                 <i class="bi bi-download"></i>
-                                            </a>
+                                            </button>
                                             
                                             <button type="button" 
-                                                    class="btn btn-sm {{ $session->status === 'active' ? 'btn-secondary' : 'btn-success' }} btn-toggle-status" 
+                                                    class="btn btn-sm {{ $session->status === 'active' ? 'btn-dark' : 'btn-info' }} btn-toggle-status" 
                                                     data-session-id="{{ $session->id }}"
                                                     data-current-status="{{ $session->status }}"
                                                     title="{{ $session->status === 'active' ? 'Nonaktifkan' : 'Aktifkan' }}">
@@ -244,7 +259,7 @@
     </div>
 </div>
 
-<!-- Modal Create QR Code - Fixed Version -->
+<!-- Modal Create QR Code -->
 <div class="modal fade" id="createQRModal" tabindex="-1">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content">
@@ -254,7 +269,7 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form action="{{ request()->is('admin/*') ? route('admin.qrcode.store') : route('guru.qrcode.store') }}" method="POST" id="createQRForm">
+            <form action="{{ route('admin.qrcode.store') }}" method="POST" id="createQRForm">
                 @csrf
                 <div class="modal-body" style="max-height: 75vh; overflow-y: auto;">
                     <div class="alert alert-warning mb-3">
@@ -290,34 +305,82 @@
                                    required>
                         </div>
 
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">
-                                Jam Mulai <span class="text-danger">*</span>
-                            </label>
-                            <input type="time" 
-                                   name="jam_mulai" 
-                                   class="form-control" 
-                                   value="07:00"
-                                   required>
+                        <!-- Waktu Check-In -->
+                        <div class="col-12">
+                            <h6 class="mb-3 border-bottom pb-2">
+                                <i class="bi bi-box-arrow-in-right text-success me-2"></i>
+                                Waktu Check-In
+                            </h6>
                         </div>
 
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">
-                                Jam Selesai <span class="text-danger">*</span>
+                                Jam Mulai Check-In <span class="text-danger">*</span>
                             </label>
                             <input type="time" 
-                                   name="jam_selesai" 
+                                   name="jam_checkin_mulai" 
+                                   class="form-control" 
+                                   value="07:00"
+                                   required>
+                            <small class="text-muted">Waktu mulai siswa bisa check-in</small>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                Jam Selesai Check-In <span class="text-danger">*</span>
+                            </label>
+                            <input type="time" 
+                                   name="jam_checkin_selesai" 
                                    class="form-control" 
                                    value="08:00"
                                    required>
+                            <small class="text-muted">Batas waktu check-in</small>
+                        </div>
+
+                        <!-- Waktu Check-Out -->
+                        <div class="col-12">
+                            <h6 class="mb-3 border-bottom pb-2">
+                                <i class="bi bi-box-arrow-right text-danger me-2"></i>
+                                Waktu Check-Out
+                            </h6>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                Jam Mulai Check-Out <span class="text-danger">*</span>
+                            </label>
+                            <input type="time" 
+                                   name="jam_checkout_mulai" 
+                                   class="form-control" 
+                                   value="15:00"
+                                   required>
+                            <small class="text-muted">Waktu mulai siswa bisa check-out</small>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                Jam Selesai Check-Out <span class="text-danger">*</span>
+                            </label>
+                            <input type="time" 
+                                   name="jam_checkout_selesai" 
+                                   class="form-control" 
+                                   value="16:00"
+                                   required>
+                            <small class="text-muted">Batas waktu check-out</small>
                         </div>
 
                         <!-- MAP SECTION -->
                         <div class="col-12">
+                            <h6 class="mb-3 border-bottom pb-2">
+                                <i class="bi bi-geo-alt text-primary me-2"></i>
+                                Lokasi Presensi
+                            </h6>
+
                             <div class="alert alert-info mb-3">
                                 <i class="bi bi-info-circle me-2"></i>
                                 <strong>Pilih Lokasi Presensi</strong><br>
-                                Klik pada peta atau gunakan tombol di bawah untuk menentukan lokasi
+                                Klik pada peta atau gunakan tombol untuk menentukan lokasi check-in.
+                                Lokasi check-out akan sama dengan check-in secara default.
                             </div>
 
                             <div class="mb-3">
@@ -348,7 +411,7 @@
                                         Latitude <span class="text-danger">*</span>
                                     </label>
                                     <input type="text" 
-                                           name="latitude" 
+                                           name="latitude_checkin" 
                                            id="latitude"
                                            class="form-control" 
                                            placeholder="-7.6298"
@@ -361,7 +424,7 @@
                                         Longitude <span class="text-danger">*</span>
                                     </label>
                                     <input type="text" 
-                                           name="longitude" 
+                                           name="longitude_checkin" 
                                            id="longitude"
                                            class="form-control" 
                                            placeholder="111.5239"
@@ -374,7 +437,7 @@
                                         Radius (meter) <span class="text-danger">*</span>
                                     </label>
                                     <input type="number" 
-                                           name="radius" 
+                                           name="radius_checkin" 
                                            id="radius"
                                            class="form-control" 
                                            value="200"
@@ -424,8 +487,6 @@
 @push('scripts')
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-@endpush
-@push('scripts')
 <link rel="stylesheet" href="{{ asset('css/admin/qrcode.css') }}">
 <script src="{{ asset('js/admin/qrcode.js') }}"></script>
 @endpush
