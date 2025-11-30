@@ -134,6 +134,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <button class="btn btn-sm btn-primary btn-add-siswa-modal" data-kelas-id="${kelas.id}">
                                 <i class="bi bi-plus-circle me-1"></i>Pindah Kelas
                             </button>
+                            </div>
                         </div>
 
                         <div class="siswa-list">
@@ -842,6 +843,426 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     }
+
+    // Tambahkan di bagian bawah file, sebelum console.log('Kelas JS fully loaded')
+
+// Handler untuk tombol "Pindah Kelas"
+document.body.addEventListener('click', function(e) {
+    const pindahKelasBtn = e.target.closest('.btn-pindah-kelas');
+    if (pindahKelasBtn) {
+        e.preventDefault();
+        const kelasId = pindahKelasBtn.getAttribute('data-kelas-id');
+        console.log('Opening pindah kelas modal for kelas:', kelasId);
+        
+        currentKelasId = kelasId;
+        selectedSiswaIds.clear();
+        
+        const showModalElement = document.getElementById('showKelasModal');
+        const showModal = bootstrap.Modal.getInstance(showModalElement);
+        if (showModal) showModal.hide();
+        
+        const pindahModalElement = document.getElementById('pindahKelasModal');
+        const modal = new bootstrap.Modal(pindahModalElement);
+        
+        const searchInput = document.getElementById('search_siswa_pindah');
+        if (searchInput) searchInput.value = '';
+        
+        const moveSelectedBtn = document.querySelector('.btn-move-selected');
+        if (moveSelectedBtn) {
+            moveSelectedBtn.style.display = 'none';
+        }
+        
+        loadAllSiswaForPindah(kelasId);
+        loadKelasListForPindah(kelasId);
+        
+        modal.show();
+    }
+});
+
+// Search siswa untuk pindah kelas
+const searchSiswaPindah = document.getElementById('search_siswa_pindah');
+if (searchSiswaPindah) {
+    searchSiswaPindah.addEventListener('input', function(e) {
+        const searchTerm = e.target.value.toLowerCase().trim();
+        console.log('Searching siswa for pindah:', searchTerm);
+        
+        if (searchTerm === '') {
+            renderSiswaPindahList(allSiswaData);
+        } else {
+            const filteredSiswa = allSiswaData.filter(siswa => 
+                siswa.name.toLowerCase().includes(searchTerm) || 
+                siswa.nis.toLowerCase().includes(searchTerm) ||
+                (siswa.kelas && siswa.kelas.nama_kelas.toLowerCase().includes(searchTerm))
+            );
+            renderSiswaPindahList(filteredSiswa);
+        }
+    });
+}
+
+// Handler checkbox "Pilih Semua" untuk pindah kelas
+document.body.addEventListener('click', function(e) {
+    const selectAllBtn = e.target.closest('.btn-select-all-pindah');
+    if (selectAllBtn) {
+        e.preventDefault();
+        const allCheckboxes = document.querySelectorAll('.siswa-checkbox-pindah');
+        
+        if (selectedSiswaIds.size === allSiswaData.length) {
+            selectedSiswaIds.clear();
+            allCheckboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+        } else {
+            allSiswaData.forEach(siswa => {
+                selectedSiswaIds.add(siswa.id.toString());
+            });
+            allCheckboxes.forEach(checkbox => {
+                checkbox.checked = true;
+            });
+        }
+        
+        updateMoveSelectedButton();
+    }
+});
+
+// Handler untuk pindah siswa terpilih
+document.body.addEventListener('click', function(e) {
+    const moveBtn = e.target.closest('.btn-move-selected');
+    if (moveBtn) {
+        e.preventDefault();
+        const targetKelasId = document.getElementById('target_kelas_select').value;
+        const siswaIdsArray = Array.from(selectedSiswaIds);
+        
+        console.log('Move selected clicked. Selected IDs:', siswaIdsArray);
+        console.log('Target kelas ID:', targetKelasId);
+        
+        if (!targetKelasId) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Peringatan!',
+                text: 'Pilih kelas tujuan terlebih dahulu',
+                confirmButtonColor: '#0d6efd'
+            });
+            return;
+        }
+        
+        if (siswaIdsArray.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Peringatan!',
+                text: 'Pilih minimal satu siswa',
+                confirmButtonColor: '#0d6efd'
+            });
+            return;
+        }
+        
+        const selectedNames = allSiswaData
+            .filter(siswa => siswaIdsArray.includes(siswa.id.toString()))
+            .map(siswa => siswa.name);
+        
+        const targetKelasName = document.querySelector(`#target_kelas_select option[value="${targetKelasId}"]`).textContent;
+        
+        Swal.fire({
+            title: 'Pindahkan Siswa?',
+            html: `Pindahkan <strong>${siswaIdsArray.length} siswa</strong> ke <strong>${targetKelasName}</strong>?<br><br>` +
+                  `<small class="text-muted">${selectedNames.slice(0, 3).join(', ')}${selectedNames.length > 3 ? ` dan ${selectedNames.length - 3} lainnya` : ''}</small>`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#0d6efd',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Pindahkan!',
+            cancelButtonText: 'Batal',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Memindahkan siswa...',
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading()
+                });
+                
+                fetch(`/admin/kelas/pindah-siswa`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        siswa_ids: siswaIdsArray,
+                        target_kelas_id: targetKelasId
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Move siswa response:', data);
+                    if (data.success) {
+                        let message = data.message;
+                        if (data.errors && data.errors.length > 0) {
+                            message += `\n\nGagal memindahkan: ${data.errors.join(', ')}`;
+                        }
+                        
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil!',
+                            text: message,
+                            timer: 2000,
+                            showConfirmButton: false
+                        }).then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal!',
+                            text: data.message,
+                            confirmButtonColor: '#dc3545'
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal!',
+                        text: 'Terjadi kesalahan saat memindahkan siswa',
+                        confirmButtonColor: '#dc3545'
+                    });
+                });
+            }
+        });
+    }
+});
+
+// Close pindah kelas modal
+const pindahKelasModal = document.getElementById('pindahKelasModal');
+if (pindahKelasModal) {
+    pindahKelasModal.addEventListener('hidden.bs.modal', function() {
+        selectedSiswaIds.clear();
+        allSiswaData = [];
+        currentKelasId = null;
+        
+        const searchInput = document.getElementById('search_siswa_pindah');
+        if (searchInput) searchInput.value = '';
+        
+        const targetSelect = document.getElementById('target_kelas_select');
+        if (targetSelect) targetSelect.value = '';
+        
+        setTimeout(() => {
+            const backdrops = document.querySelectorAll('.modal-backdrop');
+            backdrops.forEach(backdrop => backdrop.remove());
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        }, 300);
+    });
+}
+
+// Functions untuk pindah kelas
+
+function loadAllSiswaForPindah(kelasId) {
+    console.log('Loading all siswa including from other classes');
+    
+    const csrfToken = document.querySelector('input[name="_token"]').value;
+    const container = document.getElementById('siswa_pindah_list_container');
+    const countBadge = document.getElementById('all_siswa_count');
+    
+    container.innerHTML = `
+        <div class="text-center py-4">
+            <div class="spinner-border text-secondary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="text-muted mt-2">Memuat daftar siswa...</p>
+        </div>
+    `;
+    
+    fetch(`/admin/kelas/all-siswa`, {
+        method: 'GET',
+        headers: {
+            'X-CSRF-TOKEN': csrfToken,
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        console.log('All siswa response status:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('All siswa data:', data);
+        
+        if (data.success) {
+            allSiswaData = data.siswa;
+            countBadge.textContent = data.siswa.length;
+            renderSiswaPindahList(data.siswa);
+        } else {
+            throw new Error(data.message || 'Failed to load siswa');
+        }
+    })
+    .catch(error => {
+        console.error('Error loading siswa:', error);
+        container.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                Gagal memuat daftar siswa: ${error.message}
+            </div>
+        `;
+        countBadge.textContent = '0';
+    });
+}
+
+function loadKelasListForPindah(currentKelasId) {
+    console.log('Loading kelas list for pindah');
+    
+    const csrfToken = document.querySelector('input[name="_token"]').value;
+    const select = document.getElementById('target_kelas_select');
+    
+    fetch(`/admin/kelas/list`, {
+        method: 'GET',
+        headers: {
+            'X-CSRF-TOKEN': csrfToken,
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Kelas list data:', data);
+        
+        if (data.success) {
+            select.innerHTML = '<option value="">-- Pilih Kelas Tujuan --</option>';
+            data.kelas.forEach(kelas => {
+                if (kelas.id != currentKelasId) {
+                    select.innerHTML += `<option value="${kelas.id}">${kelas.nama_kelas} (${kelas.siswa_count || 0} siswa)</option>`;
+                }
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error loading kelas list:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Gagal!',
+            text: 'Gagal memuat daftar kelas',
+            confirmButtonColor: '#dc3545'
+        });
+    });
+}
+
+function renderSiswaPindahList(siswaArray) {
+    console.log('Rendering siswa pindah list:', siswaArray.length, 'items');
+    console.log('Current selected IDs:', Array.from(selectedSiswaIds));
+    
+    const container = document.getElementById('siswa_pindah_list_container');
+    
+    if (!siswaArray || siswaArray.length === 0) {
+        container.innerHTML = `
+            <div class="alert alert-info mb-0">
+                <i class="bi bi-info-circle me-2"></i>
+                Tidak ada siswa yang tersedia
+            </div>
+        `;
+        updateMoveSelectedButton();
+        return;
+    }
+    
+    const siswaHtml = siswaArray.map((siswa, index) => {
+        const siswaIdStr = siswa.id.toString();
+        const isSelected = selectedSiswaIds.has(siswaIdStr);
+        const kelasName = siswa.kelas ? siswa.kelas.nama_kelas : 'Belum ada kelas';
+        const kelasColor = siswa.kelas ? 'bg-success' : 'bg-secondary';
+        
+        return `
+        <div class="card mb-2 border hover-shadow">
+            <div class="card-body p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center flex-grow-1">
+                        <input class="form-check-input me-3 siswa-checkbox-pindah" 
+                               type="checkbox" 
+                               value="${siswaIdStr}"
+                               data-siswa-name="${siswa.name}"
+                               ${isSelected ? 'checked' : ''}
+                               id="siswa_pindah_${siswaIdStr}">
+                        <label for="siswa_pindah_${siswaIdStr}" class="flex-grow-1 mb-0" style="cursor: pointer;">
+                            <h6 class="mb-1">${siswa.name}</h6>
+                            <small class="text-muted d-block">NIS: ${siswa.nis}</small>
+                            <span class="badge ${kelasColor} mt-1">${kelasName}</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        `;
+    }).join('');
+    
+    container.innerHTML = siswaHtml;
+    
+    console.log('HTML rendered, initializing checkboxes...');
+    
+    initPindahModalCheckboxes();
+}
+
+function initPindahModalCheckboxes() {
+    const checkboxes = document.querySelectorAll('.siswa-checkbox-pindah');
+    
+    checkboxes.forEach(checkbox => {
+        const newCheckbox = checkbox.cloneNode(true);
+        checkbox.parentNode.replaceChild(newCheckbox, checkbox);
+    });
+    
+    const newCheckboxes = document.querySelectorAll('.siswa-checkbox-pindah');
+    newCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function(e) {
+            const siswaId = this.value;
+            
+            console.log('Checkbox changed:', siswaId, 'checked:', this.checked);
+            
+            if (this.checked) {
+                selectedSiswaIds.add(siswaId);
+            } else {
+                selectedSiswaIds.delete(siswaId);
+            }
+            
+            console.log('Selected IDs:', Array.from(selectedSiswaIds));
+            updateMoveSelectedButton();
+        });
+    });
+    
+    updateMoveSelectedButton();
+}
+
+function updateMoveSelectedButton() {
+    const btn = document.querySelector('.btn-move-selected');
+    const count = selectedSiswaIds.size;
+    
+    console.log('Updating move button. Selected count:', count);
+    
+    if (btn) {
+        const countSpan = btn.querySelector('.selected-count');
+        if (countSpan) {
+            countSpan.textContent = count;
+        }
+        
+        if (count > 0) {
+            btn.style.display = 'inline-block';
+        } else {
+            btn.style.display = 'none';
+        }
+    }
+    
+    const selectAllBtn = document.querySelector('.btn-select-all-pindah');
+    if (selectAllBtn && allSiswaData.length > 0) {
+        if (selectedSiswaIds.size === allSiswaData.length && allSiswaData.length > 0) {
+            selectAllBtn.innerHTML = '<i class="bi bi-x-square me-1"></i>Batal Pilih Semua';
+            selectAllBtn.classList.remove('btn-outline-primary');
+            selectAllBtn.classList.add('btn-outline-danger');
+        } else {
+            selectAllBtn.innerHTML = '<i class="bi bi-check-square me-1"></i>Pilih Semua';
+            selectAllBtn.classList.remove('btn-outline-danger');
+            selectAllBtn.classList.add('btn-outline-primary');
+        }
+    }
+}
 
     console.log('Kelas JS fully loaded');
 });

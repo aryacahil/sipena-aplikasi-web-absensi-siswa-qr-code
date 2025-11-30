@@ -40,6 +40,11 @@ class FonnteService
         }
 
         try {
+            // Add random delay between 2-5 seconds to avoid spam
+            $delay = rand(2, 5);
+            Log::info('Adding random delay before sending message', ['delay_seconds' => $delay]);
+            sleep($delay);
+
             $phoneNumber = $this->normalizePhoneNumber($phoneNumber);
 
             $data = [

@@ -498,86 +498,69 @@
     </div>
 </div>
 
-<!-- Modal Pindah Kelas - TAMBAHKAN SETELAH Modal Tambah Siswa -->
-<div class="modal fade" id="pindahKelasModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+<!-- Modal Pindah Kelas -->
+<div class="modal fade" id="pindahKelasModal" tabindex="-1" aria-labelledby="pindahKelasModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
-            <div class="modal-header bg-light">
-                <h5 class="modal-title">
-                    <i class="bi bi-arrow-left-right me-2"></i>Pindah Siswa ke Kelas
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="pindahKelasModalLabel">
+                    <i class="bi bi-arrow-left-right me-2"></i>Pindah Siswa ke Kelas Lain
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-
             <div class="modal-body">
-                <input type="hidden" id="pindah_kelas_id">
-                
-                <!-- Info Alert -->
-                <div class="alert alert-primary d-flex align-items-start mb-3" role="alert">
-                    <i class="bi bi-info-circle me-2 mt-1"></i>
+                <!-- Pilih Kelas Tujuan -->
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <label for="target_kelas_select" class="form-label fw-bold">
+                            <i class="bi bi-building me-1"></i>Kelas Tujuan
+                        </label>
+                        <select class="form-select" id="target_kelas_select" required>
+                            <option value="">-- Pilih Kelas Tujuan --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Search -->
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-search"></i>
+                            </span>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="search_siswa_pindah" 
+                                   placeholder="Cari nama siswa, NIS, atau kelas...">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info & Action -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
                     <div>
-                        <strong>Pilih siswa dari kelas lain untuk dipindahkan ke kelas ini</strong>
-                        <p class="mb-0 mt-1 small">Siswa yang dipilih akan dipindahkan dari kelas asal mereka ke kelas tujuan.</p>
+                        <h6 class="mb-0">
+                            <i class="bi bi-people-fill me-2"></i>Semua Siswa
+                            <span class="badge bg-info ms-2" id="all_siswa_count">0</span>
+                        </h6>
+                        <small class="text-muted">Termasuk siswa dari kelas lain</small>
                     </div>
-                </div>
-
-                <!-- Search Bar -->
-                <div class="mb-3">
-                    <div class="input-group">
-                        <span class="input-group-text bg-light">
-                            <i class="bi bi-search"></i>
-                        </span>
-                        <input type="text" 
-                               class="form-control" 
-                               id="search_siswa_pindah" 
-                               placeholder="Cari siswa berdasarkan NIS atau nama...">
-                    </div>
-                </div>
-
-                <!-- Filter Kelas Asal -->
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">
-                        <i class="bi bi-funnel me-1"></i>Filter berdasarkan Kelas Asal
-                    </label>
-                    <select class="form-select" id="filter_kelas_asal">
-                        <option value="">Semua Kelas</option>
-                        <!-- Options akan diisi via JavaScript -->
-                    </select>
-                </div>
-
-                <!-- Counter & Select All -->
-                <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-light rounded">
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="text-muted">
-                            <i class="bi bi-people-fill me-2"></i>Siswa Tersedia:
-                        </span>
-                        <span class="badge bg-primary" id="available_siswa_pindah_count">0</span>
-                    </div>
-                    <button type="button" class="btn btn-sm btn-outline-primary btn-select-all-pindah-siswa">
+                    <button class="btn btn-sm btn-outline-primary btn-select-all-pindah">
                         <i class="bi bi-check-square me-1"></i>Pilih Semua
                     </button>
                 </div>
 
-                <!-- Siswa List Container -->
+                <!-- Siswa List -->
                 <div id="siswa_pindah_list_container" style="max-height: 400px; overflow-y: auto;">
-                    <div class="text-center py-4">
-                        <div class="spinner-border text-secondary" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <p class="text-muted mt-2">Memuat daftar siswa...</p>
-                    </div>
+                    <!-- Will be populated by JavaScript -->
                 </div>
             </div>
-
-            <div class="modal-footer bg-light d-flex justify-content-between">
+            <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     <i class="bi bi-x-circle me-1"></i>Tutup
                 </button>
-                <button type="button" 
-                        class="btn btn-success btn-pindah-selected-to-class" 
-                        style="display: none;">
-                    <i class="bi bi-arrow-left-right me-1"></i>
-                    Pindahkan Terpilih (<span class="selected-count-pindah">0</span>)
+                <button type="button" class="btn btn-primary btn-move-selected" style="display: none;">
+                    <i class="bi bi-arrow-left-right me-1"></i>Pindahkan Terpilih (<span class="selected-count">0</span>)
                 </button>
             </div>
         </div>

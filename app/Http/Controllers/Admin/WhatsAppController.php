@@ -28,7 +28,8 @@ class WhatsAppController extends Controller
             'fonnte_enabled' => Setting::get('fonnte_enabled', false),
             'fonnte_sender_number' => Setting::get('fonnte_sender_number', ''),
             'fonnte_device_id' => Setting::get('fonnte_device_id', ''),
-            'fonnte_message_template' => Setting::get('fonnte_message_template', $this->getDefaultTemplate()),
+            'fonnte_message_template' => Setting::get('fonnte_message_template_checkin', $this->getDefaultTemplate('checkin')),
+            'fonnte_message_template_checkout' => Setting::get('fonnte_message_template_checkout', $this->getDefaultTemplate('checkout')),
         ];
 
         return view('admin.settings.whatsapp', compact('settings'));
@@ -44,65 +45,49 @@ class WhatsAppController extends Controller
             'fonnte_sender_number' => 'required|string|max:20',
             'fonnte_device_id' => 'nullable|string|max:100',
             'fonnte_enabled' => 'nullable',
-            'fonnte_message_template' => 'required|string',
+            'fonnte_message_template' => 'required|string', // Check-in template
+            'fonnte_message_template_checkout' => 'required|string', // Check-out template
         ]);
 
         try {
-            // Update all settings first
+            // Update all settings
             Setting::set('fonnte_api_key', $validated['fonnte_api_key']);
             Setting::set('fonnte_sender_number', $validated['fonnte_sender_number']);
             Setting::set('fonnte_device_id', $validated['fonnte_device_id'] ?? '');
-            Setting::set('fonnte_message_template', $validated['fonnte_message_template']);
+            Setting::set('fonnte_message_template_checkin', $validated['fonnte_message_template']);
+            Setting::set('fonnte_message_template_checkout', $validated['fonnte_message_template_checkout']);
             
-            // Clear cache to apply new settings
+            // Clear cache
             Setting::clearCache();
             
-            // Check if user wants to enable notification
+            // Handle enabled status
             $wantsToEnable = $request->has('fonnte_enabled') && 
                             in_array($request->input('fonnte_enabled'), ['on', '1', 'true', true], true);
             
             if ($wantsToEnable) {
-                // Test connection before enabling
                 $testService = new FonnteService();
                 $testResult = $testService->testConnection();
                 
                 if (!$testResult['success']) {
-                    // Test failed, don't enable
                     Setting::set('fonnte_enabled', false);
                     Setting::clearCache();
                     
-                    Log::warning('Failed to enable WhatsApp notification', [
-                        'reason' => $testResult['message'],
-                        'user_id' => auth()->id()
-                    ]);
-                    
                     return redirect()
                         ->back()
-                        ->with('error', 'Pengaturan berhasil disimpan, tetapi notifikasi TIDAK DIAKTIFKAN. Alasan: ' . $testResult['message'])
+                        ->with('error', 'Pengaturan disimpan, tetapi notifikasi TIDAK DIAKTIFKAN. Alasan: ' . $testResult['message'])
                         ->withInput();
                 }
                 
-                // Test successful, enable notification
                 Setting::set('fonnte_enabled', true);
                 Setting::clearCache();
-                
-                Log::info('WhatsApp notification enabled', [
-                    'updated_by' => auth()->id()
-                ]);
                 
                 return redirect()
                     ->route('admin.settings.whatsapp')
                     ->with('success', 'Pengaturan berhasil disimpan dan notifikasi WhatsApp DIAKTIFKAN! ✅');
             }
             
-            // User unchecked, disable notification
             Setting::set('fonnte_enabled', false);
             Setting::clearCache();
-
-            Log::info('WhatsApp settings updated', [
-                'updated_by' => auth()->id(),
-                'enabled' => false
-            ]);
 
             return redirect()
                 ->route('admin.settings.whatsapp')
@@ -110,8 +95,7 @@ class WhatsAppController extends Controller
 
         } catch (\Exception $e) {
             Log::error('Failed to update WhatsApp settings', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'error' => $e->getMessage()
             ]);
 
             return redirect()
@@ -123,7 +107,6 @@ class WhatsAppController extends Controller
 
     /**
      * Test Fonnte connection
-     * FIXED VERSION - Gunakan sender number sebagai target untuk test
      */
     public function testConnection(Request $request)
     {
@@ -155,7 +138,7 @@ class WhatsAppController extends Controller
                 'target_number' => $targetNumber
             ]);
 
-            // ✅ Test dengan endpoint /validate dan target parameter
+            // Test dengan endpoint /validate dan target parameter
             $response = Http::timeout(10)
                 ->withHeaders([
                     'Authorization' => $apiKey,
@@ -172,7 +155,7 @@ class WhatsAppController extends Controller
             if ($response->successful()) {
                 $result = $response->json();
                 
-                // ✅ Check status
+                // Check status
                 if (isset($result['status']) && $result['status'] === true) {
                     $deviceName = $result['device'] ?? $result['name'] ?? 'Connected Device';
                     
@@ -184,7 +167,7 @@ class WhatsAppController extends Controller
                     ]);
                 }
 
-                // ❌ Check if there's an error message
+                // Check if there's an error message
                 if (isset($result['reason'])) {
                     return response()->json([
                         'success' => false,
@@ -192,7 +175,7 @@ class WhatsAppController extends Controller
                     ], 400);
                 }
 
-                // ❌ Status false
+                // Status false
                 if (isset($result['status']) && $result['status'] === false) {
                     return response()->json([
                         'success' => false,
@@ -200,7 +183,7 @@ class WhatsAppController extends Controller
                     ], 400);
                 }
 
-                // ✅ No explicit status but successful response
+                // No explicit status but successful response
                 return response()->json([
                     'success' => true,
                     'message' => 'API Key valid',
@@ -209,7 +192,7 @@ class WhatsAppController extends Controller
                 ]);
             }
 
-            // ❌ HTTP Error
+            // HTTP Error
             $errorBody = $response->json();
             $errorMessage = $errorBody['reason'] ?? 'Invalid API Key atau koneksi gagal';
             
@@ -238,7 +221,6 @@ class WhatsAppController extends Controller
 
     /**
      * Send test message
-     * FIXED: Clear cache dan refresh service sebelum test
      */
     public function testMessage(Request $request)
     {
@@ -247,13 +229,13 @@ class WhatsAppController extends Controller
         ]);
 
         try {
-            // ✅ Clear cache dulu untuk get latest settings
+            // Clear cache dulu untuk get latest settings
             Setting::clearCache();
             
-            // ✅ Recreate service dengan setting terbaru
+            // Recreate service dengan setting terbaru
             $fonnteService = new FonnteService();
             
-            // ✅ Check if service is ready
+            // Check if service is ready
             if (!$fonnteService->isEnabled()) {
                 Log::warning('Fonnte service not enabled for test message', [
                     'api_key_exists' => !empty(Setting::get('fonnte_api_key')),
@@ -345,16 +327,31 @@ class WhatsAppController extends Controller
     /**
      * Get default message template
      */
-    protected function getDefaultTemplate()
+    protected function getDefaultTemplate($type = 'checkin')
     {
-        return "Assalamualaikum Bapak/Ibu\n\n" .
-               "Kami informasikan bahwa putra/putri Anda:\n\n" .
-               "*Nama:* {student_name}\n" .
-               "*Kelas:* {class_name}\n" .
-               "*Status:* {status}\n" .
-               "*Waktu:* {time}\n" .
-               "*Tanggal:* {date}\n\n" .
-               "Terima kasih atas perhatiannya.\n\n" .
-               "_Pesan otomatis dari Sistem Presensi Sekolah_";
+        if ($type === 'checkin') {
+            return "Assalamualaikum Bapak/Ibu\n\n" .
+                   "Kami informasikan bahwa:\n\n" .
+                   "*Nama:* {student_name}\n" .
+                   "*NIS:* {nis}\n" .
+                   "*Kelas:* {class_name}\n" .
+                   "*Status:* ✅ MASUK\n" .
+                   "*Waktu:* {checkin_time}\n" .
+                   "*Tanggal:* {date}\n\n" .
+                   "Terima kasih.\n\n" .
+                   "_Sistem Presensi Sekolah_";
+        } else {
+            return "Assalamualaikum Bapak/Ibu\n\n" .
+                   "Kami informasikan bahwa:\n\n" .
+                   "*Nama:* {student_name}\n" .
+                   "*NIS:* {nis}\n" .
+                   "*Kelas:* {class_name}\n" .
+                   "*Status:* 🏠 PULANG\n" .
+                   "*Check-in:* {checkin_time}\n" .
+                   "*Check-out:* {checkout_time}\n" .
+                   "*Tanggal:* {date}\n\n" .
+                   "Terima kasih.\n\n" .
+                   "_Sistem Presensi Sekolah_";
+        }
     }
 }

@@ -117,77 +117,135 @@
                             </small>
                         </div>
 
-                        <!-- Device ID (Optional) -->
-                        <div class="mb-4">
-                            <label class="form-label fw-semibold">
-                                Device ID
-                                <span class="badge bg-secondary ms-2">Opsional</span>
-                            </label>
-                            <div class="input-group">
-                                <span class="input-group-text">
-                                    <i class="bi bi-phone-fill"></i>
-                                </span>
-                                <input type="text" 
-                                       class="form-control" 
-                                       name="fonnte_device_id"
-                                       id="fonnte_device_id"
-                                       value="{{ $settings['fonnte_device_id'] }}"
-                                       placeholder="contoh: device123">
-                            </div>
-                            <small class="text-muted">
-                                Jika Anda punya multiple device, masukkan Device ID spesifik
-                            </small>
-                        </div>
-
                         <hr class="my-4">
 
-                        <!-- Message Template -->
-                        <div class="mb-4">
-                            <label class="form-label fw-semibold">
-                                Template Pesan
-                                <span class="text-danger">*</span>
-                            </label>
-                            <textarea class="form-control font-monospace" 
-                                      name="fonnte_message_template"
-                                      id="fonnte_message_template"
-                                      rows="12"
-                                      required>{{ $settings['fonnte_message_template'] }}</textarea>
-                            
-                            <div class="alert alert-info mt-2 mb-0">
-                                <strong>
-                                    <i class="bi bi-info-circle me-1"></i>
-                                    Variabel yang tersedia:
-                                </strong>
-                                <div class="row mt-2">
-                                    <div class="col-md-6">
-                                        <ul class="mb-0 small">
-                                            <li><code>{student_name}</code> - Nama siswa</li>
-                                            <li><code>{class_name}</code> - Nama kelas</li>
-                                        </ul>
+                        <!-- Tab Navigation untuk 2 Template -->
+                        <ul class="nav nav-tabs mb-3" id="templateTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="checkin-tab" data-bs-toggle="tab" 
+                                        data-bs-target="#checkin-template" type="button">
+                                    <i class="bi bi-box-arrow-in-right me-2"></i>
+                                    Template Check-In
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="checkout-tab" data-bs-toggle="tab" 
+                                        data-bs-target="#checkout-template" type="button">
+                                    <i class="bi bi-box-arrow-right me-2"></i>
+                                    Template Check-Out
+                                </button>
+                            </li>
+                        </ul>
+
+                        <!-- Tab Content -->
+                        <div class="tab-content" id="templateTabsContent">
+                            <!-- Check-In Template -->
+                            <div class="tab-pane fade show active" id="checkin-template" role="tabpanel">
+                                <div class="mb-4">
+                                    <label class="form-label fw-semibold">
+                                        Template Pesan Check-In
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    <textarea class="form-control font-monospace" 
+                                              name="fonnte_message_template"
+                                              id="fonnte_message_template_checkin"
+                                              rows="12"
+                                              required>{{ $settings['fonnte_message_template'] ?? '' }}</textarea>
+                                    
+                                    <div class="alert alert-info mt-2 mb-0">
+                                        <strong>
+                                            <i class="bi bi-info-circle me-1"></i>
+                                            Variabel untuk Check-In:
+                                        </strong>
+                                        <div class="row mt-2">
+                                            <div class="col-md-6">
+                                                <ul class="mb-0 small">
+                                                    <li><code>{student_name}</code> - Nama siswa</li>
+                                                    <li><code>{nis}</code> - NIS siswa</li>
+                                                    <li><code>{class_name}</code> - Nama kelas</li>
+                                                </ul>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <ul class="mb-0 small">
+                                                    <li><code>{checkin_time}</code> - Waktu check-in</li>
+                                                    <li><code>{status}</code> - Status (MASUK)</li>
+                                                    <li><code>{date}</code> - Tanggal</li>
+                                                </ul>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <ul class="mb-0 small">
-                                            <li><code>{status}</code> - Status presensi</li>
-                                            <li><code>{time}</code> - Waktu presensi</li>
-                                            <li><code>{date}</code> - Tanggal presensi</li>
-                                        </ul>
+                                </div>
+
+                                <!-- Preview Check-In -->
+                                <div class="mb-0">
+                                    <label class="form-label fw-semibold">Preview Pesan Check-In</label>
+                                    <div class="card bg-success-soft">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-start">
+                                                <i class="bi bi-whatsapp text-success fs-3 me-3"></i>
+                                                <div class="flex-grow-1">
+                                                    <div class="mb-2">
+                                                        <small class="text-muted">Dari: <strong id="previewSenderCheckin">Loading...</strong></small>
+                                                    </div>
+                                                    <pre class="mb-0 small" id="messagePreviewCheckin" style="white-space: pre-wrap; word-wrap: break-word;"></pre>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Preview Message -->
-                        <div class="mb-4">
-                            <label class="form-label fw-semibold">Preview Pesan</label>
-                            <div class="card bg-success-soft">
-                                <div class="card-body">
-                                    <div class="d-flex align-items-start">
-                                        <i class="bi bi-whatsapp text-success fs-3 me-3"></i>
-                                        <div class="flex-grow-1">
-                                            <div class="mb-2">
-                                                <small class="text-muted">Dari: <strong id="previewSender">Loading...</strong></small>
+                            <!-- Check-Out Template -->
+                            <div class="tab-pane fade" id="checkout-template" role="tabpanel">
+                                <div class="mb-4">
+                                    <label class="form-label fw-semibold">
+                                        Template Pesan Check-Out
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    <textarea class="form-control font-monospace" 
+                                              name="fonnte_message_template_checkout"
+                                              id="fonnte_message_template_checkout"
+                                              rows="12"
+                                              required>{{ $settings['fonnte_message_template_checkout'] ?? '' }}</textarea>
+                                    
+                                    <div class="alert alert-info mt-2 mb-0">
+                                        <strong>
+                                            <i class="bi bi-info-circle me-1"></i>
+                                            Variabel untuk Check-Out:
+                                        </strong>
+                                        <div class="row mt-2">
+                                            <div class="col-md-6">
+                                                <ul class="mb-0 small">
+                                                    <li><code>{student_name}</code> - Nama siswa</li>
+                                                    <li><code>{nis}</code> - NIS siswa</li>
+                                                    <li><code>{class_name}</code> - Nama kelas</li>
+                                                </ul>
                                             </div>
-                                            <pre class="mb-0 small" id="messagePreview" style="white-space: pre-wrap; word-wrap: break-word;"></pre>
+                                            <div class="col-md-6">
+                                                <ul class="mb-0 small">
+                                                    <li><code>{checkin_time}</code> - Waktu check-in</li>
+                                                    <li><code>{checkout_time}</code> - Waktu check-out</li>
+                                                    <li><code>{date}</code> - Tanggal</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Preview Check-Out -->
+                                <div class="mb-0">
+                                    <label class="form-label fw-semibold">Preview Pesan Check-Out</label>
+                                    <div class="card bg-warning-soft">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-start">
+                                                <i class="bi bi-whatsapp text-success fs-3 me-3"></i>
+                                                <div class="flex-grow-1">
+                                                    <div class="mb-2">
+                                                        <small class="text-muted">Dari: <strong id="previewSenderCheckout">Loading...</strong></small>
+                                                    </div>
+                                                    <pre class="mb-0 small" id="messagePreviewCheckout" style="white-space: pre-wrap; word-wrap: break-word;"></pre>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -240,7 +298,7 @@
                             Paste API Key dan nomor di form
                         </li>
                         <li class="mb-3">
-                            Sesuaikan template pesan
+                            Sesuaikan template pesan check-in dan check-out
                         </li>
                         <li class="mb-0">
                             Klik "Test Koneksi" untuk validasi
@@ -284,6 +342,16 @@
             <div class="modal-body">
                 <div class="mb-3">
                     <label class="form-label fw-semibold">
+                        Tipe Template
+                        <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select" id="testTemplateType">
+                        <option value="checkin">Check-In</option>
+                        <option value="checkout">Check-Out</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">
                         Nomor WhatsApp Tujuan
                         <span class="text-danger">*</span>
                     </label>
@@ -317,50 +385,69 @@
 @push('scripts')
 <script>
 (function() {
-    // ✅ Handle flash messages dari server
     document.addEventListener('DOMContentLoaded', function() {
-        // Check if enabled checkbox should be checked based on current setting
         const enabledCheckbox = document.getElementById('fonnte_enabled');
         const currentEnabledStatus = {{ $settings['fonnte_enabled'] ? 'true' : 'false' }};
         
         if (enabledCheckbox && currentEnabledStatus) {
             enabledCheckbox.checked = true;
         }
-        
-        console.log('WhatsApp Notification Status:', {
-            enabled: currentEnabledStatus,
-            checkbox_checked: enabledCheckbox?.checked
-        });
     });
 
-    const templateTextarea = document.getElementById('fonnte_message_template');
-    const previewDiv = document.getElementById('messagePreview');
-    const previewSender = document.getElementById('previewSender');
+    const templateCheckinTextarea = document.getElementById('fonnte_message_template_checkin');
+    const templateCheckoutTextarea = document.getElementById('fonnte_message_template_checkout');
+    const previewCheckinDiv = document.getElementById('messagePreviewCheckin');
+    const previewCheckoutDiv = document.getElementById('messagePreviewCheckout');
+    const previewSenderCheckin = document.getElementById('previewSenderCheckin');
+    const previewSenderCheckout = document.getElementById('previewSenderCheckout');
     const senderInput = document.getElementById('fonnte_sender_number');
     const testMessageModal = new bootstrap.Modal(document.getElementById('testMessageModal'));
 
-    function updatePreview() {
-        let template = templateTextarea.value;
+    function updateCheckinPreview() {
+        let template = templateCheckinTextarea.value;
         const preview = template
             .replace(/{student_name}/g, 'Ahmad Fauzi')
+            .replace(/{nis}/g, '2024001')
             .replace(/{class_name}/g, 'XII RPL 1')
-            .replace(/{status}/g, '✅ HADIR')
-            .replace(/{time}/g, '07:15:30')
+            .replace(/{status}/g, '✅ MASUK')
+            .replace(/{checkin_time}/g, '07:15')
             .replace(/{date}/g, new Date().toLocaleDateString('id-ID', { 
                 day: 'numeric', 
                 month: 'long', 
                 year: 'numeric' 
             }));
-        previewDiv.textContent = preview;
+        previewCheckinDiv.textContent = preview;
         const senderNumber = senderInput.value || 'Belum diisi';
-        previewSender.textContent = senderNumber;
+        previewSenderCheckin.textContent = senderNumber;
     }
 
-    updatePreview();
-    templateTextarea.addEventListener('input', updatePreview);
-    senderInput.addEventListener('input', updatePreview);
+    function updateCheckoutPreview() {
+        let template = templateCheckoutTextarea.value;
+        const preview = template
+            .replace(/{student_name}/g, 'Ahmad Fauzi')
+            .replace(/{nis}/g, '2024001')
+            .replace(/{class_name}/g, 'XII RPL 1')
+            .replace(/{checkin_time}/g, '07:15')
+            .replace(/{checkout_time}/g, '15:30')
+            .replace(/{date}/g, new Date().toLocaleDateString('id-ID', { 
+                day: 'numeric', 
+                month: 'long', 
+                year: 'numeric' 
+            }));
+        previewCheckoutDiv.textContent = preview;
+        const senderNumber = senderInput.value || 'Belum diisi';
+        previewSenderCheckout.textContent = senderNumber;
+    }
 
-    // ✅ FIXED: Kirim api_key DAN sender_number
+    updateCheckinPreview();
+    updateCheckoutPreview();
+    templateCheckinTextarea.addEventListener('input', updateCheckinPreview);
+    templateCheckoutTextarea.addEventListener('input', updateCheckoutPreview);
+    senderInput.addEventListener('input', function() {
+        updateCheckinPreview();
+        updateCheckoutPreview();
+    });
+
     document.getElementById('btnTestConnection').addEventListener('click', function() {
         const btn = this;
         const originalHTML = btn.innerHTML;
@@ -388,7 +475,6 @@
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Testing...';
 
-        // ✅ Kirim kedua parameter
         fetch('{{ route("admin.settings.whatsapp.test-connection") }}', {
             method: 'POST',
             headers: {
@@ -397,8 +483,8 @@
                 'Accept': 'application/json'
             },
             body: JSON.stringify({
-                api_key: apiKey,           // ✅ Kirim API key
-                sender_number: senderNumber // ✅ Kirim sender number
+                api_key: apiKey,
+                sender_number: senderNumber
             })
         })
         .then(response => response.json())
@@ -498,6 +584,7 @@
         const btn = this;
         const originalHTML = btn.innerHTML;
         const phoneNumber = document.getElementById('testPhoneNumber').value.trim();
+        const templateType = document.getElementById('testTemplateType').value;
 
         if (!phoneNumber) {
             Swal.fire({
@@ -519,7 +606,8 @@
                 'Accept': 'application/json'
             },
             body: JSON.stringify({
-                phone_number: phoneNumber
+                phone_number: phoneNumber,
+                template_type: templateType
             })
         })
         .then(response => response.json())
@@ -530,7 +618,7 @@
                 Swal.fire({
                     icon: 'success', 
                     title: 'Pesan Terkirim!', 
-                    html: 'Pesan test berhasil dikirim ke <strong>' + phoneNumber + '</strong>', 
+                    html: `Pesan test <strong>${templateType === 'checkin' ? 'Check-In' : 'Check-Out'}</strong> berhasil dikirim ke <strong>${phoneNumber}</strong>`, 
                     confirmButtonColor: '#198754'
                 });
                 document.getElementById('testPhoneNumber').value = '';
