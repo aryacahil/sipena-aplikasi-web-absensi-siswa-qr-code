@@ -7,9 +7,10 @@ use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class PresensiExport implements FromCollection, WithHeadings, WithMapping, WithStyles
+class PresensiExport implements FromCollection, WithHeadings, WithMapping, WithStyles, ShouldAutoSize
 {
     protected $filters;
 
@@ -45,43 +46,32 @@ class PresensiExport implements FromCollection, WithHeadings, WithMapping, WithS
     public function headings(): array
     {
         return [
-            'ID',
-            'Nama Siswa',
-            'Kelas',
-            'Jurusan',
-            'Tanggal',
-            'Waktu Check-in',     // FIXED: Split waktu
-            'Waktu Check-out',    // FIXED: Tambah checkout
-            'Status',
-            'Metode',
-            'Keterangan',
+            'id',
+            'nis',
+            'nama_siswa',
+            'nama_kelas',
+            'nama_jurusan',
+            'tanggal_presensi',
+            'waktu_checkin',
+            'waktu_checkout',
+            'status',
+            'metode',
         ];
     }
 
     public function map($presensi): array
     {
-        // FIXED: Gabungkan keterangan checkin dan checkout
-        $keterangan = [];
-        if ($presensi->keterangan_checkin) {
-            $keterangan[] = 'Checkin: ' . $presensi->keterangan_checkin;
-        }
-        if ($presensi->keterangan_checkout) {
-            $keterangan[] = 'Checkout: ' . $presensi->keterangan_checkout;
-        }
-        $keteranganText = !empty($keterangan) ? implode(' | ', $keterangan) : '-';
-
         return [
             $presensi->id,
+            $presensi->siswa->nis ?? '',
             $presensi->siswa->name,
             $presensi->kelas->nama_kelas,
             $presensi->kelas->jurusan->nama_jurusan,
-            $presensi->tanggal_presensi->format('d-m-Y'),
-            // FIXED: Tampilkan waktu checkin dan checkout terpisah
-            $presensi->waktu_checkin ? $presensi->waktu_checkin->format('H:i:s') : '-',
-            $presensi->waktu_checkout ? $presensi->waktu_checkout->format('H:i:s') : '-',
-            strtoupper($presensi->status),
-            strtoupper($presensi->metode),
-            $keteranganText,
+            $presensi->tanggal_presensi->format('Y-m-d'),
+            $presensi->waktu_checkin ? $presensi->waktu_checkin->format('H:i:s') : '',
+            $presensi->waktu_checkout ? $presensi->waktu_checkout->format('H:i:s') : '',
+            $presensi->status,
+            $presensi->metode,
         ];
     }
 
@@ -90,10 +80,16 @@ class PresensiExport implements FromCollection, WithHeadings, WithMapping, WithS
         return [
             // Style untuk header
             1 => [
-                'font' => ['bold' => true],
+                'font' => [
+                    'bold' => true,
+                    'color' => ['rgb' => 'FFFFFF'],
+                ],
                 'fill' => [
                     'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
-                    'startColor' => ['rgb' => 'E2E8F0']
+                    'startColor' => ['rgb' => '4299E1']
+                ],
+                'alignment' => [
+                    'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
                 ]
             ],
         ];

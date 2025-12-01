@@ -53,9 +53,18 @@ class ExportImportController extends Controller
         try {
             Excel::import(new SiswaImport, $request->file('file'));
             
-            return back()->with('success', 'Data siswa berhasil diimport!');
+            return redirect()->back()->with('success', 'Data siswa berhasil diimport!');
+        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+            $failures = $e->failures();
+            $errorMessages = [];
+            
+            foreach ($failures as $failure) {
+                $errorMessages[] = "Baris {$failure->row()}: " . implode(', ', $failure->errors());
+            }
+            
+            return redirect()->back()->with('error', 'Gagal import: ' . implode(' | ', $errorMessages));
         } catch (\Exception $e) {
-            return back()->with('error', 'Gagal import: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal import: ' . $e->getMessage());
         }
     }
 }

@@ -17,14 +17,11 @@ class SiswaImport implements ToModel, WithHeadingRow, WithValidation
         $kelas = Kelas::where('nama_kelas', $row['nama_kelas'])->first();
 
         return new User([
+            'nis'           => (string) $row['nis'], 
             'name'          => $row['nama_lengkap'],
-            'email'         => $row['email'],
             'password'      => Hash::make($row['password'] ?? '12345678'),
             'role'          => 2,
-
-            // Masukkan id kelas, bukan nama kelas
             'kelas_id'      => $kelas->id ?? null,
-
             'parent_phone'  => $row['no_telp_orang_tua'] ?? null,
             'status'        => $row['status'] ?? 'active',
         ]);
@@ -33,8 +30,8 @@ class SiswaImport implements ToModel, WithHeadingRow, WithValidation
     public function rules(): array
     {
         return [
+            'nis'               => 'required|unique:users,nis',
             'nama_lengkap'      => 'required|string|max:255',
-            'email'             => 'required|email|unique:users,email',
             'nama_kelas'        => 'required|string|max:255',
             'status'            => 'in:active,inactive',
         ];
@@ -43,8 +40,10 @@ class SiswaImport implements ToModel, WithHeadingRow, WithValidation
     public function customValidationMessages()
     {
         return [
-            'email.unique'  => 'Email :input sudah terdaftar',
-            'email.required'=> 'Email wajib diisi',
+            'nis.required'      => 'NIS wajib diisi',
+            'nis.unique'        => 'NIS :input sudah terdaftar',
+            'nama_lengkap.required' => 'Nama lengkap wajib diisi',
+            'nama_kelas.required' => 'Nama kelas wajib diisi',
         ];
     }
 }

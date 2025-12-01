@@ -7,9 +7,10 @@ use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class SiswaExport implements FromCollection, WithHeadings, WithMapping, WithStyles
+class SiswaExport implements FromCollection, WithHeadings, WithMapping, WithStyles, ShouldAutoSize
 {
     protected $filters;
 
@@ -31,41 +32,50 @@ class SiswaExport implements FromCollection, WithHeadings, WithMapping, WithStyl
             $query->where('status', $this->filters['status']);
         }
 
-        return $query->get();
+        return $query->orderBy('name', 'asc')->get();
     }
 
     public function headings(): array
     {
         return [
-            'ID',
-            'Nama Lengkap',
-            'Email',
-            'Kelas',
-            'Jurusan',
-            'No. Telp Orang Tua',
-            'Status',
-            'Tanggal Terdaftar',
+            'nis',
+            'nama_lengkap',
+            'password',
+            'nama_kelas',
+            'no_telp_orang_tua',
+            'status',
         ];
     }
 
     public function map($siswa): array
     {
         return [
-            $siswa->id,
+            $siswa->nis ?? '',
             $siswa->name,
-            $siswa->email,
-            $siswa->kelas ? $siswa->kelas->nama_kelas : '-',
-            $siswa->kelas ? $siswa->kelas->jurusan->nama_jurusan : '-',
-            $siswa->parent_phone ?? '-',
-            ucfirst($siswa->status),
-            $siswa->created_at->format('d-m-Y H:i'),
+            '12345678', // Default password untuk re-import
+            $siswa->kelas ? $siswa->kelas->nama_kelas : '',
+            $siswa->parent_phone ?? '',
+            $siswa->status,
         ];
     }
 
     public function styles(Worksheet $sheet)
     {
         return [
-            1 => ['font' => ['bold' => true]],
+            // Style untuk header
+            1 => [
+                'font' => [
+                    'bold' => true,
+                    'color' => ['rgb' => 'FFFFFF'],
+                ],
+                'fill' => [
+                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => '4299E1']
+                ],
+                'alignment' => [
+                    'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+                ]
+            ],
         ];
     }
 }
