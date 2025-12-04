@@ -47,22 +47,18 @@ class LoginController extends Controller
      */
     public function login(Request $request)
     {
-        // Validasi input
         $this->validateLogin($request);
         
-        // Cek apakah terlalu banyak percobaan login
         if (method_exists($this, 'hasTooManyLoginAttempts') &&
             $this->hasTooManyLoginAttempts($request)) {
             $this->fireLockoutEvent($request);
             return $this->sendLockoutResponse($request);
         }
         
-        // Attempt login
         if ($this->attemptLogin($request)) {
             return $this->sendLoginResponse($request);
         }
         
-        // Increment login attempts
         $this->incrementLoginAttempts($request);
         
         return $this->sendFailedLoginResponse($request);
@@ -99,10 +95,8 @@ class LoginController extends Controller
         $password = $request->input('password');
         $remember = $request->filled('remember');
         
-        // Cek apakah input adalah email atau NIS
         $fieldType = filter_var($loginField, FILTER_VALIDATE_EMAIL) ? 'email' : 'nis';
         
-        // Attempt login dengan credentials
         return Auth::attempt(
             [$fieldType => $loginField, 'password' => $password],
             $remember
@@ -134,14 +128,12 @@ class LoginController extends Controller
      */
     protected function authenticated(Request $request, $user)
     {
-        // Cek status user
         if ($user->status !== 'active') {
             Auth::logout();
             return redirect()->route('login')
                 ->with('error', 'Akun Anda tidak aktif. Hubungi administrator.');
         }
         
-        // Redirect berdasarkan role
         switch ($user->role) {
             case '1':
             case 'admin':

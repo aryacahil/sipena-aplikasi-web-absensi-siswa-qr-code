@@ -23,7 +23,6 @@ class PresensiExport implements FromCollection, WithHeadings, WithMapping, WithS
     {
         $query = Presensi::with(['siswa', 'kelas.jurusan']);
 
-        // Apply filters
         if (!empty($this->filters['kelas_id'])) {
             $query->where('kelas_id', $this->filters['kelas_id']);
         }
@@ -78,7 +77,6 @@ class PresensiExport implements FromCollection, WithHeadings, WithMapping, WithS
     public function styles(Worksheet $sheet)
     {
         return [
-            // Style untuk header
             1 => [
                 'font' => [
                     'bold' => true,

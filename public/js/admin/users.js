@@ -15,7 +15,6 @@ document.addEventListener('DOMContentLoaded', function() {
         </svg>`;
     }
 
-    // Toggle fields untuk role Siswa - Create Modal
     window.toggleStudentFieldsCreate = function() {
         const role = document.getElementById('create_role').value;
         const nisGroup = document.getElementById('create_nis_group');
@@ -27,24 +26,19 @@ document.addEventListener('DOMContentLoaded', function() {
         const kelasSelect = document.getElementById('create_kelas_id');
         const parentPhoneInput = document.getElementById('create_parent_phone');
         
-        if (role == '2') { // Siswa
-            // Tampilkan field NIS, Kelas, dan Parent Phone
+        if (role == '2') {
             nisGroup.style.display = 'block';
             kelasGroup.style.display = 'block';
             parentPhoneGroup.style.display = 'block';
-            // Sembunyikan field Email
             emailGroup.style.display = 'none';
             emailInput.value = '';
             emailInput.removeAttribute('required');
             nisInput.setAttribute('required', 'required');
-        } else { // Admin atau Guru
-            // Tampilkan field Email
+        } else {
             emailGroup.style.display = 'block';
-            // Sembunyikan field NIS, Kelas, dan Parent Phone
             nisGroup.style.display = 'none';
             kelasGroup.style.display = 'none';
             parentPhoneGroup.style.display = 'none';
-            // Clear values
             nisInput.value = '';
             kelasSelect.value = '';
             parentPhoneInput.value = '';
@@ -53,7 +47,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // Toggle fields untuk role Siswa - Edit Modal
     window.toggleStudentFieldsEdit = function() {
         const role = document.getElementById('edit_role').value;
         const nisGroup = document.getElementById('edit_nis_group');
@@ -65,24 +58,19 @@ document.addEventListener('DOMContentLoaded', function() {
         const kelasSelect = document.getElementById('edit_kelas_id');
         const parentPhoneInput = document.getElementById('edit_parent_phone');
         
-        if (role == '2') { // Siswa
-            // Tampilkan field NIS, Kelas, dan Parent Phone
+        if (role == '2') {
             nisGroup.style.display = 'block';
             kelasGroup.style.display = 'block';
             parentPhoneGroup.style.display = 'block';
-            // Sembunyikan field Email
             emailGroup.style.display = 'none';
             emailInput.value = '';
             emailInput.removeAttribute('required');
             nisInput.setAttribute('required', 'required');
-        } else { // Admin atau Guru
-            // Tampilkan field Email
+        } else {
             emailGroup.style.display = 'block';
-            // Sembunyikan field NIS, Kelas, dan Parent Phone
             nisGroup.style.display = 'none';
             kelasGroup.style.display = 'none';
             parentPhoneGroup.style.display = 'none';
-            // Clear values
             nisInput.value = '';
             kelasSelect.value = '';
             parentPhoneInput.value = '';
@@ -91,7 +79,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // Show user
     document.querySelectorAll('.btn-show-user').forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
@@ -126,7 +113,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         ? '<span class="badge bg-success">Aktif</span>' 
                         : '<span class="badge bg-secondary">Nonaktif</span>';
                     
-                    // Info NIS atau Email
                     let identifierInfo = '';
                     if (user.role == 2) {
                         identifierInfo = `<tr>
@@ -215,7 +201,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Edit user
     document.querySelectorAll('.btn-edit-user').forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
@@ -246,7 +231,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('edit_role').value = user.role;
                     document.getElementById('edit_status').value = user.status;
                     
-                    // Set Email atau NIS berdasarkan role
                     if (user.role == 2) {
                         document.getElementById('edit_nis').value = user.nis || '';
                         document.getElementById('edit_email').value = '';
@@ -255,7 +239,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         document.getElementById('edit_nis').value = '';
                     }
                     
-                    // Set Kelas dan Parent Phone untuk siswa
                     if (user.kelas_id) {
                         document.getElementById('edit_kelas_id').value = user.kelas_id;
                     } else {
@@ -279,7 +262,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Delete confirmation
     document.querySelectorAll('.btn-delete').forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
@@ -309,7 +291,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Bulk Delete
     window.confirmDeleteByRole = function(role, roleName) {
         event.preventDefault();
         Swal.fire({
@@ -378,7 +359,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     };
 
-    // Reset forms on modal close
     document.getElementById('createUserModal').addEventListener('hidden.bs.modal', function () {
         document.getElementById('createUserForm').reset();
         toggleStudentFieldsCreate();
@@ -392,7 +372,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Success/Error notifications
 if (typeof Swal !== 'undefined') {
     const successMessage = document.querySelector('meta[name="success-message"]');
     if (successMessage) {

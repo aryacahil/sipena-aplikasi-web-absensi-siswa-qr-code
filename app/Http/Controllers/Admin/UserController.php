@@ -8,7 +8,6 @@ use App\Models\Kelas;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
@@ -17,22 +16,18 @@ class UserController extends Controller
     {
         $query = User::with(['kelas.jurusan']);
 
-        // Filter berdasarkan role (gunakan raw value)
         if ($request->has('role') && $request->role !== '') {
             $query->whereRaw('role = ?', [$request->role]);
         }
 
-        // Filter berdasarkan status
         if ($request->has('status') && $request->status !== '') {
             $query->where('status', $request->status);
         }
 
-        // Filter berdasarkan kelas
         if ($request->has('kelas_id') && $request->kelas_id !== '') {
             $query->where('kelas_id', $request->kelas_id);
         }
 
-        // Search (nama, email, atau NIS)
         if ($request->has('search') && $request->search !== '') {
             $search = $request->search;
             $query->where(function($q) use ($search) {
@@ -51,10 +46,7 @@ class UserController extends Controller
     public function store(Request $request)
     {
         try {
-            // Log request untuk debugging
-            Log::info('Store User Request:', $request->all());
 
-            // Validasi dinamis berdasarkan role
             $rules = [
                 'name' => 'required|string|max:255',
                 'role' => 'required|in:0,1,2',
@@ -71,9 +63,7 @@ class UserController extends Controller
                 'password.confirmed' => 'Konfirmasi password tidak cocok',
             ];
 
-            // Validasi berdasarkan role
             if ($request->role == '2') { 
-                // Siswa - butuh NIS
                 $rules['nis'] = 'required|string|max:20|unique:users,nis';
                 $rules['kelas_id'] = 'nullable|exists:kelas,id';
                 $rules['parent_phone'] = 'nullable|string|max:15';
@@ -82,7 +72,6 @@ class UserController extends Controller
                 $messages['nis.unique'] = 'NIS sudah terdaftar';
                 $messages['kelas_id.exists'] = 'Kelas tidak valid';
             } else { 
-                // Admin atau Guru - butuh Email
                 $rules['email'] = 'required|email|max:255|unique:users,email';
                 
                 $messages['email.required'] = 'Email harus diisi untuk admin/guru';
@@ -90,25 +79,21 @@ class UserController extends Controller
                 $messages['email.unique'] = 'Email sudah terdaftar';
             }
 
-            // Validasi request
             $validator = Validator::make($request->all(), $rules, $messages);
 
             if ($validator->fails()) {
-                Log::error('Validation Failed:', $validator->errors()->toArray());
                 return redirect()->back()
                     ->withErrors($validator)
                     ->withInput()
                     ->with('error', 'Validasi gagal: ' . $validator->errors()->first());
             }
 
-            // Gunakan DB transaction untuk keamanan
             DB::beginTransaction();
 
             try {
-                // Buat user dengan insert langsung untuk bypass accessor
                 $userId = DB::table('users')->insertGetId([
                     'name' => $request->name,
-                    'role' => $request->role, // Insert raw value
+                    'role' => $request->role, 
                     'status' => $request->status,
                     'password' => Hash::make($request->password),
                     'email' => $request->role != '2' ? $request->email : null,
@@ -121,8 +106,6 @@ class UserController extends Controller
 
                 DB::commit();
 
-                Log::info('User Created Successfully:', ['id' => $userId, 'name' => $request->name]);
-
                 return redirect()->route('admin.users.index')
                     ->with('success', 'User berhasil ditambahkan!');
 
@@ -132,10 +115,6 @@ class UserController extends Controller
             }
 
         } catch (\Exception $e) {
-            Log::error('Error Creating User:', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
             
             return redirect()->back()
                 ->withInput()
@@ -148,7 +127,6 @@ class UserController extends Controller
         try {
             $user = User::with(['kelas.jurusan'])->findOrFail($id);
             
-            // Ambil raw role value
             $userData = $user->toArray();
             $userData['role'] = $user->getRawOriginal('role');
             
@@ -169,7 +147,6 @@ class UserController extends Controller
         try {
             $user = User::with(['kelas.jurusan'])->findOrFail($id);
             
-            // Ambil raw role value
             $userData = $user->toArray();
             $userData['role'] = $user->getRawOriginal('role');
             
@@ -190,10 +167,6 @@ class UserController extends Controller
         try {
             $user = User::findOrFail($id);
 
-            // Log request untuk debugging
-            Log::info('Update User Request:', ['id' => $id, 'data' => $request->all()]);
-
-            // Validasi dinamis berdasarkan role
             $rules = [
                 'name' => 'required|string|max:255',
                 'role' => 'required|in:0,1,2',
@@ -209,9 +182,7 @@ class UserController extends Controller
                 'password.confirmed' => 'Konfirmasi password tidak cocok',
             ];
 
-            // Validasi berdasarkan role
             if ($request->role == '2') { 
-                // Siswa - butuh NIS
                 $rules['nis'] = 'required|string|max:20|unique:users,nis,' . $id;
                 $rules['kelas_id'] = 'nullable|exists:kelas,id';
                 $rules['parent_phone'] = 'nullable|string|max:15';
@@ -219,7 +190,6 @@ class UserController extends Controller
                 $messages['nis.required'] = 'NIS harus diisi untuk siswa';
                 $messages['nis.unique'] = 'NIS sudah terdaftar';
             } else { 
-                // Admin atau Guru - butuh Email
                 $rules['email'] = 'required|email|max:255|unique:users,email,' . $id;
                 
                 $messages['email.required'] = 'Email harus diisi untuk admin/guru';
@@ -227,25 +197,21 @@ class UserController extends Controller
                 $messages['email.unique'] = 'Email sudah terdaftar';
             }
 
-            // Validasi request
             $validator = Validator::make($request->all(), $rules, $messages);
 
             if ($validator->fails()) {
-                Log::error('Validation Failed:', $validator->errors()->toArray());
                 return redirect()->back()
                     ->withErrors($validator)
                     ->withInput()
                     ->with('error', 'Validasi gagal: ' . $validator->errors()->first());
             }
 
-            // Gunakan DB transaction untuk keamanan
             DB::beginTransaction();
 
             try {
-                // Update dengan query builder untuk bypass accessor
                 $updateData = [
                     'name' => $request->name,
-                    'role' => $request->role, // Update raw value
+                    'role' => $request->role, 
                     'status' => $request->status,
                     'email' => $request->role != '2' ? $request->email : null,
                     'nis' => $request->role == '2' ? $request->nis : null,
@@ -254,7 +220,6 @@ class UserController extends Controller
                     'updated_at' => now(),
                 ];
 
-                // Update password jika diisi
                 if ($request->filled('password')) {
                     $updateData['password'] = Hash::make($request->password);
                 }
@@ -265,8 +230,6 @@ class UserController extends Controller
 
                 DB::commit();
 
-                Log::info('User Updated Successfully:', ['id' => $id, 'name' => $request->name]);
-
                 return redirect()->route('admin.users.index')
                     ->with('success', 'User berhasil diperbarui!');
 
@@ -276,10 +239,6 @@ class UserController extends Controller
             }
 
         } catch (\Exception $e) {
-            Log::error('Error Updating User:', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
             
             return redirect()->back()
                 ->withInput()
@@ -314,7 +273,6 @@ class UserController extends Controller
                 ], 400);
             }
 
-            // Gunakan raw query untuk delete
             $count = DB::table('users')->where('role', $role)->delete();
             
             $roleName = $role == '0' ? 'guru' : 'siswa';
@@ -324,7 +282,6 @@ class UserController extends Controller
                 'message' => "{$count} {$roleName} berhasil dihapus"
             ]);
         } catch (\Exception $e) {
-            Log::error('Bulk Delete Error:', ['message' => $e->getMessage()]);
             
             return response()->json([
                 'success' => false,

@@ -13,7 +13,6 @@ class SiswaImport implements ToModel, WithHeadingRow, WithValidation
 {
     public function model(array $row)
     {
-        // Konversi nama_kelas dari Excel menjadi kelas_id
         $kelas = Kelas::where('nama_kelas', $row['nama_kelas'])->first();
 
         return new User([

@@ -1,4 +1,3 @@
-// ==================== GLOBAL VARIABLES ====================
 let map;
 let markerCheckin;
 let circleCheckin;
@@ -7,17 +6,13 @@ let circleCheckout;
 let csrfToken;
 let baseRoute;
 
-// ==================== DOM READY ====================
 document.addEventListener('DOMContentLoaded', function() {
-    // Get CSRF Token
     const tokenInput = document.querySelector('input[name="_token"]');
     csrfToken = tokenInput ? tokenInput.value : '';
     
-    // Get Base Route (admin or guru)
     const baseRouteInput = document.getElementById('baseRoute');
     baseRoute = baseRouteInput ? baseRouteInput.value : 'admin';
 
-    // Initialize all event listeners
     initializeModalEvents();
     initializeMapEvents();
     initializeQRActions();
@@ -25,17 +20,14 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeNotifications();
 });
 
-// ==================== MODAL EVENTS ====================
 function initializeModalEvents() {
     const createQRModal = document.getElementById('createQRModal');
     
     if (createQRModal) {
-        // Initialize map when modal shown
         createQRModal.addEventListener('shown.bs.modal', function() {
             if (!map) {
                 initMap();
             }
-            // PENTING: Invalidate size setelah modal terbuka
             setTimeout(function() {
                 if (map) {
                     map.invalidateSize();
@@ -43,7 +35,6 @@ function initializeModalEvents() {
             }, 200);
         });
         
-        // Reset form when modal closed
         createQRModal.addEventListener('hidden.bs.modal', function() {
             resetCreateForm();
         });
@@ -56,13 +47,11 @@ function resetCreateForm() {
         form.reset();
     }
     
-    // Hide search box
     const searchBox = document.getElementById('searchBox');
     if (searchBox) {
         searchBox.style.display = 'none';
     }
     
-    // Remove map markers
     if (map) {
         if (markerCheckin) {
             map.removeLayer(markerCheckin);
@@ -82,12 +71,10 @@ function resetCreateForm() {
         }
     }
     
-    // Clear location inputs
     document.getElementById('latitude').value = '';
     document.getElementById('longitude').value = '';
 }
 
-// ==================== MAP EVENTS ====================
 function initializeMapEvents() {
     const searchLocationBtn = document.getElementById('searchLocationBtn');
     if (searchLocationBtn) {
@@ -141,20 +128,16 @@ function initializeMapEvents() {
     }
 }
 
-// ==================== MAP FUNCTIONS ====================
 function initMap() {
-    // Default location (Indonesia center / Madiun area)
     const defaultLat = -7.6298;
     const defaultLng = 111.5239;
     
-    // Pastikan container map ada
     const mapContainer = document.getElementById('map');
     if (!mapContainer) {
         console.error('Map container not found');
         return;
     }
     
-    // Destroy existing map if any
     if (map) {
         map.remove();
         map = null;
@@ -171,12 +154,10 @@ function initMap() {
         maxZoom: 19
     }).addTo(map);
     
-    // Click on map to set location (untuk check-in, check-out akan sama)
     map.on('click', function(e) {
         setLocation(e.latlng.lat, e.latlng.lng);
     });
     
-    // PENTING: Invalidate size setelah map dibuat
     setTimeout(function() {
         map.invalidateSize();
     }, 100);
@@ -186,7 +167,6 @@ function setLocation(lat, lng) {
     document.getElementById('latitude').value = lat.toFixed(8);
     document.getElementById('longitude').value = lng.toFixed(8);
     
-    // Remove existing markers and circles
     if (markerCheckin) {
         map.removeLayer(markerCheckin);
     }
@@ -194,7 +174,6 @@ function setLocation(lat, lng) {
         map.removeLayer(circleCheckin);
     }
     
-    // Add new marker for check-in (green)
     markerCheckin = L.marker([lat, lng], {
         icon: L.icon({
             iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
@@ -206,7 +185,6 @@ function setLocation(lat, lng) {
         })
     }).addTo(map).bindPopup('Lokasi Check-In & Check-Out');
     
-    // Add circle for check-in
     const radius = parseInt(document.getElementById('radius').value) || 200;
     circleCheckin = L.circle([lat, lng], {
         color: 'green',
@@ -215,7 +193,6 @@ function setLocation(lat, lng) {
         radius: radius
     }).addTo(map);
     
-    // Center map
     map.setView([lat, lng], 16);
 }
 
@@ -321,9 +298,7 @@ function searchAddress(address) {
         });
 }
 
-// ==================== QR CODE ACTIONS ====================
 function initializeQRActions() {
-    // Show QR Code Detail
     document.querySelectorAll('.btn-show-qr').forEach(button => {
         button.addEventListener('click', function() {
             const sessionId = this.getAttribute('data-session-id');
@@ -331,7 +306,6 @@ function initializeQRActions() {
         });
     });
 
-    // Download Both QR Codes
     document.querySelectorAll('.btn-download-both').forEach(button => {
         button.addEventListener('click', function() {
             const sessionId = this.getAttribute('data-session-id');
@@ -341,7 +315,6 @@ function initializeQRActions() {
         });
     });
 
-    // Toggle Status
     document.querySelectorAll('.btn-toggle-status').forEach(button => {
         button.addEventListener('click', function() {
             const sessionId = this.getAttribute('data-session-id');
@@ -350,7 +323,6 @@ function initializeQRActions() {
         });
     });
 
-    // Delete QR Code
     document.querySelectorAll('.btn-delete').forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
@@ -428,7 +400,6 @@ function showQRCodeDetail(sessionId) {
 }
 
 function downloadBothQRCodes(sessionId, kelasName, tanggal) {
-    // Download Check-In QR
     const downloadCheckin = fetch(`/${baseRoute}/qrcode/${sessionId}/download?type=checkin`, {
         method: 'GET',
         headers: {
@@ -450,7 +421,6 @@ function downloadBothQRCodes(sessionId, kelasName, tanggal) {
         document.body.removeChild(a);
     });
 
-    // Download Check-Out QR
     const downloadCheckout = fetch(`/${baseRoute}/qrcode/${sessionId}/download?type=checkout`, {
         method: 'GET',
         headers: {
@@ -472,7 +442,6 @@ function downloadBothQRCodes(sessionId, kelasName, tanggal) {
         document.body.removeChild(a);
     });
 
-    // Wait for both downloads to complete
     Promise.all([downloadCheckin, downloadCheckout])
         .catch(error => {
             console.error('Error downloading QR codes:', error);
@@ -572,11 +541,9 @@ function deleteQRCode(form, qrName) {
     });
 }
 
-// ==================== RENDER QR DETAIL ====================
 function renderQRDetail(data, container, sessionId) {
     const session = data.session;
     
-    // Status badge
     let statusBadge = '';
     if (session.status === 'active') {
         statusBadge = '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Aktif</span>';
@@ -584,7 +551,6 @@ function renderQRDetail(data, container, sessionId) {
         statusBadge = '<span class="badge bg-secondary"><i class="bi bi-x-circle me-1"></i>Expired</span>';
     }
 
-    // Current phase badge
     let phaseBadge = '';
     if (session.current_phase === 'checkin') {
         phaseBadge = '<span class="badge bg-primary"><i class="bi bi-box-arrow-in-right me-1"></i>Fase Check-In</span>';
@@ -594,8 +560,6 @@ function renderQRDetail(data, container, sessionId) {
         phaseBadge = '<span class="badge bg-secondary"><i class="bi bi-clock me-1"></i>Belum Dimulai / Selesai</span>';
     }
 
-    // Generate siswa list
-    // Sudah presensi list
     let siswaListHtml = '';
     if (session.presensis && session.presensis.length > 0) {
         siswaListHtml = session.presensis.map((presensi, index) => {
@@ -643,7 +607,6 @@ function renderQRDetail(data, container, sessionId) {
         `;
     }
 
-    // Belum presensi list
     let belumPresensiHtml = '';
     if (session.siswa_belum_presensi && session.siswa_belum_presensi.length > 0) {
         belumPresensiHtml = session.siswa_belum_presensi.map((siswa, index) => `
@@ -843,7 +806,6 @@ function renderQRDetail(data, container, sessionId) {
     `;
 }
 
-// ==================== FORM VALIDATION ====================
 function initializeFormValidation() {
     const createForm = document.getElementById('createQRForm');
     if (createForm) {
@@ -866,7 +828,6 @@ function initializeFormValidation() {
                 return false;
             }
             
-            // Validasi waktu check-in
             if (jamCheckinSelesai <= jamCheckinMulai) {
                 e.preventDefault();
                 Swal.fire({
@@ -878,7 +839,6 @@ function initializeFormValidation() {
                 return false;
             }
             
-            // Validasi waktu check-out
             if (jamCheckoutMulai <= jamCheckinSelesai) {
                 e.preventDefault();
                 Swal.fire({
@@ -904,7 +864,6 @@ function initializeFormValidation() {
     }
 }
 
-// ==================== NOTIFICATIONS ====================
 function initializeNotifications() {
     if (typeof Swal !== 'undefined') {
         const successMeta = document.querySelector('meta[name="success-message"]');

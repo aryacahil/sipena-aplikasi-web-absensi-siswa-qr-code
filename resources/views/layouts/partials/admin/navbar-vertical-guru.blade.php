@@ -1,13 +1,13 @@
  <!-- Sidebar -->
- <nav class="navbar-vertical navbar">
-     <div class="nav-scroller">
-         <!-- Brand logo -->
-         <a class="navbar-brand">
-             <img src="{{ asset('admin_assets/images/brand/logo/logo_sekolah.png') }}" alt="" />
-             <span class="ms-2 fw-semibold text-white" style="font-size:16px; letter-spacing:0.5px;">
-                SMKN 1 BENDO
+<nav class="navbar-vertical navbar">
+    <div class="nav-scroller">
+        <!-- Brand logo -->
+        <a class="navbar-brand">
+            <img src="{{ \App\Models\SchoolSetting::get()->logo_url }}" alt="Logo Sekolah" />
+            <span class="ms-2 fw-semibold text-white" style="font-size:16px; letter-spacing:0.5px;">
+                {{ \App\Models\SchoolSetting::get()->school_name ?? 'SMKN 1 BENDO' }}
             </span>
-         </a>
+        </a>
          <!-- Navbar nav -->
          <ul class="navbar-nav flex-column" id="sideNavbar">
              <li class="nav-item">

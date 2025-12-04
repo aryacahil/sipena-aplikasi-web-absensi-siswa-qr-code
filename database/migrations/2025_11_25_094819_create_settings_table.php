@@ -21,7 +21,6 @@ return new class extends Migration
         });
 
         DB::table('settings')->insert([
-            // Global WhatsApp notification toggle
             [
                 'key' => 'fonnte_enabled',
                 'value' => '0',
@@ -31,7 +30,6 @@ return new class extends Migration
                 'updated_at' => now(),
             ],
             
-            // Message templates (masih di settings karena global untuk semua device)
             [
                 'key' => 'fonnte_message_template_checkin',
                 'value' => "Assalamualaikum Bapak/Ibu\n\nKami informasikan bahwa:\n\n*Nama:* {student_name}\n*NIS:* {nis}\n*Kelas:* {class_name}\n*Status:* ✅ MASUK\n*Waktu:* {checkin_time}\n*Tanggal:* {date}\n\nTerima kasih.\n\n_Sistem Presensi Sekolah_",

@@ -7,7 +7,6 @@ use App\Models\Setting;
 use App\Models\FonnteDevice;
 use App\Services\FonnteService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
 class WhatsAppController extends Controller
 {
@@ -18,9 +17,6 @@ class WhatsAppController extends Controller
         $this->fonnteService = $fonnteService;
     }
 
-    /**
-     * Display WhatsApp settings page with all devices
-     */
     public function index()
     {
         $settings = [
@@ -29,20 +25,15 @@ class WhatsAppController extends Controller
             'fonnte_message_template_checkout' => Setting::get('fonnte_message_template_checkout', $this->getDefaultTemplate('checkout')),
         ];
 
-        // Get all devices
         $devices = FonnteDevice::orderBy('priority', 'asc')
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Get statistics
         $stats = $this->fonnteService->getDeviceStatistics();
 
         return view('admin.settings.whatsapp', compact('settings', 'devices', 'stats'));
     }
 
-    /**
-     * Update WhatsApp settings (Global settings & templates)
-     */
     public function update(Request $request)
     {
         $validated = $request->validate([
@@ -51,16 +42,13 @@ class WhatsAppController extends Controller
         ]);
 
         try {
-            // Update templates
             Setting::set('fonnte_message_template_checkin', $validated['fonnte_message_template_checkin']);
             Setting::set('fonnte_message_template_checkout', $validated['fonnte_message_template_checkout']);
             
-            // Handle enabled status (checkbox)
             $wantsToEnable = $request->has('fonnte_enabled') && 
                             $request->input('fonnte_enabled') == '1';
             
             if ($wantsToEnable) {
-                // Check if there are available devices
                 if (!$this->fonnteService->hasAvailableDevices()) {
                     Setting::set('fonnte_enabled', false);
                     Setting::clearCache();
@@ -87,9 +75,6 @@ class WhatsAppController extends Controller
                 ->with('success', 'Pengaturan berhasil disimpan. Notifikasi WhatsApp tidak aktif.');
 
         } catch (\Exception $e) {
-            Log::error('Failed to update WhatsApp settings', [
-                'error' => $e->getMessage()
-            ]);
 
             return redirect()
                 ->back()
@@ -98,9 +83,6 @@ class WhatsAppController extends Controller
         }
     }
 
-    /**
-     * Store new device
-     */
     public function storeDevice(Request $request)
     {
         $validated = $request->validate([
@@ -112,27 +94,12 @@ class WhatsAppController extends Controller
         ]);
 
         try {
-            // Normalize phone number
             $validated['phone_number'] = $this->normalizePhoneNumber($validated['phone_number']);
             
-            // Handle is_active checkbox
             $validated['is_active'] = $request->input('is_active') == '1';
 
-            Log::info('Creating new device', [
-                'name' => $validated['name'],
-                'phone' => $validated['phone_number'],
-                'is_active' => $validated['is_active']
-            ]);
-
-            // Create device
             $device = FonnteDevice::create($validated);
 
-            Log::info('Device created successfully', [
-                'device_id' => $device->id,
-                'name' => $device->name
-            ]);
-
-            // Test connection
             $testResult = $this->fonnteService->testDevice($device);
 
             if ($testResult['success']) {
@@ -146,9 +113,6 @@ class WhatsAppController extends Controller
             }
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            Log::error('Validation failed for device creation', [
-                'errors' => $e->errors()
-            ]);
 
             return redirect()
                 ->back()
@@ -157,10 +121,6 @@ class WhatsAppController extends Controller
                 ->withInput();
 
         } catch (\Exception $e) {
-            Log::error('Failed to create device', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
 
             return redirect()
                 ->back()
@@ -169,9 +129,6 @@ class WhatsAppController extends Controller
         }
     }
 
-    /**
-     * Update device
-     */
     public function updateDevice(Request $request, FonnteDevice $device)
     {
         $validated = $request->validate([
@@ -183,16 +140,12 @@ class WhatsAppController extends Controller
         ]);
 
         try {
-            // Normalize phone number
             $validated['phone_number'] = $this->normalizePhoneNumber($validated['phone_number']);
             
-            // Handle is_active checkbox
             $validated['is_active'] = $request->input('is_active') == '1';
 
-            // Update device
             $device->update($validated);
 
-            // Return JSON for AJAX request
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => true,
@@ -205,12 +158,7 @@ class WhatsAppController extends Controller
                 ->with('success', 'Device berhasil diupdate!');
 
         } catch (\Exception $e) {
-            Log::error('Failed to update device', [
-                'device_id' => $device->id,
-                'error' => $e->getMessage()
-            ]);
 
-            // Return JSON for AJAX request
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => false,
@@ -225,26 +173,13 @@ class WhatsAppController extends Controller
         }
     }
 
-    /**
- * Delete device - Enhanced with debugging
- */
 public function deleteDevice(Request $request, $deviceId)
 {
     try {
-        // Log incoming request
-        Log::info('Delete device request received', [
-            'device_id_param' => $deviceId,
-            'request_method' => $request->method(),
-            'is_ajax' => $request->ajax(),
-            'wants_json' => $request->wantsJson(),
-            'headers' => $request->headers->all()
-        ]);
 
-        // Find device manually by ID
         $device = FonnteDevice::find($deviceId);
         
         if (!$device) {
-            Log::warning('Device not found', ['device_id' => $deviceId]);
             
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json([
@@ -259,20 +194,9 @@ public function deleteDevice(Request $request, $deviceId)
         }
 
         $deviceName = $device->name;
-        
-        Log::info('Deleting device', [
-            'device_id' => $device->id,
-            'name' => $deviceName
-        ]);
 
         $device->delete();
 
-        Log::info('Device deleted successfully', [
-            'device_id' => $device->id,
-            'name' => $deviceName
-        ]);
-
-        // Always return JSON for AJAX request
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
                 'success' => true,
@@ -285,11 +209,6 @@ public function deleteDevice(Request $request, $deviceId)
             ->with('success', "Device '$deviceName' berhasil dihapus!");
 
     } catch (\Exception $e) {
-        Log::error('Failed to delete device', [
-            'device_id' => $deviceId ?? null,
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString()
-        ]);
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
@@ -304,9 +223,6 @@ public function deleteDevice(Request $request, $deviceId)
     }
 }
 
-    /**
-     * Test device connection
-     */
     public function testDeviceConnection(Request $request)
     {
         try {
@@ -333,9 +249,6 @@ public function deleteDevice(Request $request, $deviceId)
             ], 400);
 
         } catch (\Exception $e) {
-            Log::error('Test device connection error', [
-                'error' => $e->getMessage()
-            ]);
 
             return response()->json([
                 'success' => false,
@@ -344,9 +257,6 @@ public function deleteDevice(Request $request, $deviceId)
         }
     }
 
-    /**
-     * Test all devices
-     */
     public function testAllDevices()
     {
         try {
@@ -362,9 +272,6 @@ public function deleteDevice(Request $request, $deviceId)
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Test all devices error', [
-                'error' => $e->getMessage()
-            ]);
 
             return response()->json([
                 'success' => false,
@@ -373,9 +280,6 @@ public function deleteDevice(Request $request, $deviceId)
         }
     }
 
-    /**
-     * Toggle device active status
-     */
     public function toggleDevice(FonnteDevice $device)
     {
         try {
@@ -392,10 +296,6 @@ public function deleteDevice(Request $request, $deviceId)
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Toggle device active error', [
-                'device_id' => $device->id,
-                'error' => $e->getMessage()
-            ]);
 
             return response()->json([
                 'success' => false,
@@ -404,9 +304,6 @@ public function deleteDevice(Request $request, $deviceId)
         }
     }
 
-    /**
-     * Send test message
-     */
     public function testMessage(Request $request)
     {
         $validated = $request->validate([
@@ -414,13 +311,11 @@ public function deleteDevice(Request $request, $deviceId)
         ]);
 
         try {
-            // Clear cache
             Setting::clearCache();
             
-            // Recreate service
+            
             $fonnteService = new FonnteService();
             
-            // Check if service is ready
             if (!$fonnteService->isEnabled()) {
                 return response()->json([
                     'success' => false,
@@ -428,12 +323,7 @@ public function deleteDevice(Request $request, $deviceId)
                 ], 400);
             }
 
-            // Normalize phone number
             $phoneNumber = $this->normalizePhoneNumber($validated['phone_number']);
-
-            Log::info('Sending test message', [
-                'to' => $phoneNumber
-            ]);
 
             $testMessage = "📱 *Test Notifikasi*\n\n";
             $testMessage .= "Halo! Ini adalah pesan test dari Sistem Presensi Sekolah.\n\n";
@@ -444,11 +334,6 @@ public function deleteDevice(Request $request, $deviceId)
             $result = $fonnteService->sendMessage($phoneNumber, $testMessage);
 
             if ($result['success']) {
-                Log::info('Test message sent successfully', [
-                    'to' => $phoneNumber,
-                    'device_id' => $result['device_id'] ?? null,
-                    'device_name' => $result['device_name'] ?? null
-                ]);
                 
                 return response()->json([
                     'success' => true,
@@ -457,22 +342,12 @@ public function deleteDevice(Request $request, $deviceId)
                 ]);
             }
 
-            Log::warning('Test message failed', [
-                'to' => $phoneNumber,
-                'reason' => $result['message'] ?? 'Unknown'
-            ]);
-
             return response()->json([
                 'success' => false,
                 'message' => $result['message'] ?? 'Gagal mengirim pesan'
             ], 400);
 
         } catch (\Exception $e) {
-            Log::error('Test message error', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'phone' => $validated['phone_number'] ?? null
-            ]);
 
             return response()->json([
                 'success' => false,
@@ -481,9 +356,6 @@ public function deleteDevice(Request $request, $deviceId)
         }
     }
 
-    /**
-     * Normalize phone number format
-     */
     protected function normalizePhoneNumber($phone)
     {
         $phone = preg_replace('/[^0-9]/', '', $phone);
@@ -499,9 +371,6 @@ public function deleteDevice(Request $request, $deviceId)
         return $phone;
     }
 
-    /**
-     * Get default message template
-     */
     protected function getDefaultTemplate($type = 'checkin')
     {
         if ($type === 'checkin') {

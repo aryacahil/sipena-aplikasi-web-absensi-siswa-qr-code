@@ -29,115 +29,54 @@ class HomeController extends Controller
      */
     public function adminHome()
     {
-        // Statistik Cards
         $stats = [
-            'total_siswa' => User::where('role', 2)->count(),
-            'total_guru' => User::where('role', 0)->count(),
+            'total_siswa' => User::whereRaw('role = ?', [2])->count(),
+            'total_guru' => User::whereRaw('role = ?', [0])->count(),
             'total_kelas' => Kelas::count(),
-            'total_admin' => User::where('role', 1)->count(),
+            'total_admin' => User::whereRaw('role = ?', [1])->count(),
             
-            // Completed (bisa disesuaikan dengan logika Anda)
-            'siswa_completed' => User::where('role', 2)->where('status', 'active')->count(),
-            'guru_completed' => User::where('role', 0)->where('status', 'active')->count(),
+            'siswa_completed' => User::whereRaw('role = ?', [2])->where('status', 'active')->count(),
+            'guru_completed' => User::whereRaw('role = ?', [0])->where('status', 'active')->count(),
             'kelas_completed' => Kelas::withCount('siswa')->get()->filter(function($kelas) {
                 return $kelas->siswa_count > 0;
             })->count(),
-            'admin_completed' => User::where('role', 1)->where('status', 'active')->count(),
+            'admin_completed' => User::whereRaw('role = ?', [1])->where('status', 'active')->count(),
         ];
 
-        // Data Jurusan dan Kelas
         $jurusans = Jurusan::withCount('kelas')
             ->with(['kelas' => function($query) {
                 $query->withCount('siswa');
             }])
             ->get();
 
-        // Data Grafik Kehadiran (5 hari terakhir)
-        $endDate = Carbon::now();
-        $startDate = Carbon::now()->subDays(4);
-        
-        $dates = [];
-        $labels = [];
-        for ($date = $startDate->copy(); $date <= $endDate; $date->addDay()) {
-            $dates[] = $date->format('Y-m-d');
-            $labels[] = $this->getDayName($date->dayOfWeek);
-        }
-
-        $chartData = [
-            'labels' => $labels,
-            'hadir' => [],
-            'izin' => [],
-            'sakit' => [],
-            'alpha' => []
-        ];
-
-        foreach ($dates as $date) {
-            $chartData['hadir'][] = Presensi::whereDate('tanggal_presensi', $date)
-                ->where('status', 'hadir')->count();
-            $chartData['izin'][] = Presensi::whereDate('tanggal_presensi', $date)
-                ->where('status', 'izin')->count();
-            $chartData['sakit'][] = Presensi::whereDate('tanggal_presensi', $date)
-                ->where('status', 'sakit')->count();
-            $chartData['alpha'][] = Presensi::whereDate('tanggal_presensi', $date)
-                ->where('status', 'alpha')->count();
-        }
+        $chartData = $this->getChartData('week');
 
         return view('admin.home', compact('stats', 'jurusans', 'chartData'));
     }
 
     public function guruHome() 
     {
-        // Statistik Cards untuk Guru
         $stats = [
-            'total_siswa' => User::where('role', 2)->count(),
-            'total_guru' => User::where('role', 0)->count(),
+            'total_siswa' => User::whereRaw('role = ?', [2])->count(),
+            'total_guru' => User::whereRaw('role = ?', [0])->count(),
             'total_kelas' => Kelas::count(),
-            'total_admin' => User::where('role', 1)->count(),
+            'total_admin' => User::whereRaw('role = ?', [1])->count(),
             
-            'siswa_completed' => User::where('role', 2)->where('status', 'active')->count(),
-            'guru_completed' => User::where('role', 0)->where('status', 'active')->count(),
+            'siswa_completed' => User::whereRaw('role = ?', [2])->where('status', 'active')->count(),
+            'guru_completed' => User::whereRaw('role = ?', [0])->where('status', 'active')->count(),
             'kelas_completed' => Kelas::withCount('siswa')->get()->filter(function($kelas) {
                 return $kelas->siswa_count > 0;
             })->count(),
-            'admin_completed' => User::where('role', 1)->where('status', 'active')->count(),
+            'admin_completed' => User::whereRaw('role = ?', [1])->where('status', 'active')->count(),
         ];
 
-        // Data Jurusan dan Kelas
         $jurusans = Jurusan::withCount('kelas')
             ->with(['kelas' => function($query) {
                 $query->withCount('siswa');
             }])
             ->get();
 
-        // Data Grafik Kehadiran
-        $endDate = Carbon::now();
-        $startDate = Carbon::now()->subDays(4);
-        
-        $dates = [];
-        $labels = [];
-        for ($date = $startDate->copy(); $date <= $endDate; $date->addDay()) {
-            $dates[] = $date->format('Y-m-d');
-            $labels[] = $this->getDayName($date->dayOfWeek);
-        }
-
-        $chartData = [
-            'labels' => $labels,
-            'hadir' => [],
-            'izin' => [],
-            'sakit' => [],
-            'alpha' => []
-        ];
-
-        foreach ($dates as $date) {
-            $chartData['hadir'][] = Presensi::whereDate('tanggal_presensi', $date)
-                ->where('status', 'hadir')->count();
-            $chartData['izin'][] = Presensi::whereDate('tanggal_presensi', $date)
-                ->where('status', 'izin')->count();
-            $chartData['sakit'][] = Presensi::whereDate('tanggal_presensi', $date)
-                ->where('status', 'sakit')->count();
-            $chartData['alpha'][] = Presensi::whereDate('tanggal_presensi', $date)
-                ->where('status', 'alpha')->count();
-        }
+        $chartData = $this->getChartData('week');
 
         return view('guru.home', compact('stats', 'jurusans', 'chartData')); 
     }
@@ -147,9 +86,114 @@ class HomeController extends Controller
         return view('siswa.home');
     }
 
-    /**
-     * Helper function untuk mendapatkan nama hari dalam Bahasa Indonesia
-     */
+    public function getChartDataAjax(Request $request)
+    {
+        $period = $request->get('period', 'week');
+        $kelasId = $request->get('kelas_id', 'all');
+        $jurusanId = $request->get('jurusan_id', 'all');
+
+        $chartData = $this->getChartData($period, $kelasId, $jurusanId);
+
+        return response()->json($chartData);
+    }
+
+    private function getChartData($period = 'week', $kelasId = 'all', $jurusanId = 'all')
+    {
+        $dates = [];
+        $labels = [];
+        
+        switch ($period) {
+            case 'week':
+                $today = Carbon::now();
+                
+                if ($today->dayOfWeek === 0) {
+                    $startDate = Carbon::now()->subWeek()->startOfWeek(Carbon::MONDAY);
+                } else {
+                    $startDate = Carbon::now()->startOfWeek(Carbon::MONDAY);
+                }
+                
+                $endDate = $startDate->copy()->addDays(4); 
+                
+                for ($date = $startDate->copy(); $date <= $endDate; $date->addDay()) {
+                    $dates[] = $date->format('Y-m-d');
+                    $labels[] = $this->getDayName($date->dayOfWeek);
+                }
+                break;
+                
+            case 'month':
+                $endDate = Carbon::now()->endOfWeek();
+                $startDate = Carbon::now()->subWeeks(3)->startOfWeek();
+                
+                $weekNumber = 1;
+                for ($date = $startDate->copy(); $date <= $endDate; $date->addWeek()) {
+                    $weekStart = $date->copy();
+                    $weekEnd = $date->copy()->endOfWeek();
+                    $dates[] = ['start' => $weekStart->format('Y-m-d'), 'end' => $weekEnd->format('Y-m-d')];
+                    $labels[] = 'Minggu ' . $weekNumber;
+                    $weekNumber++;
+                }
+                break;
+                
+            case 'year':
+                $endDate = Carbon::now();
+                $startDate = Carbon::now()->subMonths(11)->startOfMonth();
+                
+                for ($date = $startDate->copy(); $date <= $endDate; $date->addMonth()) {
+                    $dates[] = $date->format('Y-m');
+                    $labels[] = $this->getMonthName($date->month);
+                }
+                break;
+        }
+
+        $chartData = [
+            'labels' => $labels,
+            'hadir' => [],
+            'izin' => [],
+            'sakit' => [],
+            'alpha' => []
+        ];
+
+        foreach ($dates as $date) {
+            $baseQuery = Presensi::query();
+
+            if ($period === 'month' && is_array($date)) {
+                $baseQuery->whereBetween('tanggal_presensi', [$date['start'], $date['end']]);
+            } elseif ($period === 'year') {
+                $year = substr($date, 0, 4);
+                $month = substr($date, 5, 2);
+                $baseQuery->whereYear('tanggal_presensi', $year)
+                          ->whereMonth('tanggal_presensi', $month);
+            } else {
+                $baseQuery->whereDate('tanggal_presensi', $date);
+            }
+
+            if ($kelasId !== 'all' && !empty($kelasId)) {
+                $baseQuery->where('kelas_id', $kelasId);
+            }
+
+            if ($jurusanId !== 'all' && !empty($jurusanId)) {
+                $baseQuery->whereHas('kelas', function($q) use ($jurusanId) {
+                    $q->where('jurusan_id', $jurusanId);
+                });
+            }
+
+            $chartData['hadir'][] = (int) (clone $baseQuery)->where('status', 'hadir')->count();
+            $chartData['izin'][] = (int) (clone $baseQuery)->where('status', 'izin')->count();
+            $chartData['sakit'][] = (int) (clone $baseQuery)->where('status', 'sakit')->count();
+            $chartData['alpha'][] = (int) (clone $baseQuery)->where('status', 'alpha')->count();
+        }
+
+        $labelCount = count($chartData['labels']);
+        foreach (['hadir', 'izin', 'sakit', 'alpha'] as $key) {
+            while (count($chartData[$key]) < $labelCount) {
+                $chartData[$key][] = 0;
+            }
+            $chartData[$key] = array_slice($chartData[$key], 0, $labelCount);
+        }
+
+        return $chartData;
+    }
+
     private function getDayName($dayOfWeek)
     {
         $days = [
@@ -163,5 +207,16 @@ class HomeController extends Controller
         ];
         
         return $days[$dayOfWeek];
+    }
+
+    private function getMonthName($month)
+    {
+        $months = [
+            1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr',
+            5 => 'Mei', 6 => 'Jun', 7 => 'Jul', 8 => 'Agt',
+            9 => 'Sep', 10 => 'Okt', 11 => 'Nov', 12 => 'Des'
+        ];
+        
+        return $months[$month];
     }
 }

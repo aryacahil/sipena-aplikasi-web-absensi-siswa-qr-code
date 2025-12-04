@@ -1,34 +1,23 @@
 (function() {
     'use strict';
 
-    // Global variables
     let devices = [];
     let routes = {};
     let csrfToken = '';
 
-    /**
-     * Initialize
-     */
     document.addEventListener('DOMContentLoaded', function() {
-        // Get data from window object (passed from Blade)
         if (window.WhatsAppSettings) {
             devices = window.WhatsAppSettings.devices || [];
             routes = window.WhatsAppSettings.routes || {};
             csrfToken = window.WhatsAppSettings.csrfToken || '';
         }
 
-        // Initialize template preview
         initTemplatePreview();
         
-        // Show session messages as SweetAlert
         showSessionMessages();
     });
 
-    /**
-     * Show session messages from Laravel as SweetAlert
-     */
     function showSessionMessages() {
-        // Success message
         const successAlert = document.querySelector('.alert-success');
         if (successAlert) {
             const message = successAlert.textContent.trim().replace(/×/g, '').replace(/\s+/g, ' ');
@@ -48,7 +37,6 @@
             successAlert.remove();
         }
 
-        // Error message
         const errorAlert = document.querySelector('.alert-danger');
         if (errorAlert) {
             const message = errorAlert.textContent
@@ -66,7 +54,6 @@
             errorAlert.remove();
         }
 
-        // Warning message
         const warningAlert = document.querySelector('.alert-warning');
         if (warningAlert) {
             const message = warningAlert.textContent.trim().replace(/×/g, '').replace(/\s+/g, ' ');
@@ -80,9 +67,6 @@
         }
     }
 
-    /**
-     * Template Preview Functions
-     */
     function initTemplatePreview() {
         updatePreview();
         
@@ -103,9 +87,9 @@
         const checkoutTemplate = document.getElementById('template_checkout')?.value || '';
         
         const sampleData = {
-            student_name: 'Ahmad Fauzi',
-            nis: '2024001',
-            class_name: 'XII RPL 1',
+            student_name: 'Arya Dwipa Mukti',
+            nis: '233307037',
+            class_name: 'XII TKJ 1',
             checkin_time: '07:15',
             checkout_time: '15:30',
             date: new Date().toLocaleDateString('id-ID', { 
@@ -136,9 +120,6 @@
         }
     }
 
-    /**
-     * Device Management Functions
-     */
     window.testDevice = function(deviceId) {
         Swal.fire({
             title: 'Testing...',
@@ -246,7 +227,6 @@
             return;
         }
         
-        // Populate form
         document.getElementById('edit_device_id').value = device.id;
         document.getElementById('edit_name').value = device.name;
         document.getElementById('edit_api_key').value = device.api_key;
@@ -255,11 +235,9 @@
         document.getElementById('edit_priority').value = device.priority;
         document.getElementById('edit_is_active').checked = device.is_active;
         
-        // Set form action
         const form = document.getElementById('editDeviceForm');
         form.action = `${routes.updateDevice}${deviceId}`;
         
-        // Show modal
         const modal = new bootstrap.Modal(document.getElementById('editDeviceModal'));
         modal.show();
     };
@@ -277,7 +255,6 @@
             reverseButtons: true
         }).then((result) => {
             if (result.isConfirmed) {
-                // Show loading
                 Swal.fire({
                     title: 'Menghapus...',
                     text: 'Mohon tunggu',
@@ -342,9 +319,6 @@
         });
     };
 
-    /**
-     * Test Message Functions
-     */
     window.showTestMessageModal = function() {
         const modal = new bootstrap.Modal(document.getElementById('testMessageModal'));
         modal.show();
@@ -363,7 +337,6 @@
             return;
         }
         
-        // Validate phone number format
         const phoneRegex = /^(08|628)[0-9]{8,13}$/;
         if (!phoneRegex.test(phoneNumber)) {
             Swal.fire({
@@ -375,14 +348,12 @@
             return;
         }
         
-        // Close modal
         const modalElement = document.getElementById('testMessageModal');
         const modal = bootstrap.Modal.getInstance(modalElement);
         if (modal) {
             modal.hide();
         }
         
-        // Show loading
         Swal.fire({
             title: 'Mengirim...',
             text: 'Mohon tunggu sebentar',
@@ -442,9 +413,6 @@
         });
     };
 
-    /**
-     * Reset form on modal close
-     */
     const addDeviceModal = document.getElementById('addDeviceModal');
     if (addDeviceModal) {
         addDeviceModal.addEventListener('hidden.bs.modal', function() {

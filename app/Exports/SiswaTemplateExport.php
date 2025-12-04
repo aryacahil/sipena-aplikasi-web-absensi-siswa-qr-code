@@ -12,10 +12,9 @@ class SiswaTemplateExport implements FromArray, WithHeadings, WithStyles, Should
 {
     public function array(): array
     {
-        // Contoh data
         return [
-            ['12345', 'Ahmad Fauzi', '12345678', 'X DKV 1', '081234567890', 'active'],
-            ['12346', 'Siti Nurhaliza', '12345678', 'X DKV 2', '081234567891', 'active'],
+            ['12345', 'Jefri Nichole', '12345678', 'X DKV 1', '081234567890', 'active'],
+            ['12346', 'Maria Theodore', '12345678', 'X DKV 2', '081234567891', 'active'],
         ];
     }
 

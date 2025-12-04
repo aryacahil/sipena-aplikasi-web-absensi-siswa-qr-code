@@ -16,7 +16,7 @@
     <div class="row mt-6">
         <div class="col-lg-8 mx-auto">
             
-            {{-- ✅ ALERT BARU: Informative, tidak blocking --}}
+            {{-- Alert Status Presensi --}}
             @if($todayPresensi)
             <div class="alert alert-info alert-dismissible fade show" role="alert">
                 <div class="d-flex align-items-center">
@@ -91,8 +91,9 @@
                 </div>
 
                 <div class="card-body">
+                    <!-- Scanner Container dengan style responsif -->
                     <div id="scanner-container" class="mb-4">
-                        <div id="reader" style="border-radius: 8px; overflow: hidden; border: 2px solid #dee2e6;"></div>
+                        <div id="reader"></div>
                     </div>
 
                     <div class="alert alert-info mb-3">
@@ -126,13 +127,111 @@
 <!-- Hidden CSRF Token -->
 <input type="hidden" id="csrf-token-input" value="{{ csrf_token() }}">
 
+<!-- Custom CSS untuk Scanner Mobile-Friendly -->
+<style>
+    /* Scanner Container Base */
+    #scanner-container {
+        position: relative;
+        width: 100%;
+        max-width: 100%;
+        margin: 0 auto;
+    }
+
+    #reader {
+        border-radius: 12px;
+        overflow: hidden;
+        border: 3px solid #dee2e6;
+        background: #000;
+        position: relative;
+    }
+
+    /* Video element styling */
+    #reader video {
+        width: 100% !important;
+        height: auto !important;
+        border-radius: 8px;
+    }
+
+    /* Canvas styling */
+    #reader canvas {
+        width: 100% !important;
+        height: auto !important;
+    }
+
+    /* Desktop & Tablet (landscape) */
+    @media (min-width: 768px) {
+        #reader {
+            min-height: 400px;
+        }
+    }
+
+    /* Mobile Portrait - Kotak scan lebih besar dan proporsional */
+    @media (max-width: 767px) {
+        #scanner-container {
+            padding: 0;
+        }
+
+        #reader {
+            min-height: 320px;
+            border-radius: 16px;
+            border-width: 2px;
+        }
+
+        #reader video {
+            border-radius: 14px;
+        }
+    }
+
+    /* Small Mobile */
+    @media (max-width: 375px) {
+        #reader {
+            min-height: 280px;
+            border-radius: 12px;
+        }
+    }
+
+    /* Scanning indicator */
+    #reader.scanning::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 80%;
+        max-width: 280px;
+        height: 80%;
+        max-height: 280px;
+        border: 3px solid #0d6efd;
+        border-radius: 16px;
+        box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.1);
+        pointer-events: none;
+        animation: scanPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes scanPulse {
+        0%, 100% {
+            opacity: 0.6;
+            transform: translate(-50%, -50%) scale(0.95);
+        }
+        50% {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+    }
+
+    /* Status badge mobile */
+    @media (max-width: 576px) {
+        #statusBadge {
+            font-size: 0.75rem;
+        }
+    }
+</style>
+
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
-// ==================== SISTEM PRESENSI QR CODE ====================
 (function() {
     let scanner = null;
     let isScanning = false;
-    // ✅ HAPUS: const alreadyAttended - siswa bisa scan berkali-kali
     
     function getCSRFToken() {
         let token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
@@ -166,9 +265,8 @@
         return;
     }
     
-    // ==================== CALCULATE DISTANCE ====================
     function calculateDistance(lat1, lon1, lat2, lon2) {
-        const R = 6371000; // Earth radius in meters
+        const R = 6371000;
         const dLat = (lat2 - lat1) * Math.PI / 180;
         const dLon = (lon2 - lon1) * Math.PI / 180;
         
@@ -182,42 +280,50 @@
         return Math.round(distance);
     }
     
-    // ==================== DETECT FAKE GPS ====================
     function checkFakeGPS(position) {
         const accuracy = position.coords.accuracy;
         let warnings = [];
         
-        // Check 1: Accuracy terlalu sempurna (< 3 meter)
         if (accuracy !== null && accuracy < 3) {
             warnings.push('GPS accuracy terlalu sempurna (' + accuracy + 'm)');
         }
         
-        // Check 2: Altitude null atau 0
         if (position.coords.altitude === null || position.coords.altitude === 0) {
             warnings.push('Data altitude tidak valid');
         }
         
-        // Check 3: Mock flag (Android)
         if (position.coords.isMock === true || position.mocked === true) {
             warnings.push('GPS Mock terdeteksi oleh sistem');
         }
         
         return {
-            isSuspicious: warnings.length >= 2, // 2 atau lebih warning = suspicious
+            isSuspicious: warnings.length >= 2,
             warnings: warnings,
             accuracy: accuracy
         };
     }
     
+    function getResponsiveQRBox() {
+        const width = window.innerWidth;
+        
+        if (width < 576) {
+            return { width: Math.min(width * 0.75, 250), height: Math.min(width * 0.75, 250) };
+        }
+        else if (width < 768) {
+            return { width: 280, height: 280 };
+        }
+        else {
+            return { width: 300, height: 300 };
+        }
+    }
+    
     function init() {
         const startBtn = document.getElementById('startScanBtn');
         const stopBtn = document.getElementById('stopScanBtn');
-        const testQRBtn = document.getElementById('testQRBtn');
         
         if (startBtn) {
             startBtn.addEventListener('click', function() {
                 if (isScanning) return;
-                // ✅ HAPUS: if (alreadyAttended) check
                 startScanning();
             });
         }
@@ -227,22 +333,12 @@
                 stopScanning();
             });
         }
-        
-        if (testQRBtn) {
-            testQRBtn.addEventListener('click', function() {
-                // ✅ HAPUS: if (alreadyAttended) check
-                const testCode = prompt('Masukkan QR Code:\n\n(Default: IojRZFbqsmCJEi9HLNKqND4Vx0rlhFjc)', 'IojRZFbqsmCJEi9HLNKqND4Vx0rlhFjc');
-                
-                if (testCode && testCode.trim()) {
-                    showLoading('Testing validasi QR Code...');
-                    validateQRCode(testCode.trim());
-                }
-            });
-        }
     }
     
     function startScanning() {
         const startBtn = document.getElementById('startScanBtn');
+        const readerElement = document.getElementById('reader');
+        
         startBtn.disabled = true;
         startBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Memulai...';
         
@@ -250,13 +346,20 @@
             scanner = new Html5Qrcode("reader");
         }
         
+        const qrBox = getResponsiveQRBox();
+        
         scanner.start(
             { facingMode: "environment" },
-            { fps: 10, qrbox: { width: 250, height: 250 } },
+            { 
+                fps: 10, 
+                qrbox: qrBox,
+                aspectRatio: 1.0
+            },
             onScanSuccess,
             onScanError
         ).then(() => {
             isScanning = true;
+            readerElement.classList.add('scanning');
             updateUI(true);
         }).catch(err => {
             startBtn.disabled = false;
@@ -268,11 +371,15 @@
     function stopScanning() {
         if (!isScanning || !scanner) return;
         
+        const readerElement = document.getElementById('reader');
+        
         scanner.stop().then(() => {
             isScanning = false;
+            readerElement.classList.remove('scanning');
             updateUI(false);
         }).catch(err => {
             isScanning = false;
+            readerElement.classList.remove('scanning');
             updateUI(false);
         });
     }
@@ -292,7 +399,6 @@
                 qrCode = parts[parts.length - 1];
             }
         } catch (e) {
-            // Use as is
         }
         
         if (!qrCode || qrCode.length < 10) {
@@ -305,7 +411,6 @@
     }
     
     function onScanError(error) {
-        // Silent
     }
     
     function validateQRCode(qrCode) {
@@ -335,7 +440,6 @@
         })
         .then(data => {
             if (data.success) {
-                // SIMPAN SESSION DATA untuk validasi radius
                 window.sessionData = data.data;
                 requestLocationAndSubmit(data.data);
             } else {
@@ -357,13 +461,9 @@
         
         navigator.geolocation.getCurrentPosition(
             (position) => {
-                console.log('GPS Position received:', position.coords);
-                
-                // ==================== CHECK FAKE GPS ====================
                 const gpsCheck = checkFakeGPS(position);
                 
                 if (gpsCheck.isSuspicious) {
-                    console.warn('Suspicious GPS detected:', gpsCheck.warnings);
                     Swal.fire({
                         icon: 'warning',
                         title: 'GPS Mencurigakan!',
@@ -380,10 +480,9 @@
                         confirmButtonColor: '#dc3545',
                         confirmButtonText: 'OK, Saya Mengerti'
                     });
-                    return; // STOP - tidak bisa lanjut
+                    return;
                 }
                 
-                // ==================== CHECK RADIUS ====================
                 const userLat = position.coords.latitude;
                 const userLng = position.coords.longitude;
                 const sessionLat = sessionData.latitude;
@@ -392,14 +491,7 @@
                 
                 const distance = calculateDistance(userLat, userLng, sessionLat, sessionLng);
                 
-                console.log('Distance check:', {
-                    distance: distance,
-                    allowedRadius: allowedRadius,
-                    isValid: distance <= allowedRadius
-                });
-                
                 if (distance > allowedRadius) {
-                    console.warn('Location outside radius:', distance, '>', allowedRadius);
                     Swal.fire({
                         icon: 'error',
                         title: 'Lokasi Terlalu Jauh!',
@@ -415,11 +507,9 @@
                         confirmButtonColor: '#dc3545',
                         confirmButtonText: 'OK, Saya Mengerti'
                     });
-                    return; // STOP - tidak bisa lanjut
+                    return;
                 }
                 
-                // ==================== SEMUA VALIDASI PASSED - SUBMIT ====================
-                console.log('All validations passed. Submitting...');
                 submitPresensi(sessionData.session_id, userLat, userLng, distance, gpsCheck.accuracy);
             },
             (error) => {
@@ -447,26 +537,22 @@
     }
     
     function submitPresensi(sessionId, lat, lng, distance, gpsAccuracy) {
-        // ✅ AMBIL DATA DARI sessionData yang disimpan
         const sessionData = window.sessionData;
         
         if (!sessionData) {
-            console.error('Session data not found');
             showAlert('error', 'Error', 'Data sesi tidak ditemukan. Silakan scan ulang.');
             return;
         }
         
         const payload = {
-            qr_code_id: sessionData.qr_code_id,  // ✅ TAMBAHKAN
+            qr_code_id: sessionData.qr_code_id,
             session_id: sessionId,
-            type: sessionData.type,               // ✅ TAMBAHKAN
+            type: sessionData.type,
             latitude: lat,
             longitude: lng,
             distance: distance,
             gps_accuracy: gpsAccuracy
         };
-        
-        console.log('Submitting presensi:', payload);
         
         fetch(submitRoute, {
             method: 'POST',
@@ -506,7 +592,6 @@
             }
         })
         .catch(error => {
-            console.error('Submit error:', error);
             showAlert('error', 'Gagal Menyimpan Presensi', error.message);
         });
     }
@@ -553,6 +638,19 @@
             alert(title + '\n' + text);
         }
     }
+    
+    let resizeTimer;
+    window.addEventListener('resize', function() {
+        if (!isScanning) return;
+        
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function() {
+            if (scanner && isScanning) {
+                stopScanning();
+                setTimeout(() => startScanning(), 500);
+            }
+        }, 250);
+    });
     
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);

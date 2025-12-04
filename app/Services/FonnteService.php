@@ -5,31 +5,21 @@ namespace App\Services;
 use App\Models\FonnteDevice;
 use App\Models\Setting;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 
 class FonnteService
 {
     protected $apiUrl = 'https://api.fonnte.com';
 
-    /**
-     * Check if Fonnte service is enabled globally
-     */
     public function isEnabled(): bool
     {
         return Setting::get('fonnte_enabled', false) && $this->hasAvailableDevices();
     }
 
-    /**
-     * Check if there are available devices
-     */
     public function hasAvailableDevices(): bool
     {
         return FonnteDevice::available()->exists();
     }
 
-    /**
-     * Get next available device using round-robin with priority
-     */
     public function getNextDevice(): ?FonnteDevice
     {
         $device = FonnteDevice::available()
@@ -37,7 +27,6 @@ class FonnteService
             ->first();
 
         if (!$device) {
-            Log::warning('No available Fonnte device found');
             return null;
         }
 
@@ -54,30 +43,19 @@ class FonnteService
      */
     public function sendMessage(string $phoneNumber, string $message, ?FonnteDevice $device = null, ?int $kelasId = null): array
     {
-        // If no device specified, get next available (with class filter if provided)
         if (!$device) {
             $device = $this->getNextDevice($kelasId);
         }
 
                     if (!$device) {
-            Log::warning('No available device to send message', [
-                'kelas_id' => $kelasId
-            ]);
             return [
                 'success' => false,
                 'message' => 'No available device. All devices are offline or in error state.'
             ];
         }
 
-        // Double check: jika ada kelasId, pastikan device bisa kirim ke kelas ini
         if ($kelasId !== null && !$device->canSendToClass($kelasId)) {
-            Log::warning('Device cannot send to this class', [
-                'device_id' => $device->id,
-                'device_name' => $device->name,
-                'kelas_id' => $kelasId
-            ]);
             
-            // Try get another device
             $device = $this->getNextDevice($kelasId);
             
             if (!$device) {
@@ -89,13 +67,7 @@ class FonnteService
         }
 
         try {
-            // Add random delay between 2-5 seconds to avoid spam
             $delay = rand(2, 5);
-            Log::info('Adding random delay before sending message', [
-                'delay_seconds' => $delay,
-                'device_id' => $device->id,
-                'device_name' => $device->name
-            ]);
             sleep($delay);
 
             $phoneNumber = $this->normalizePhoneNumber($phoneNumber);
@@ -110,34 +82,18 @@ class FonnteService
                 $data['device'] = $device->device_id;
             }
 
-            Log::info('Sending WhatsApp message', [
-                'phone' => $phoneNumber,
-                'message_length' => strlen($message),
-                'device_id' => $device->id,
-                'device_name' => $device->name,
-                'sent_count' => $device->sent_count,
-            ]);
-
             $response = Http::timeout(30)
                 ->withHeaders([
                     'Authorization' => $device->api_key,
                 ])
                 ->post($this->apiUrl . '/send', $data);
 
-            Log::info('Fonnte send message response', [
-                'status' => $response->status(),
-                'body' => $response->json(),
-                'device_id' => $device->id
-            ]);
-
             if ($response->successful()) {
                 $result = $response->json();
                 
                 if (isset($result['status']) && $result['status'] === true) {
-                    // Increment sent counter
                     $device->incrementSentCount();
                     
-                    // Update device status to connected
                     $device->updateStatus('connected', 'Message sent successfully');
                     
                     return [
@@ -149,16 +105,10 @@ class FonnteService
                     ];
                 }
 
-                // If failed, try next device
                 $device->updateStatus('error', $result['reason'] ?? 'Failed to send message');
                 
-                // Recursive call with next device
                 $nextDevice = $this->getNextDevice();
                 if ($nextDevice && $nextDevice->id !== $device->id) {
-                    Log::info('Retrying with next device', [
-                        'failed_device' => $device->name,
-                        'next_device' => $nextDevice->name
-                    ]);
                     return $this->sendMessage($phoneNumber, $message, $nextDevice);
                 }
 
@@ -173,14 +123,8 @@ class FonnteService
             
             $device->updateStatus('error', $errorMessage);
 
-            // Try next device
             $nextDevice = $this->getNextDevice();
             if ($nextDevice && $nextDevice->id !== $device->id) {
-                Log::info('Retrying with next device after error', [
-                    'failed_device' => $device->name,
-                    'next_device' => $nextDevice->name,
-                    'error' => $errorMessage
-                ]);
                 return $this->sendMessage($phoneNumber, $message, $nextDevice);
             }
 
@@ -190,11 +134,6 @@ class FonnteService
             ];
 
         } catch (\Exception $e) {
-            Log::error('Fonnte send message error', [
-                'error' => $e->getMessage(),
-                'phone' => $phoneNumber,
-                'device_id' => $device->id ?? null
-            ]);
 
             if ($device) {
                 $device->updateStatus('error', $e->getMessage());
@@ -207,9 +146,6 @@ class FonnteService
         }
     }
 
-    /**
-     * Test Fonnte API connection for specific device
-     */
     public function testDevice(FonnteDevice $device): array
     {
         if (empty($device->api_key)) {
@@ -229,12 +165,6 @@ class FonnteService
         try {
             $targetNumber = $this->normalizePhoneNumber($device->phone_number);
 
-            Log::info('Testing Fonnte device connection', [
-                'device_id' => $device->id,
-                'device_name' => $device->name,
-                'target_number' => $targetNumber
-            ]);
-
             $response = Http::timeout(10)
                 ->withHeaders([
                     'Authorization' => $device->api_key,
@@ -242,12 +172,6 @@ class FonnteService
                 ->post($this->apiUrl . '/validate', [
                     'target' => $targetNumber
                 ]);
-
-            Log::info('Fonnte device test response', [
-                'device_id' => $device->id,
-                'status' => $response->status(),
-                'body' => $response->json()
-            ]);
 
             if ($response->successful()) {
                 $result = $response->json();
@@ -301,10 +225,6 @@ class FonnteService
             ];
 
         } catch (\Exception $e) {
-            Log::error('Fonnte device test error', [
-                'device_id' => $device->id,
-                'error' => $e->getMessage()
-            ]);
 
             $device->updateStatus('error', $e->getMessage());
 
@@ -315,9 +235,6 @@ class FonnteService
         }
     }
 
-    /**
-     * Test all active devices
-     */
     public function testAllDevices(): array
     {
         $devices = FonnteDevice::active()->get();
@@ -326,20 +243,15 @@ class FonnteService
         foreach ($devices as $device) {
             $results[$device->id] = $this->testDevice($device);
             
-            // Add small delay between tests
             sleep(1);
         }
 
         return $results;
     }
 
-    /**
-     * Send presensi notification to parent
-     */
     public function sendPresensiNotification($presensi, string $type = 'checkin'): array
     {
         if (!$this->isEnabled()) {
-            Log::info('Fonnte service is disabled, skipping notification');
             return [
                 'success' => false,
                 'message' => 'Fonnte service is not enabled',
@@ -354,10 +266,6 @@ class FonnteService
             $kelas = $presensi->kelas;
             
             if (!$siswa) {
-                Log::warning('Student not found for presensi', [
-                    'presensi_id' => $presensi->id,
-                    'siswa_id' => $presensi->siswa_id
-                ]);
                 
                 return [
                     'success' => false,
@@ -367,10 +275,6 @@ class FonnteService
             }
             
             if (empty($siswa->parent_phone)) {
-                Log::warning('Student has no parent phone number', [
-                    'student_id' => $siswa->id,
-                    'student_name' => $siswa->name
-                ]);
                 
                 return [
                     'success' => false,
@@ -379,7 +283,6 @@ class FonnteService
                 ];
             }
 
-            // Get template berdasarkan tipe
             $templateKey = $type === 'checkin' 
                 ? 'fonnte_message_template_checkin' 
                 : 'fonnte_message_template_checkout';
@@ -389,7 +292,6 @@ class FonnteService
             $parentName = $this->getParentName($siswa->name);
             $className = $kelas ? $kelas->nama_kelas : '-';
 
-            // Build variables untuk template
             $variables = [
                 'parent_name' => $parentName,
                 'student_name' => $siswa->name,
@@ -415,23 +317,9 @@ class FonnteService
 
             $message = $this->replaceVariables($template, $variables);
 
-            Log::info('Sending presensi notification', [
-                'presensi_id' => $presensi->id,
-                'type' => $type,
-                'siswa_name' => $siswa->name,
-                'parent_phone' => $siswa->parent_phone,
-            ]);
-
-            // Send message with auto device rotation
             return $this->sendMessage($siswa->parent_phone, $message);
 
         } catch (\Exception $e) {
-            Log::error('Failed to send attendance notification', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'presensi_id' => $presensi->id ?? null,
-                'type' => $type ?? null
-            ]);
 
             return [
                 'success' => false,
@@ -440,9 +328,6 @@ class FonnteService
         }
     }
 
-    /**
-     * Replace variables in message template
-     */
     protected function replaceVariables(string $template, array $variables): string
     {
         foreach ($variables as $key => $value) {
@@ -452,18 +337,12 @@ class FonnteService
         return $template;
     }
 
-    /**
-     * Get parent name from student name
-     */
     protected function getParentName(string $studentName): string
     {
         $firstName = explode(' ', $studentName)[0];
         return "Orang Tua " . $firstName;
     }
 
-    /**
-     * Normalize phone number to international format
-     */
     protected function normalizePhoneNumber(string $phone): string
     {
         $phone = preg_replace('/[^0-9]/', '', $phone);
@@ -479,9 +358,6 @@ class FonnteService
         return $phone;
     }
 
-    /**
-     * Get default message template
-     */
     protected function getDefaultTemplate(string $type = 'checkin'): string
     {
         if ($type === 'checkin') {
@@ -510,9 +386,6 @@ class FonnteService
         }
     }
 
-    /**
-     * Get statistics for all devices
-     */
     public function getDeviceStatistics(): array
     {
         return [

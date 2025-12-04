@@ -1,4 +1,3 @@
-/* Clean Modern Styling for Kelas Management */
 body {
     background-color: #f8f9fa;
 }
@@ -81,14 +80,12 @@ body {
     border-color: #0d6efd;
 }
 
-/* Loading spinner */
 .spinner-border {
     width: 2rem;
     height: 2rem;
     border-width: 0.25rem;
 }
 
-/* Gap utilities */
 .gap-1 {
     gap: 0.25rem;
 }

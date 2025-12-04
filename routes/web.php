@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\JurusanController;
 use App\Http\Controllers\Admin\KelasController;
 use App\Http\Controllers\Siswa\PresensiController;
+use App\Http\Controllers\Admin\SettingsController;
 
 Route::get('/', function () {
     if (Auth::check()) {
@@ -40,6 +41,8 @@ Route::middleware(['auth'])->group(function() {
 // ==================== ADMIN ROUTES ====================
 Route::middleware(['auth', 'user-role:admin'])->group(function() {
     Route::get('/admin/home', [HomeController::class, 'adminHome'])->name('admin.home');
+    
+    Route::get('/admin/chart-data', [HomeController::class, 'getChartDataAjax'])->name('admin.chart-data');
 
     Route::post('admin/users/bulk-delete', [UserController::class, 'bulkDeleteByRole'])
         ->name('admin.users.bulk-delete');
@@ -88,7 +91,6 @@ Route::middleware(['auth', 'user-role:admin'])->group(function() {
         'destroy' => 'admin.kelas.destroy',
     ]);
 
-    // QR CODE ROUTES
     Route::get('admin/qrcode', [App\Http\Controllers\Admin\QRCodeController::class, 'index'])
         ->name('admin.qrcode.index');
     Route::get('admin/qrcode/create', [App\Http\Controllers\Admin\QRCodeController::class, 'create'])
@@ -104,7 +106,6 @@ Route::middleware(['auth', 'user-role:admin'])->group(function() {
     Route::delete('admin/qrcode/{qrcode}', [App\Http\Controllers\Admin\QRCodeController::class, 'destroy'])
         ->name('admin.qrcode.destroy');
 
-    // PRESENSI ROUTES
     Route::get('admin/presensi', [App\Http\Controllers\Admin\PresensiController::class, 'index'])
         ->name('admin.presensi.index');
     Route::get('admin/presensi/kelas/{kelas}', [App\Http\Controllers\Admin\PresensiController::class, 'showKelas'])
@@ -120,7 +121,6 @@ Route::middleware(['auth', 'user-role:admin'])->group(function() {
     Route::delete('admin/presensi/{presensi}', [App\Http\Controllers\Admin\PresensiController::class, 'destroy'])
         ->name('admin.presensi.destroy');
 
-    // Export & Import
     Route::get('admin/export-import', [App\Http\Controllers\Admin\ExportImportController::class, 'index'])
         ->name('admin.export-import.index');
     Route::post('admin/export/siswa', [App\Http\Controllers\Admin\ExportImportController::class, 'exportSiswa'])
@@ -132,46 +132,48 @@ Route::middleware(['auth', 'user-role:admin'])->group(function() {
     Route::post('admin/import/siswa', [App\Http\Controllers\Admin\ExportImportController::class, 'importSiswa'])
         ->name('admin.import.siswa');
 
-    // ==================== WHATSAPP SETTINGS ROUTES ====================
-// Main WhatsApp settings page (index)
-Route::get('admin/settings/whatsapp', [App\Http\Controllers\Admin\WhatsAppController::class, 'index'])
-    ->name('admin.settings.whatsapp.index');
+    Route::get('admin/settings/whatsapp', [App\Http\Controllers\Admin\WhatsAppController::class, 'index'])
+        ->name('admin.settings.whatsapp.index');
 
-// Update global settings & templates
-Route::put('admin/settings/whatsapp', [App\Http\Controllers\Admin\WhatsAppController::class, 'update'])
-    ->name('admin.settings.whatsapp.update');
+    Route::put('admin/settings/whatsapp', [App\Http\Controllers\Admin\WhatsAppController::class, 'update'])
+        ->name('admin.settings.whatsapp.update');
 
-// Device Management Routes
-Route::post('admin/settings/whatsapp/devices', [App\Http\Controllers\Admin\WhatsAppController::class, 'storeDevice'])
-    ->name('admin.settings.whatsapp.devices.store');
+    Route::post('admin/settings/whatsapp/devices', [App\Http\Controllers\Admin\WhatsAppController::class, 'storeDevice'])
+        ->name('admin.settings.whatsapp.devices.store');
 
-Route::put('admin/settings/whatsapp/devices/{device}', [App\Http\Controllers\Admin\WhatsAppController::class, 'updateDevice'])
-    ->name('admin.settings.whatsapp.devices.update');
+    Route::put('admin/settings/whatsapp/devices/{device}', [App\Http\Controllers\Admin\WhatsAppController::class, 'updateDevice'])
+        ->name('admin.settings.whatsapp.devices.update');
 
-// DELETE route - use {id} instead of {device} for manual handling
-Route::delete('admin/settings/whatsapp/devices/{id}', [App\Http\Controllers\Admin\WhatsAppController::class, 'deleteDevice'])
-    ->name('admin.settings.whatsapp.devices.destroy');
+    Route::delete('admin/settings/whatsapp/devices/{id}', [App\Http\Controllers\Admin\WhatsAppController::class, 'deleteDevice'])
+        ->name('admin.settings.whatsapp.devices.destroy');
 
-Route::post('admin/settings/whatsapp/devices/{device}/toggle', [App\Http\Controllers\Admin\WhatsAppController::class, 'toggleDevice'])
-    ->name('admin.settings.whatsapp.devices.toggle');
+    Route::post('admin/settings/whatsapp/devices/{device}/toggle', [App\Http\Controllers\Admin\WhatsAppController::class, 'toggleDevice'])
+        ->name('admin.settings.whatsapp.devices.toggle');
 
-// Device Testing Routes
-Route::post('admin/settings/whatsapp/devices/test-connection', [App\Http\Controllers\Admin\WhatsAppController::class, 'testDeviceConnection'])
-    ->name('admin.settings.whatsapp.devices.test-connection');
+    Route::post('admin/settings/whatsapp/devices/test-connection', [App\Http\Controllers\Admin\WhatsAppController::class, 'testDeviceConnection'])
+        ->name('admin.settings.whatsapp.devices.test-connection');
 
-Route::post('admin/settings/whatsapp/devices/test-all', [App\Http\Controllers\Admin\WhatsAppController::class, 'testAllDevices'])
-    ->name('admin.settings.whatsapp.devices.test-all');
+    Route::post('admin/settings/whatsapp/devices/test-all', [App\Http\Controllers\Admin\WhatsAppController::class, 'testAllDevices'])
+        ->name('admin.settings.whatsapp.devices.test-all');
 
-// Test Message Route
-Route::post('admin/settings/whatsapp/test-message', [App\Http\Controllers\Admin\WhatsAppController::class, 'testMessage'])
-    ->name('admin.settings.whatsapp.test-message');
+    Route::post('admin/settings/whatsapp/test-message', [App\Http\Controllers\Admin\WhatsAppController::class, 'testMessage'])
+        ->name('admin.settings.whatsapp.test-message');
+
+    Route::get('/admin/settings', [SettingsController::class, 'index'])->name('admin.settings.index');
+    Route::post('/admin/settings/school', [SettingsController::class, 'updateSchool'])->name('admin.settings.school.update');
+    
+    Route::post('/admin/settings/academic-year', [SettingsController::class, 'storeAcademicYear'])->name('admin.settings.academic-year.store');
+    Route::put('/admin/settings/academic-year/{academicYear}', [SettingsController::class, 'updateAcademicYear'])->name('admin.settings.academic-year.update');
+    Route::delete('/admin/settings/academic-year/{academicYear}', [SettingsController::class, 'deleteAcademicYear'])->name('admin.settings.academic-year.delete');
+    Route::post('/admin/settings/academic-year/{academicYear}/activate', [SettingsController::class, 'activateAcademicYear'])->name('admin.settings.academic-year.activate');
 });
 
 // ==================== GURU ROUTES ====================
 Route::middleware(['auth', 'user-role:guru'])->group(function() {
     Route::get('/guru/home', [HomeController::class, 'guruHome'])->name('guru.home');
+    
+    Route::get('/guru/chart-data', [HomeController::class, 'getChartDataAjax'])->name('guru.chart-data');
 
-    // QR CODE ROUTES GURU
     Route::get('guru/qrcode', [App\Http\Controllers\Guru\QRCodeController::class, 'index'])
         ->name('guru.qrcode.index');
     Route::get('guru/qrcode/create', [App\Http\Controllers\Guru\QRCodeController::class, 'create'])
@@ -187,7 +189,6 @@ Route::middleware(['auth', 'user-role:guru'])->group(function() {
     Route::delete('guru/qrcode/{qrcode}', [App\Http\Controllers\Guru\QRCodeController::class, 'destroy'])
         ->name('guru.qrcode.destroy');
 
-    // PRESENSI ROUTES GURU
     Route::get('guru/presensi', [App\Http\Controllers\Guru\PresensiController::class, 'index'])
         ->name('guru.presensi.index');
     Route::get('guru/presensi/kelas/{kelas}', [App\Http\Controllers\Guru\PresensiController::class, 'showKelas'])
@@ -201,7 +202,6 @@ Route::middleware(['auth', 'user-role:guru'])->group(function() {
     Route::delete('guru/presensi/{presensi}', [App\Http\Controllers\Guru\PresensiController::class, 'destroy'])
         ->name('guru.presensi.destroy');
 
-    // Export & Import GURU
     Route::get('guru/export-import', [App\Http\Controllers\Guru\ExportImportController::class, 'index'])
         ->name('guru.export-import.index');
     Route::post('guru/export/siswa', [App\Http\Controllers\Guru\ExportImportController::class, 'exportSiswa'])
@@ -218,7 +218,6 @@ Route::middleware(['auth', 'user-role:guru'])->group(function() {
 Route::middleware(['auth', 'user-role:siswa'])->group(function() {
     Route::get('/siswa/home', [HomeController::class, 'siswaHome'])->name('siswa.home');
     
-    // Presensi Routes
     Route::get('siswa/presensi', [\App\Http\Controllers\Siswa\PresensiController::class, 'index'])
         ->name('siswa.presensi.index');
     Route::post('siswa/presensi/validate', [\App\Http\Controllers\Siswa\PresensiController::class, 'validateQRCode'])
@@ -227,15 +226,12 @@ Route::middleware(['auth', 'user-role:siswa'])->group(function() {
         ->name('siswa.presensi.submit');
 });
 
-// Route untuk QR Code redirect (PUBLIC - tanpa auth)
 Route::get('siswa/presensi/scan/{code}', function($code) {
-    // Jika sudah login, redirect ke scanner dengan info
     if (Auth::check() && Auth::user()->role == 'siswa') {
         return redirect()->route('siswa.presensi.index')
             ->with('qr_code', $code);
     }
     
-    // Jika belum login, redirect ke login dengan return URL
     return redirect()->route('login')
         ->with('info', 'Silakan login terlebih dahulu untuk melakukan presensi');
 })->name('siswa.presensi.scan');

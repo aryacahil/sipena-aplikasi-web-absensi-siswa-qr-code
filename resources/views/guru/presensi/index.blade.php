@@ -17,8 +17,8 @@
         <div class="col-lg-12 col-md-12 col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <div class="mb-2 mb-lg-0">
-                    <h3 class="mb-0 text-white">Data Presensi Siswa</h3>
-                    <p class="text-white-50 mb-0">Pilih kelas untuk melihat data presensi siswa</p>
+                    <h3 class="mb-0 text-white">Manajemen Absensi</h3>
+                    <p class="text-white-50 mb-0">Kelola Data absensi siswa</p>
                 </div>
                 <div>
                     <a href="{{ route('guru.qrcode.index') }}" class="btn btn-white">
@@ -319,6 +319,6 @@
 
 @endsection
 @push('scripts')
-<link rel="stylesheet" href="{{ asset('css/admin/presensi.css') }}">
+<link rel="stylesheet" href="{{ asset('css/guru/presensi.css') }}">
 <script src="{{ asset('js/guru/presensi.js') }}"></script>
 @endpush

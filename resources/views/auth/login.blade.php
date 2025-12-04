@@ -9,11 +9,11 @@
                     <div class="card-body p-6">
                         <!-- Logo & Judul -->
                         <div class="text-center mb-4">
-                            <img src="{{ asset('admin_assets/images/brand/logo/logo_sekolah.png') }}"
-                                 alt="Logo SMK Bendo"
+                            <img src="{{ \App\Models\SchoolSetting::get()->logo_url }}"
+                                 alt="Logo Sekolah"
                                  class="rounded-circle shadow-sm mb-3"
                                  width="100">
-                            <h4 class="fw-bold mb-1">SMKN 1 BENDO MAGETAN</h4>
+                            <h4 class="fw-bold mb-1">{{ \App\Models\SchoolSetting::get()->school_name ?? 'SMKN 1 BENDO MAGETAN' }}</h4>
                             <p class="text-muted small">Aplikasi Web Absensi Berbasis QR CODE</p>
                         </div>
 
@@ -21,6 +21,13 @@
                         @if(session('error'))
                             <div class="alert alert-danger alert-dismissible fade show" role="alert">
                                 <strong>{{ session('error') }}</strong>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        @endif
+
+                        @if(session('info'))
+                            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                                <strong>{{ session('info') }}</strong>
                                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                             </div>
                         @endif

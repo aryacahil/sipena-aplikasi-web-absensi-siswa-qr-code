@@ -6,12 +6,8 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        // Buat tabel fonnte_devices
         Schema::create('fonnte_devices', function (Blueprint $table) {
             $table->id();
             $table->string('name')->comment('Nama device untuk identifikasi');
@@ -27,16 +23,12 @@ return new class extends Migration
             $table->text('status_message')->nullable()->comment('Detail status/error message');
             $table->timestamps();
             
-            // Index untuk performa
             $table->index(['is_active', 'priority']);
             $table->index('sent_count');
             $table->index('last_used_at');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('fonnte_devices');

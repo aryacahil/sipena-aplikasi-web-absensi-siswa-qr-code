@@ -19,7 +19,6 @@ class ExportImportController extends Controller
         return view('admin.export-import.index', compact('kelas'));
     }
 
-    // Export Siswa
     public function exportSiswa(Request $request)
     {
         $filters = $request->only(['kelas_id', 'status']);
@@ -28,7 +27,6 @@ class ExportImportController extends Controller
         return Excel::download(new SiswaExport($filters), $filename);
     }
 
-    // Export Presensi
     public function exportPresensi(Request $request)
     {
         $filters = $request->only(['kelas_id', 'tanggal_mulai', 'tanggal_akhir', 'status']);
@@ -37,13 +35,11 @@ class ExportImportController extends Controller
         return Excel::download(new PresensiExport($filters), $filename);
     }
 
-    // Download Template Import Siswa
     public function downloadTemplate()
     {
         return Excel::download(new SiswaTemplateExport, 'template-import-siswa.xlsx');
     }
 
-    // Import Siswa
     public function importSiswa(Request $request)
     {
         $request->validate([

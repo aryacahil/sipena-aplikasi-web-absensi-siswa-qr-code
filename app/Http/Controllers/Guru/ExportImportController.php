@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Guru;
+namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Exports\SiswaExport;
@@ -16,10 +16,9 @@ class ExportImportController extends Controller
     public function index()
     {
         $kelas = Kelas::with('jurusan')->get();
-        return view('guru.export-import.index', compact('kelas'));
+        return view('admin.export-import.index', compact('kelas'));
     }
 
-    // Export Siswa
     public function exportSiswa(Request $request)
     {
         $filters = $request->only(['kelas_id', 'status']);
@@ -28,7 +27,6 @@ class ExportImportController extends Controller
         return Excel::download(new SiswaExport($filters), $filename);
     }
 
-    // Export Presensi
     public function exportPresensi(Request $request)
     {
         $filters = $request->only(['kelas_id', 'tanggal_mulai', 'tanggal_akhir', 'status']);
@@ -37,13 +35,11 @@ class ExportImportController extends Controller
         return Excel::download(new PresensiExport($filters), $filename);
     }
 
-    // Download Template Import Siswa
     public function downloadTemplate()
     {
         return Excel::download(new SiswaTemplateExport, 'template-import-siswa.xlsx');
     }
 
-    // Import Siswa
     public function importSiswa(Request $request)
     {
         $request->validate([
@@ -53,9 +49,18 @@ class ExportImportController extends Controller
         try {
             Excel::import(new SiswaImport, $request->file('file'));
             
-            return back()->with('success', 'Data siswa berhasil diimport!');
+            return redirect()->back()->with('success', 'Data siswa berhasil diimport!');
+        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+            $failures = $e->failures();
+            $errorMessages = [];
+            
+            foreach ($failures as $failure) {
+                $errorMessages[] = "Baris {$failure->row()}: " . implode(', ', $failure->errors());
+            }
+            
+            return redirect()->back()->with('error', 'Gagal import: ' . implode(' | ', $errorMessages));
         } catch (\Exception $e) {
-            return back()->with('error', 'Gagal import: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal import: ' . $e->getMessage());
         }
     }
 }
