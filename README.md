@@ -99,12 +99,6 @@ Aplikasi Web Absensi Siswa Berbasis QR Code (Sipena) untuk sekolah dengan fitur 
 ![Presensi Kelas](screenshots/admin-presensi-kelas.png)
 *Detail presensi siswa dalam satu kelas*
 
-![Input Manual Presensi](screenshots/admin-presensi-manual.png)
-*Form input manual presensi*
-
-![Edit Presensi](screenshots/admin-presensi-edit.png)
-*Edit data presensi*
-
 #### Export & Import
 ![Export Import](screenshots/admin-export-import.png)
 *Halaman export dan import data*
@@ -113,18 +107,9 @@ Aplikasi Web Absensi Siswa Berbasis QR Code (Sipena) untuk sekolah dengan fitur 
 ![WhatsApp Settings](screenshots/admin-whatsapp-settings.png)
 *Konfigurasi WhatsApp API dan device*
 
-![WhatsApp Device](screenshots/admin-whatsapp-device.png)
-*Manajemen WhatsApp device*
-
-![WhatsApp Template](screenshots/admin-whatsapp-template.png)
-*Customisasi template pesan WhatsApp*
-
 #### Pengaturan Sistem
 ![School Settings](screenshots/admin-settings-school.png)
 *Pengaturan data sekolah dan logo*
-
-![Academic Year](screenshots/admin-settings-academic.png)
-*Manajemen tahun ajaran*
 
 ---
 
@@ -153,43 +138,6 @@ Aplikasi Web Absensi Siswa Berbasis QR Code (Sipena) untuk sekolah dengan fitur 
 #### Scan QR Code
 ![Siswa Scan QR](screenshots/siswa-scan-qr.png)
 *Halaman scan QR Code untuk presensi*
-
-![Siswa Camera](screenshots/siswa-camera.png)
-*Tampilan kamera saat scan QR Code*
-
-![Siswa Validasi](screenshots/siswa-validasi.png)
-*Proses validasi lokasi dan waktu*
-
-![Siswa Success](screenshots/siswa-success.png)
-*Notifikasi berhasil presensi*
-
-#### Riwayat Presensi
-![Siswa History](screenshots/siswa-history.png)
-*Riwayat presensi siswa*
-
----
-
-### 📱 Notifikasi WhatsApp
-
-#### Notifikasi Check-in
-![WA Check-in](screenshots/wa-notif-checkin.png)
-*Contoh notifikasi WhatsApp saat check-in*
-
-#### Notifikasi Check-out
-![WA Check-out](screenshots/wa-notif-checkout.png)
-*Contoh notifikasi WhatsApp saat check-out*
-
----
-
-### 📊 Laporan & Export
-
-#### Excel Export - Data Siswa
-![Export Siswa](screenshots/export-siswa.png)
-*Contoh hasil export data siswa*
-
-#### Excel Export - Data Presensi
-![Export Presensi](screenshots/export-presensi.png)
-*Contoh hasil export data presensi*
 
 ---
 
