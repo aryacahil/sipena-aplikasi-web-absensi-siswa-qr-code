@@ -235,7 +235,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     ? '<span class="badge bg-primary-soft text-primary"><i class="bi bi-qr-code me-1"></i>QR</span>'
                     : (presensi ? '<span class="badge bg-secondary-soft text-secondary"><i class="bi bi-pencil me-1"></i>Manual</span>' : '-');
 
-                // ✅ FIXED: Tampilkan waktu checkin dan checkout terpisah
                 const checkinTime = presensi && presensi.waktu_checkin && presensi.waktu_checkin !== '-'
                     ? `<small class="text-muted"><i class="bi bi-box-arrow-in-right me-1"></i>${presensi.waktu_checkin}</small>` 
                     : '<small class="text-muted">-</small>';

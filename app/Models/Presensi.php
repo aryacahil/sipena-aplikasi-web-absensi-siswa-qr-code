@@ -46,11 +46,8 @@ class Presensi extends Model
     {
         parent::boot();
 
-        // Event saat creating (sebelum insert)
         static::creating(function ($presensi) {
-            // Jika presensi manual
             if ($presensi->metode === 'manual') {
-                // Hanya isi waktu untuk status HADIR
                 if ($presensi->status === 'hadir') {
                     $presensi->waktu_checkin = \Carbon\Carbon::parse($presensi->tanggal_presensi)
                         ->setTime(7, 0, 0);
@@ -58,18 +55,14 @@ class Presensi extends Model
                     $presensi->waktu_checkout = \Carbon\Carbon::parse($presensi->tanggal_presensi)
                         ->setTime(15, 0, 0);
                 } else {
-                    // Untuk sakit, izin, alpha -> waktu NULL
                     $presensi->waktu_checkin = null;
                     $presensi->waktu_checkout = null;
                 }
             }
         });
 
-        // Event saat updating (saat update)
         static::updating(function ($presensi) {
-            // Jika presensi manual
             if ($presensi->metode === 'manual') {
-                // Jika statusnya HADIR dan waktu masih kosong
                 if ($presensi->status === 'hadir') {
                     if (empty($presensi->waktu_checkin)) {
                         $presensi->waktu_checkin = \Carbon\Carbon::parse($presensi->tanggal_presensi)
@@ -81,7 +74,6 @@ class Presensi extends Model
                             ->setTime(15, 0, 0);
                     }
                 } else {
-                    // Untuk sakit, izin, alpha -> kosongkan waktu
                     $presensi->waktu_checkin = null;
                     $presensi->waktu_checkout = null;
                 }
@@ -89,40 +81,26 @@ class Presensi extends Model
         });
     }
     
-    /**
-     * Accessor untuk waktu_presensi (backward compatibility)
-     * Return waktu checkin sebagai default
-     */
     public function getWaktuPresensiAttribute()
     {
         return $this->waktu_checkin ?? $this->created_at;
     }
 
-    /**
-     * Check if student has checked in
-     */
     public function hasCheckedIn()
     {
         return !is_null($this->waktu_checkin);
     }
 
-    /**
-     * Check if student has checked out
-     */
     public function hasCheckedOut()
     {
         return !is_null($this->waktu_checkout);
     }
 
-    /**
-     * Check if presensi is complete (both checkin and checkout)
-     */
     public function isComplete()
     {
         return $this->hasCheckedIn() && $this->hasCheckedOut();
     }
 
-    // Relationships
     public function session()
     {
         return $this->belongsTo(PresensiSession::class, 'session_id');
@@ -143,7 +121,6 @@ class Presensi extends Model
         return $this->belongsTo(Kelas::class, 'kelas_id');
     }
 
-    // Scopes
     public function scopeByDate($query, $date)
     {
         return $query->whereDate('tanggal_presensi', $date);

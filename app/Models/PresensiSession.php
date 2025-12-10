@@ -43,7 +43,6 @@ class PresensiSession extends Model
         'radius_checkout' => 'integer',
     ];
 
-    // Relationships
     public function kelas()
     {
         return $this->belongsTo(Kelas::class);
@@ -64,9 +63,6 @@ class PresensiSession extends Model
         return $this->hasOne(QRCode::class, 'session_id');
     }
 
-    /**
-     * Check if checkin is currently active
-     */
     public function isCheckinActive()
     {
         if ($this->status !== 'active') {
@@ -86,9 +82,6 @@ class PresensiSession extends Model
         return $now->between($checkinMulai, $checkinSelesai);
     }
 
-    /**
-     * Check if checkout is currently active
-     */
     public function isCheckoutActive()
     {
         if ($this->status !== 'active') {
@@ -108,9 +101,6 @@ class PresensiSession extends Model
         return $now->between($checkoutMulai, $checkoutSelesai);
     }
 
-    /**
-     * Get current session phase (checkin/checkout/none)
-     */
     public function getCurrentPhase()
     {
         if ($this->isCheckinActive()) {
@@ -124,9 +114,6 @@ class PresensiSession extends Model
         return 'none';
     }
 
-    /**
-     * Get status text based on time
-     */
     public function getStatusText()
     {
         if ($this->status === 'expired' || $this->status === 'inactive') {
@@ -163,9 +150,6 @@ class PresensiSession extends Model
         return 'between_sessions';
     }
 
-    /**
-     * Auto-set expired if needed
-     */
     public function updateStatusIfExpired()
     {
         if ($this->getStatusText() === 'expired' && $this->status === 'active') {
@@ -176,9 +160,6 @@ class PresensiSession extends Model
         return false;
     }
 
-    /**
-     * Haversine distance in meters
-     */
     public static function calculateDistance($lat1, $lon1, $lat2, $lon2)
     {
         $earthRadius = 6371000;

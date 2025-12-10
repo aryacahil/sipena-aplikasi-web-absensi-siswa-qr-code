@@ -879,7 +879,6 @@ document.body.addEventListener('click', function(e) {
     }
 });
 
-// Search siswa untuk pindah kelas
 const searchSiswaPindah = document.getElementById('search_siswa_pindah');
 if (searchSiswaPindah) {
     searchSiswaPindah.addEventListener('input', function(e) {
@@ -899,7 +898,6 @@ if (searchSiswaPindah) {
     });
 }
 
-// Handler checkbox "Pilih Semua" untuk pindah kelas
 document.body.addEventListener('click', function(e) {
     const selectAllBtn = e.target.closest('.btn-select-all-pindah');
     if (selectAllBtn) {
@@ -924,7 +922,6 @@ document.body.addEventListener('click', function(e) {
     }
 });
 
-// Handler untuk pindah siswa terpilih
 document.body.addEventListener('click', function(e) {
     const moveBtn = e.target.closest('.btn-move-selected');
     if (moveBtn) {
@@ -1034,7 +1031,6 @@ document.body.addEventListener('click', function(e) {
     }
 });
 
-// Close pindah kelas modal
 const pindahKelasModal = document.getElementById('pindahKelasModal');
 if (pindahKelasModal) {
     pindahKelasModal.addEventListener('hidden.bs.modal', function() {
@@ -1058,7 +1054,6 @@ if (pindahKelasModal) {
     });
 }
 
-// Functions untuk pindah kelas
 
 function loadAllSiswaForPindah(kelasId) {
     console.log('Loading all siswa including from other classes');
@@ -1076,8 +1071,7 @@ function loadAllSiswaForPindah(kelasId) {
         </div>
     `;
     
-    // ⭐ PERBAIKAN: Ganti URL dari /admin/kelas/all-siswa ke /admin/kelas/all-siswa
-    fetch(`/admin/kelas/all-siswa`, {  // ← BUKAN /admin/kelas/${kelasId}/all-siswa
+    fetch(`/admin/kelas/all-siswa`, {
         method: 'GET',
         headers: {
             'X-CSRF-TOKEN': csrfToken,
@@ -1121,12 +1115,10 @@ function loadKelasListForPindah(currentKelasId) {
     const csrfToken = document.querySelector('input[name="_token"]').value;
     const select = document.getElementById('target_kelas_select');
     
-    // Set loading state
     select.innerHTML = '<option value="">Memuat...</option>';
     select.disabled = true;
     
-    // ⭐ PERBAIKAN: Ganti URL menjadi /admin/kelas/list-all
-    fetch(`/admin/kelas/list-all`, {  // ← BUKAN /admin/kelas/list
+    fetch(`/admin/kelas/list-all`, {
         method: 'GET',
         headers: {
             'X-CSRF-TOKEN': csrfToken,
@@ -1183,10 +1175,6 @@ function loadKelasListForPindah(currentKelasId) {
     });
 }
 
-// ============================================================
-// PERBAIKAN renderSiswaPindahList - DESIGN SAMA DENGAN TAMBAH SISWA
-// ============================================================
-
 function renderSiswaPindahList(siswaArray) {
     console.log('Rendering siswa pindah list:', siswaArray.length, 'items');
     console.log('Current selected IDs:', Array.from(selectedSiswaIds));
@@ -1204,7 +1192,6 @@ function renderSiswaPindahList(siswaArray) {
         return;
     }
     
-    // ⭐ DESIGN BARU: Sama seperti modal Tambah Siswa
     const siswaHtml = siswaArray.map((siswa, index) => {
         const siswaIdStr = siswa.id.toString();
         const isSelected = selectedSiswaIds.has(siswaIdStr);

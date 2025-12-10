@@ -140,7 +140,6 @@ class QRCodeController extends Controller
         try {
             $qrcode->load(['kelas.jurusan', 'creator', 'presensis.siswa', 'qrCode']);
             
-            // Generate QR Code SVG
             $qrCodeCheckinSvg = '';
             $qrCodeCheckoutSvg = '';
             
@@ -243,7 +242,6 @@ class QRCodeController extends Controller
 
     public function download(PresensiSession $qrcode, Request $request)
     {
-        // Validate type parameter
         $type = $request->input('type', 'checkin');
         
         if (!in_array($type, ['checkin', 'checkout'])) {

@@ -23,7 +23,6 @@ class QRCode extends Model
         'deleted_at' => 'datetime',
     ];
 
-    // Relasi
     public function session()
     {
         return $this->belongsTo(PresensiSession::class, 'session_id');

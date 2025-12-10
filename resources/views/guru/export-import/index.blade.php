@@ -25,7 +25,7 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <form action="{{ route('admin.export.siswa') }}" method="POST">
+                    <form action="{{ route('guru.export.siswa') }}" method="POST">
                         @csrf
                         <div class="mb-3">
                             <label class="form-label">Filter Kelas</label>
@@ -63,7 +63,7 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <form action="{{ route('admin.export.presensi') }}" method="POST">
+                    <form action="{{ route('guru.export.presensi') }}" method="POST">
                         @csrf
                         <div class="mb-3">
                             <label class="form-label">Filter Kelas</label>
@@ -127,14 +127,14 @@
                     <div class="row">
                         <!-- Download Template -->
                         <div class="col-md-6 mb-3 mb-md-0">
-                            <a href="{{ route('admin.download.template') }}" class="btn btn-outline-primary w-100">
+                            <a href="{{ route('guru.download.template') }}" class="btn btn-outline-primary w-100">
                                 <i class="bi bi-download me-2"></i>Download Template
                             </a>
                         </div>
 
                         <!-- Upload Import -->
                         <div class="col-md-6">
-                            <form action="{{ route('admin.import.siswa') }}" method="POST" enctype="multipart/form-data">
+                            <form action="{{ route('guru.import.siswa') }}" method="POST" enctype="multipart/form-data">
                                 @csrf
                                 <div class="input-group">
                                     <input type="file" name="file" class="form-control" accept=".xlsx,.xls,.csv" required>

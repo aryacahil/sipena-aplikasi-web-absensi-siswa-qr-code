@@ -31,26 +31,17 @@ class FonnteDevice extends Model
         'last_checked_at' => 'datetime',
     ];
 
-    /**
-     * Scope untuk device yang aktif
-     */
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
     }
 
-    /**
-     * Scope untuk device yang available (aktif & status OK)
-     */
     public function scopeAvailable($query)
     {
         return $query->active()
                     ->where('status', '!=', 'error');
     }
 
-    /**
-     * Scope untuk sorting by priority
-     */
     public function scopeByPriority($query)
     {
         return $query->orderBy('priority', 'asc')
@@ -58,18 +49,12 @@ class FonnteDevice extends Model
                     ->orderBy('last_used_at', 'asc');
     }
 
-    /**
-     * Increment counter pengiriman
-     */
     public function incrementSentCount(): void
     {
         $this->increment('sent_count');
         $this->update(['last_used_at' => now()]);
     }
 
-    /**
-     * Update status device
-     */
     public function updateStatus(string $status, ?string $message = null): void
     {
         $this->update([
@@ -79,14 +64,10 @@ class FonnteDevice extends Model
         ]);
     }
 
-    /**
-     * Get formatted phone number
-     */
     public function getFormattedPhoneAttribute(): string
     {
         $phone = $this->phone_number;
         
-        // Format: 628xxx -> 0xxx
         if (substr($phone, 0, 2) === '62') {
             return '0' . substr($phone, 2);
         }
@@ -94,9 +75,6 @@ class FonnteDevice extends Model
         return $phone;
     }
 
-    /**
-     * Get status badge color
-     */
     public function getStatusBadgeColorAttribute(): string
     {
         return match($this->status) {
@@ -107,9 +85,6 @@ class FonnteDevice extends Model
         };
     }
 
-    /**
-     * Get status label
-     */
     public function getStatusLabelAttribute(): string
     {
         return match($this->status) {

@@ -36,7 +36,6 @@ class KelasController extends Controller
         $kelas = $query->paginate(10);
         $jurusans = Jurusan::all();
         
-        // Ambil guru dengan raw query untuk bypass accessor
         $gurus = DB::table('users')
             ->where('role', 0)
             ->select('id', 'name', 'email')
@@ -50,7 +49,6 @@ class KelasController extends Controller
     {
         $jurusans = Jurusan::all();
         
-        // Ambil guru dengan raw query
         $gurus = DB::table('users')
             ->where('role', 0)
             ->select('id', 'name', 'email')
@@ -87,7 +85,6 @@ class KelasController extends Controller
         if (request()->wantsJson()) {
             $kela->load(['jurusan', 'waliKelas']);
             
-            // Ambil siswa dengan raw query - HANYA NIS, tanpa email
             $siswaData = DB::table('users')
                 ->where('kelas_id', $kela->id)
                 ->where('role', 2)
@@ -129,7 +126,6 @@ class KelasController extends Controller
     public function edit(Kelas $kela)
     {
         if (request()->wantsJson()) {
-            // Ambil guru dengan raw query
             $gurus = DB::table('users')
                 ->where('role', 0)
                 ->select('id', 'name', 'email')
@@ -146,7 +142,6 @@ class KelasController extends Controller
 
         $jurusans = Jurusan::all();
         
-        // Ambil guru dengan raw query
         $gurus = DB::table('users')
             ->where('role', 0)
             ->select('id', 'name', 'email')
@@ -181,7 +176,6 @@ class KelasController extends Controller
     public function destroy(Kelas $kela)
     {
         try {
-            // Cek apakah ada siswa di kelas
             $siswaCount = DB::table('users')
                 ->where('kelas_id', $kela->id)
                 ->count();
@@ -202,7 +196,6 @@ class KelasController extends Controller
 
     public function availableSiswa(Kelas $kela)
     {
-        // Ambil siswa yang belum punya kelas - HANYA NIS, tanpa email
         $siswa = DB::table('users')
             ->where('role', 2)
             ->where(function($query) {
@@ -213,7 +206,6 @@ class KelasController extends Controller
             ->orderBy('nis', 'asc')
             ->get();
 
-        // Format data siswa
         $formattedSiswa = $siswa->map(function($s) {
             return [
                 'id' => $s->id,
@@ -239,7 +231,6 @@ class KelasController extends Controller
         $errors = [];
 
         foreach ($request->siswa_ids as $siswaId) {
-            // Cek apakah siswa belum punya kelas
             $siswa = DB::table('users')
                 ->where('id', $siswaId)
                 ->where('role', 2)
@@ -284,7 +275,6 @@ class KelasController extends Controller
 
     public function removeSiswa(Request $request, Kelas $kela)
     {
-        // Jika menghapus multiple siswa
         if ($request->has('siswa_ids')) {
             $request->validate([
                 'siswa_ids' => 'required|array',
@@ -335,7 +325,6 @@ class KelasController extends Controller
                 'errors' => $errors
             ], 422);
         } 
-        // Jika menghapus single siswa
         else {
             $request->validate([
                 'siswa_id' => 'required|exists:users,id',
@@ -403,14 +392,6 @@ class KelasController extends Controller
         }
     }
 
-    // ============================================================
-    // ⭐ METHOD BARU UNTUK PINDAH KELAS
-    // ============================================================
-
-    /**
-     * Get daftar semua kelas untuk dropdown Pindah Kelas
-     * Route: GET /admin/kelas/list-all
-     */
     public function listAll()
     {
         try {
@@ -427,7 +408,6 @@ class KelasController extends Controller
                 ->orderBy('kelas.nama_kelas', 'asc')
                 ->get();
 
-            // Hitung siswa per kelas
             $kelasWithCount = $kelas->map(function($k) {
                 $siswaCount = DB::table('users')
                     ->where('kelas_id', $k->id)
@@ -456,14 +436,9 @@ class KelasController extends Controller
         }
     }
 
-    /**
-     * Get semua siswa (termasuk yang sudah punya kelas) untuk Pindah Kelas
-     * Route: GET /admin/kelas/all-siswa
-     */
     public function allSiswa()
     {
         try {
-            // Ambil semua siswa dengan informasi kelas mereka
             $siswa = DB::table('users as u')
                 ->leftJoin('kelas as k', 'u.kelas_id', '=', 'k.id')
                 ->where('u.role', 2)
@@ -477,7 +452,6 @@ class KelasController extends Controller
                 ->orderBy('u.name', 'asc')
                 ->get();
 
-            // Format data siswa
             $formattedSiswa = $siswa->map(function($s) {
                 return [
                     'id' => $s->id,
@@ -502,10 +476,6 @@ class KelasController extends Controller
         }
     }
 
-    /**
-     * Pindahkan siswa ke kelas lain
-     * Route: POST /admin/kelas/pindah-siswa
-     */
     public function pindahSiswa(Request $request)
     {
         try {
@@ -522,7 +492,6 @@ class KelasController extends Controller
             $siswaIds = $request->siswa_ids;
             $targetKelasId = $request->target_kelas_id;
 
-            // Get target kelas info
             $targetKelas = DB::table('kelas')
                 ->where('id', $targetKelasId)
                 ->first();
@@ -545,13 +514,11 @@ class KelasController extends Controller
                     ->first();
                 
                 if ($siswa) {
-                    // Cek jika siswa sudah di kelas tujuan
                     if ($siswa->kelas_id == $targetKelasId) {
                         $errors[] = "{$siswa->name} sudah berada di kelas tujuan";
                         continue;
                     }
 
-                    // Pindahkan siswa
                     DB::table('users')
                         ->where('id', $siswaId)
                         ->update(['kelas_id' => $targetKelasId]);

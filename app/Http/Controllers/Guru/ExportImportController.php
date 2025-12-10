@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\Guru;
 
 use App\Http\Controllers\Controller;
 use App\Exports\SiswaExport;
@@ -16,7 +16,7 @@ class ExportImportController extends Controller
     public function index()
     {
         $kelas = Kelas::with('jurusan')->get();
-        return view('admin.export-import.index', compact('kelas'));
+        return view('guru.export-import.index', compact('kelas'));
     }
 
     public function exportSiswa(Request $request)

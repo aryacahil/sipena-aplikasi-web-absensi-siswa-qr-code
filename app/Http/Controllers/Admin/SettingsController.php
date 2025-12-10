@@ -31,9 +31,7 @@ class SettingsController extends Controller
 
         $setting = SchoolSetting::first() ?? new SchoolSetting();
         
-        // Handle logo upload
         if ($request->hasFile('logo')) {
-            // Delete old logo if exists
             if ($setting->logo_path && file_exists(public_path($setting->logo_path))) {
                 unlink(public_path($setting->logo_path));
             }
@@ -42,7 +40,6 @@ class SettingsController extends Controller
             $filename = 'logo_sekolah.' . $file->getClientOriginalExtension();
             $path = 'admin_assets/images/brand/logo/';
             
-            // Create directory if not exists
             if (!file_exists(public_path($path))) {
                 mkdir(public_path($path), 0755, true);
             }
@@ -66,7 +63,6 @@ class SettingsController extends Controller
             'is_active' => 'boolean'
         ]);
 
-        // If this year is set as active, deactivate others
         if ($request->is_active) {
             AcademicYear::where('is_active', true)->update(['is_active' => false]);
         }
@@ -85,7 +81,6 @@ class SettingsController extends Controller
             'is_active' => 'boolean'
         ]);
 
-        // If this year is set as active, deactivate others
         if ($request->is_active) {
             AcademicYear::where('id', '!=', $academicYear->id)
                 ->where('is_active', true)

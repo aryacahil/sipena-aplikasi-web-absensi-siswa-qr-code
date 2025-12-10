@@ -23,7 +23,6 @@ class SiswaExport implements FromCollection, WithHeadings, WithMapping, WithStyl
     {
         $query = User::where('role', 2)->with('kelas.jurusan');
 
-        // Apply filters
         if (!empty($this->filters['kelas_id'])) {
             $query->where('kelas_id', $this->filters['kelas_id']);
         }
@@ -52,7 +51,7 @@ class SiswaExport implements FromCollection, WithHeadings, WithMapping, WithStyl
         return [
             $siswa->nis ?? '',
             $siswa->name,
-            '12345678', // Default password untuk re-import
+            '12345678', 
             $siswa->kelas ? $siswa->kelas->nama_kelas : '',
             $siswa->parent_phone ?? '',
             $siswa->status,
@@ -62,7 +61,6 @@ class SiswaExport implements FromCollection, WithHeadings, WithMapping, WithStyl
     public function styles(Worksheet $sheet)
     {
         return [
-            // Style untuk header
             1 => [
                 'font' => [
                     'bold' => true,

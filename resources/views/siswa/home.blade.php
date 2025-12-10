@@ -332,7 +332,6 @@
 
 @push('styles')
 <style>
-    /* Custom background colors */
     .bg-success.bg-opacity-10 {
         background-color: rgba(25, 135, 84, 0.1) !important;
     }
